@@ -449,7 +449,8 @@ float3 GetXvirtual( float hitDist, float curvature, float3 X, float3 Xprev, floa
 
         // TODO: to fix bahavior on concave mirrors, signed world position is needed. But the code below can't be used "as is"
         // because motion can become inconsistent in some cases ( tests 133, 164, 171 - 176 ) leading to reprojection artefacts
-        //Iw = Geometry::RotateVectorInverse( reflectorBasis, I );
+        //Iw = Geometry::RotateVectorInverse( reflectorBasis, I ); // no
+        //Iw *= -Math::Sign( mag ); // closer
     #endif
 
     // Only hit distance is provided, not real motion in the virtual world. If the virtual position is close to the
