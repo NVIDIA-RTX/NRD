@@ -245,10 +245,6 @@ namespace nrd
         // Values ">= maxAccumulatedFrameNum"  get clamped to "maxAccumulatedFrameNum"
         uint32_t maxStabilizedFrameNum = REBLUR_MAX_HISTORY_FRAME_NUM;
 
-        // [0; maxAccumulatedFrameNum] - maximum number of linearly accumulated frames for stabilized hit distance
-        // 0 - allows to reach parity with "REBLUR_OCCLUSION"
-        uint32_t maxStabilizedFrameNumForHitDistance = REBLUR_MAX_HISTORY_FRAME_NUM;
-
         // [0; 3] - number of reconstructed frames after history reset (less than "maxFastAccumulatedFrameNum")
         uint32_t historyFixFrameNum = 3;
 

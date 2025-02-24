@@ -148,7 +148,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float, gStrandMaterialID ) \
     NRD_CONSTANT( float, gStrandThickness ) \
     NRD_CONSTANT( float, gStabilizationStrength ) \
-    NRD_CONSTANT( float, gHitDistStabilizationStrength ) \
     NRD_CONSTANT( float, gDebug ) \
     NRD_CONSTANT( float, gOrthoMode ) \
     NRD_CONSTANT( float, gUnproject ) \

@@ -299,5 +299,7 @@ A single NRD instance can now include any combination of denoisers, including re
   - `enableMaterialTestForDiffuse` replaced with `minMaterialForDiffuse` (the default matches old behavior)
   - `enableMaterialTestForSpecular` replaced with `minMaterialForSpecular` (the default matches old behavior)
 - *REBLUR*:
-  - removed `ReblurAntilagSettings::hitDistanceSigmaScale` and `ReblurAntilagSettings::hitDistanceSensitivity`
+  - Disabled temporal stabilization for `hitT`:
+    - removed `ReblurAntilagSettings::hitDistanceSigmaScale` and `ReblurAntilagSettings::hitDistanceSensitivity`
+    - removed `ReblurSettings::maxStabilizedFrameNumForHitDistance`
   - output textures are not used as history buffers on the next frame anymore

@@ -312,7 +312,6 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     float specularPrepassBlurRadius = settings.specularPrepassBlurRadius * worstResolutionScale;
     float disocclusionThresholdBonus = (1.0f + m_JitterDelta) / float(rectH);
     float stabilizationStrength = settings.maxStabilizedFrameNum / (1.0f + settings.maxStabilizedFrameNum);
-    float hitDistanceStabilizationStrength = settings.maxStabilizedFrameNumForHitDistance / (1.0f + settings.maxStabilizedFrameNumForHitDistance);
     uint32_t maxAccumulatedFrameNum = min(settings.maxAccumulatedFrameNum, REBLUR_MAX_HISTORY_FRAME_NUM);
 
     uint32_t diffCheckerboard = 2;
@@ -367,7 +366,6 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gStrandMaterialID                                   = m_CommonSettings.strandMaterialID;
     consts->gStrandThickness                                    = m_CommonSettings.strandThickness;
     consts->gStabilizationStrength                              = isHistoryReset ? 0.0f : stabilizationStrength;
-    consts->gHitDistStabilizationStrength                       = isHistoryReset ? 0.0f : hitDistanceStabilizationStrength;
     consts->gDebug                                              = m_CommonSettings.debug;
     consts->gOrthoMode                                          = m_OrthoMode;
     consts->gUnproject                                          = unproject;
