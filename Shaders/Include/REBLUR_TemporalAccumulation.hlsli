@@ -222,14 +222,17 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     float disocclusionThreshold = lerp( gDisocclusionThreshold, gDisocclusionThresholdAlternate, disocclusionThresholdMix );
 
+    // TODO: small parallax ( very slow motion ) could be used to increase disocclusion threshold, but:
+    // - MVs should be dilated first
+    // - Problem: a static pixel ( with relaxed threshold ) can touch a moving pixel, leading to reprojection artefacts
     float smallParallax = Math::LinearStep( 0.25, 0.0, smbParallaxInPixelsMax );
-    disocclusionThreshold += 0.05 * smallParallax;
+    float thresholdAngle = REBLUR_ALMOST_ZERO_ANGLE - 0.25 * smallParallax;
 
     float3 V = GetViewVector( X );
     float NoV = abs( dot( N, V ) );
     float NoVstrict = lerp( NoV, 1.0, saturate( smbParallaxInPixelsMax / 30.0 ) );
     float4 smbDisocclusionThreshold = GetDisocclusionThreshold( disocclusionThreshold, frustumSize, NoVstrict );
-    smbDisocclusionThreshold *= float( dot( smbNavg, Navg ) > REBLUR_ALMOST_ZERO_ANGLE - 0.25 * smallParallax ); // good for smb
+    smbDisocclusionThreshold *= float( dot( smbNavg, Navg ) > thresholdAngle ); // good for smb
     smbDisocclusionThreshold *= IsInScreenBilinear( smbBilinearFilter.origin, gRectSizePrev );
     smbDisocclusionThreshold -= NRD_EPS;
 
@@ -483,8 +486,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         {
             float4 vmbOcclusionThreshold = disocclusionThreshold * frustumSize;
             vmbOcclusionThreshold *= lerp( 0.25, 1.0, NoV ); // yes, "*" not "/" // TODO: it's from commit "fixed suboptimal "vmb" reprojection behavior in disocclusions", but is it really needed?
-            vmbOcclusionThreshold *= float( dot( vmbN, N ) > REBLUR_ALMOST_ZERO_ANGLE ); // good for vmb
-            vmbOcclusionThreshold *= float( dot( vmbN, smbNavg ) > REBLUR_ALMOST_ZERO_ANGLE ); // bonus check for test 168
+            vmbOcclusionThreshold *= float( dot( vmbN, N ) > thresholdAngle ); // good for vmb
+            vmbOcclusionThreshold *= float( dot( vmbN, smbNavg ) > thresholdAngle ); // bonus check for test 168
             vmbOcclusionThreshold *= IsInScreenBilinear( vmbBilinearFilter.origin, gRectSizePrev );
             vmbOcclusionThreshold -= NRD_EPS;
 
