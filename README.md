@@ -41,7 +41,7 @@ For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "
 
 # HOW TO BUILD?
 
-- Install [*Cmake*](https://cmake.org/download/) 3.15+
+- Install [*Cmake*](https://cmake.org/download/) 3.16+
 - Install on
     - Windows: latest *WindowsSDK* and *VulkanSDK*
     - Linux (x86-64): latest *VulkanSDK*
@@ -49,6 +49,7 @@ For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "
 - Build (variant 1) - using *Git* and *CMake* explicitly
     - Clone project and init submodules
     - Generate and build the project using *CMake*
+    - To build the binary with static MSVC runtime, add `-DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>"` parameter when deploying the project
 - Build (variant 2) - by running scripts:
     - Run `1-Deploy`
     - Run `2-Build`
