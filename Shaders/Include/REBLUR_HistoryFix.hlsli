@@ -10,6 +10,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 groupshared float s_DiffLuma[ BUFFER_Y ][ BUFFER_X ];
 groupshared float s_SpecLuma[ BUFFER_Y ][ BUFFER_X ];
+groupshared float2 s_FrameNum[ BUFFER_Y ][ BUFFER_X ];
 
 void Preload( uint2 sharedPos, int2 globalPos )
 {
@@ -22,6 +23,8 @@ void Preload( uint2 sharedPos, int2 globalPos )
     #ifdef REBLUR_SPECULAR
         s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = gIn_SpecFast[ globalPos ];
     #endif
+
+    s_FrameNum[ sharedPos.y ][ sharedPos.x ] = UnpackData1( gIn_Data1[ globalPos ] );
 }
 
 // Tests 20, 23, 24, 27, 28, 54, 59, 65, 66, 76, 81, 98, 112, 117, 124, 126, 128, 134
@@ -57,9 +60,39 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 Nv = Geometry::RotateVectorInverse( gViewToWorld, N );
     float3 Vv = GetViewVector( Xv, true );
     float NoV = abs( dot( Nv, Vv ) );
-    float2 frameNum = UnpackData1( gIn_Data1[ pixelPos ] );
 
-    float2 stride = gHistoryFixBasePixelStride / ( 2.0 + frameNum ); // +1 to match RELAX
+    int2 smemPos = threadPos + BORDER;
+    float2 frameNum = s_FrameNum[ smemPos.y ][ smemPos.x ];
+
+    // Use smaller strides if neighborhood pixels have longer history to minimize chances of ruining contact details // TODO: it would be good to apply the same logic in spatial passes
+    float2 stride;
+    {
+        float2 frameNumAvg = frameNum;
+        float2 sum = 1.0;
+        float invHistoryFixFrameNum = 1.0 / ( gHistoryFixFrameNum + NRD_EPS );
+
+        [unroll]
+        for( i = -1; i <= 1; i++ )
+        {
+            [unroll]
+            for( j = -1; j <= 1; j++ )
+            {
+                if( i == 0 && j == 0 )
+                    continue;
+
+                float2 f = s_FrameNum[ smemPos.y + j ][ smemPos.x + i ];
+                float2 w = step( frameNum, f ); // use only neighbors with longer history
+
+                frameNumAvg += saturate( f * invHistoryFixFrameNum ) * w;
+                sum += w;
+            }
+        }
+
+        frameNumAvg /= sum;
+
+        stride = gHistoryFixBasePixelStride / ( 2.0 + frameNumAvg * gHistoryFixFrameNum ); // +1 to match RELAX
+        stride *= float2( frameNum < gHistoryFixFrameNum );
+    }
 
     // Diffuse
     #ifdef REBLUR_DIFFUSE
@@ -70,7 +103,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         // Stride between taps
-         float diffStride = stride.x * float( frameNum.x < gHistoryFixFrameNum );
+         float diffStride = stride.x;
          diffStride = floor( diffStride );
 
         // History reconstruction
@@ -266,7 +299,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Stride between taps
         float smc = GetSpecMagicCurve( roughness );
-        float specStride = stride.y * float( frameNum.y < gHistoryFixFrameNum );
+        float specStride = stride.y;
         specStride *= lerp( 0.5, 1.0, smc ); // hand tuned
         specStride = floor( specStride );
 
