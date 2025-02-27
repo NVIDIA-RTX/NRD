@@ -709,7 +709,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float edgeLenSq = Math::LengthSquared( edge );
         curvature = dot( n - currentNormal, edge ) * Math::PositiveRcp( edgeLenSq );
 
-    #if( NRD_USE_SPECULAR_MOTION_V2 == 0 ) // needed onlt for the old version
+    #if( NRD_USE_SPECULAR_MOTION_V2 == 0 ) // needed only for the old version
         // Correction #1 - this is needed if camera is "inside" a concave mirror ( tests 133, 164, 171 - 176 )
         if( length( currentWorldPos ) < -1.0 / curvature ) // TODO: test 78
             curvature *= NoV;
