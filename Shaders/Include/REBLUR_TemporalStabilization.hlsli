@@ -77,14 +77,15 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Shared data
     uint bits;
+    bool smbAllowCatRom;
     REBLUR_DATA1_TYPE data1 = UnpackData1( gIn_Data1[ pixelPos ] );
-    float2 data2 = UnpackData2( gIn_Data2[ pixelPos ], bits );
+    float2 data2 = UnpackData2( gIn_Data2[ pixelPos ], bits, smbAllowCatRom );
 
     // Surface motion footprint
     Filtering::Bilinear smbBilinearFilter = Filtering::GetBilinearFilter( smbPixelUv, gRectSizePrev );
     float4 smbOcclusion = float4( ( bits & uint4( 1, 2, 4, 8 ) ) != 0 );
+
     float4 smbOcclusionWeights = Filtering::GetBilinearCustomWeights( smbBilinearFilter, smbOcclusion );
-    bool smbAllowCatRom = dot( smbOcclusion, 1.0 ) > 3.5 && REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TS;
     float smbFootprintQuality = Filtering::ApplyBilinearFilter( smbOcclusion.x, smbOcclusion.y, smbOcclusion.z, smbOcclusion.w, smbBilinearFilter );
     smbFootprintQuality = Math::Sqrt01( smbFootprintQuality );
 
@@ -298,6 +299,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float4 vmbOcclusion = float4( ( bits & uint4( 16, 32, 64, 128 ) ) != 0 );
         float4 vmbOcclusionWeights = Filtering::GetBilinearCustomWeights( vmbBilinearFilter, vmbOcclusion );
         bool vmbAllowCatRom = dot( vmbOcclusion, 1.0 ) > 3.5 && REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TS;
+        vmbAllowCatRom = vmbAllowCatRom && smbAllowCatRom; // helps to reduce over-sharpening in disoccluded areas
         float vmbFootprintQuality = Filtering::ApplyBilinearFilter( vmbOcclusion.x, vmbOcclusion.y, vmbOcclusion.z, vmbOcclusion.w, vmbBilinearFilter );
         vmbFootprintQuality = Math::Sqrt01( vmbFootprintQuality );
 

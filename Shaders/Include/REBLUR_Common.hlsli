@@ -56,24 +56,29 @@ float2 UnpackData1( float2 p )
     return p * REBLUR_MAX_ACCUM_FRAME_NUM;
 }
 
-uint PackData2( float fbits, float curvature, float virtualHistoryAmount )
+uint PackData2( float fbits, bool smbAllowCatRom, float curvature, float virtualHistoryAmount )
 {
     // BITS:
     // 0-3 - smbOcclusion 2x2
     // 4-7 - vmbOcclusion 2x2
+    // 8-14 - virtualHistoryAmount
+    // 15 - smbAllowCatRom
+    // 16-31 - curvature
 
     uint p = uint( fbits + 0.5 );
-    p |= uint( saturate( virtualHistoryAmount ) * 255.0 + 0.5 ) << 8;
+    p |= uint( saturate( virtualHistoryAmount ) * 127.0 + 0.5 ) << 8;
+    p |= smbAllowCatRom ? ( 1 << 15 ) : 0;
     p |= f32tof16( curvature ) << 16;
 
     return p;
 }
 
-float2 UnpackData2( uint p, out uint bits )
+float2 UnpackData2( uint p, out uint bits, out bool smbAllowCatRom )
 {
     bits = p & 0xFF;
+    smbAllowCatRom = ( p & ( 1 << 15 ) ) != 0;
 
-    float virtualHistoryAmount = float( ( p >> 8 ) & 0xFF ) / 255.0;
+    float virtualHistoryAmount = float( ( p >> 8 ) & 127 ) / 127.0;
     float curvature = f16tof32( p >> 16 );
 
     return float2( virtualHistoryAmount, curvature );

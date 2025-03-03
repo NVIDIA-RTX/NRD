@@ -823,7 +823,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Output
     #ifndef REBLUR_OCCLUSION
-        gOut_Data2[ pixelPos ] = PackData2( fbits, curvature, virtualHistoryAmount );
+        // TODO: "PackData2" can be inlined into the code ( right after a variable gets ready for use ) to utilize the only
+        // one "uint" for the intermediate storage. But it looks like the compiler does good job by rearranging the code for us
+        gOut_Data2[ pixelPos ] = PackData2( fbits, curvature, virtualHistoryAmount, smbAllowCatRom );
     #endif
 
     // Diffuse

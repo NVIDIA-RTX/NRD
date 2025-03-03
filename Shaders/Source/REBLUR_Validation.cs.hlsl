@@ -60,7 +60,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     data1 *= REBLUR_MAX_ACCUM_FRAME_NUM;
 
     uint bits;
-    float2 data2 = UnpackData2( gIn_Data2[ uint2( viewportUvScaled * gResourceSize ) ], bits );
+    bool smbAllowCatRom;
+    float2 data2 = UnpackData2( gIn_Data2[ uint2( viewportUvScaled * gResourceSize ) ], bits, smbAllowCatRom );
 
     float3 N = normalAndRoughness.xyz;
     float roughness = normalAndRoughness.w;
