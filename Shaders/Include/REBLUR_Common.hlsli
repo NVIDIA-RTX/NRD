@@ -56,7 +56,7 @@ float2 UnpackData1( float2 p )
     return p * REBLUR_MAX_ACCUM_FRAME_NUM;
 }
 
-uint PackData2( float fbits, bool smbAllowCatRom, float curvature, float virtualHistoryAmount )
+uint PackData2( float fbits, float curvature, float virtualHistoryAmount, bool smbAllowCatRom )
 {
     // BITS:
     // 0-3 - smbOcclusion 2x2
