@@ -38,8 +38,9 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_FORMAT                                               Format::RGBA16_SFLOAT // .xyz - color, .w - normalized hit distance
 #define REBLUR_FORMAT_FAST_HISTORY                                  Format::R16_SFLOAT // .x - luminance
 
+// TODO: there can be an option for UNORM/SNORM 8/16-bit promotion/demotion, but only for resources marked as main/fast history (i.e. not normal-roughness and internal data resources)
 #define REBLUR_FORMAT_OCCLUSION                                     Format::R16_UNORM
-#define REBLUR_FORMAT_OCCLUSION_FAST_HISTORY                        Format::R16_UNORM
+#define REBLUR_FORMAT_OCCLUSION_FAST_HISTORY                        Format::R8_UNORM // TODO: keep an eye on precision, but can be even used for the main history if accumulation is not as long
 
 #define REBLUR_FORMAT_DIRECTIONAL_OCCLUSION                         Format::RGBA16_SNORM
 #define REBLUR_FORMAT_DIRECTIONAL_OCCLUSION_FAST_HISTORY            REBLUR_FORMAT_OCCLUSION_FAST_HISTORY

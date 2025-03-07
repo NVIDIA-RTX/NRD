@@ -204,7 +204,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         gOut_DiffSh[ pixelPos ] = diffSh;
     #endif
 
-    #if( defined( REBLUR_NO_TEMPORAL_STABILIZATION ) && !defined( REBLUR_OCCLUSION ) )
+    #ifdef REBLUR_NO_TEMPORAL_STABILIZATION
         gOut_DiffCopy[ pixelPos ] = diff;
         #ifdef REBLUR_SH
             gOut_DiffShCopy[ pixelPos ] = diffSh;

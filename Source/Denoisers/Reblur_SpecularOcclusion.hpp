@@ -22,6 +22,7 @@ void nrd::InstanceImpl::Add_ReblurSpecularOcclusion(DenoiserData& denoiserData)
         PREV_VIEWZ = PERMANENT_POOL_START,
         PREV_NORMAL_ROUGHNESS,
         PREV_INTERNAL_DATA,
+        SPEC_HISTORY,
         SPEC_FAST_HISTORY,
         SPEC_HITDIST_FOR_TRACKING_PING,
         SPEC_HITDIST_FOR_TRACKING_PONG,
@@ -30,6 +31,7 @@ void nrd::InstanceImpl::Add_ReblurSpecularOcclusion(DenoiserData& denoiserData)
     AddTextureToPermanentPool( {REBLUR_FORMAT_PREV_VIEWZ, 1} );
     AddTextureToPermanentPool( {REBLUR_FORMAT_PREV_NORMAL_ROUGHNESS, 1} );
     AddTextureToPermanentPool( {REBLUR_FORMAT_PREV_INTERNAL_DATA, 1} );
+    AddTextureToPermanentPool( {REBLUR_FORMAT_OCCLUSION, 1} );
     AddTextureToPermanentPool( {REBLUR_FORMAT_OCCLUSION_FAST_HISTORY, 1} );
     AddTextureToPermanentPool( {REBLUR_FORMAT_HITDIST_FOR_TRACKING, 1} );
     AddTextureToPermanentPool( {REBLUR_FORMAT_HITDIST_FOR_TRACKING, 1} );
@@ -107,7 +109,7 @@ void nrd::InstanceImpl::Add_ReblurSpecularOcclusion(DenoiserData& denoiserData)
             PushInput( hasDisocclusionThresholdMix ? AsUint(ResourceType::IN_DISOCCLUSION_THRESHOLD_MIX) : REBLUR_DUMMY );
             PushInput( hasConfidenceInputs ? AsUint(ResourceType::IN_SPEC_CONFIDENCE) : REBLUR_DUMMY );
             PushInput( isAfterReconstruction ? SPEC_TEMP1 : AsUint(ResourceType::IN_SPEC_HITDIST) );
-            PushInput( AsUint(ResourceType::OUT_SPEC_HITDIST) );
+            PushInput( AsUint(Permanent::SPEC_HISTORY) );
             PushInput( AsUint(Permanent::SPEC_FAST_HISTORY) );
             PushInput( AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PING), AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PONG) );
 
@@ -171,8 +173,9 @@ void nrd::InstanceImpl::Add_ReblurSpecularOcclusion(DenoiserData& denoiserData)
 
         // Outputs
         PushOutput( AsUint(Permanent::PREV_NORMAL_ROUGHNESS) );
-        PushOutput( AsUint(ResourceType::OUT_SPEC_HITDIST) );
+        PushOutput( AsUint(Permanent::SPEC_HISTORY) );
         PushOutput( AsUint(Permanent::PREV_INTERNAL_DATA) );
+        PushOutput( AsUint(ResourceType::OUT_SPEC_HITDIST) );
 
         // Shaders
         AddDispatch( REBLUR_SpecularOcclusion_PostBlur_NoTemporalStabilization, REBLUR_PostBlur, 1 );

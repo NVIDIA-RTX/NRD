@@ -17,8 +17,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #include <alloca.h>
 #endif
 
-static_assert(NRD_VERSION_MAJOR >= 4 && NRD_VERSION_MINOR >= 11, "Unsupported NRD version!");
-static_assert(NRI_VERSION_MAJOR >= 1 && NRI_VERSION_MINOR >= 161, "Unsupported NRI version!");
+static_assert(NRD_VERSION_MAJOR >= 4 && NRD_VERSION_MINOR >= 14, "Unsupported NRD version!");
+static_assert(NRI_VERSION_MAJOR >= 1 && NRI_VERSION_MINOR >= 165, "Unsupported NRI version!");
 
 namespace nrd
 {

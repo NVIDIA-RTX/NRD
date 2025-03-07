@@ -25,7 +25,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #define NRD_INTEGRATION_MAJOR 1
 #define NRD_INTEGRATION_MINOR 16
-#define NRD_INTEGRATION_DATE "20 December 2024"
+#define NRD_INTEGRATION_DATE "7 March 2025"
 #define NRD_INTEGRATION 1
 
 // Debugging

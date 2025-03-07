@@ -184,13 +184,17 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( uint, gIsRectChanged ) \
     NRD_CONSTANT( uint, gResetHistory )
 
-#ifdef REBLUR_DIRECTIONAL_OCCLUSION
+// ( Optional ) This can provide a minor performance boost by sacrificing IQ a bit.
+// The negative effect is minimal if SH resolve is in use
+/*
+#if( defined( REBLUR_DIRECTIONAL_OCCLUSION ) || defined( REBLUR_SH ) )
     #undef REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA
     #define REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA          0
 
     #undef REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TA
     #define REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TA          0
 #endif
+*/
 
 #ifdef REBLUR_PERFORMANCE_MODE
     #undef REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA

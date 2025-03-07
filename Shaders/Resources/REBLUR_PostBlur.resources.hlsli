@@ -38,15 +38,13 @@ NRD_SAMPLERS_END
         NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_Spec, u, 2 )
         #ifdef REBLUR_NO_TEMPORAL_STABILIZATION
             NRD_OUTPUT( RWTexture2D<uint>, gOut_InternalData, u, 3 )
-            #ifndef REBLUR_OCCLUSION
-                NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_DiffCopy, u, 4 )
-                NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_SpecCopy, u, 5 )
-                #ifdef REBLUR_SH
-                    NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_DiffShCopy, u, 6 )
-                    NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_SpecShCopy, u, 7 )
-                    NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_DiffSh, u, 8 )
-                    NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_SpecSh, u, 9 )
-                #endif
+            NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_DiffCopy, u, 4 )
+            NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_SpecCopy, u, 5 )
+            #ifdef REBLUR_SH
+                NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_DiffShCopy, u, 6 )
+                NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_SpecShCopy, u, 7 )
+                NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_DiffSh, u, 8 )
+                NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_SpecSh, u, 9 )
             #endif
         #else
             #ifdef REBLUR_SH
@@ -74,12 +72,10 @@ NRD_SAMPLERS_END
         NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_Diff, u, 1 )
         #ifdef REBLUR_NO_TEMPORAL_STABILIZATION
             NRD_OUTPUT( RWTexture2D<uint>, gOut_InternalData, u, 2 )
-            #ifndef REBLUR_OCCLUSION
-                NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_DiffCopy, u, 3 )
-                #ifdef REBLUR_SH
-                    NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_DiffShCopy, u, 4 )
-                    NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_DiffSh, u, 5 )
-                #endif
+            NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_DiffCopy, u, 3 )
+            #ifdef REBLUR_SH
+                NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_DiffShCopy, u, 4 )
+                NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_DiffSh, u, 5 )
             #endif
         #else
             #ifdef REBLUR_SH
@@ -106,12 +102,10 @@ NRD_SAMPLERS_END
         NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_Spec, u, 1 )
         #ifdef REBLUR_NO_TEMPORAL_STABILIZATION
             NRD_OUTPUT( RWTexture2D<uint>, gOut_InternalData, u, 2 )
-            #ifndef REBLUR_OCCLUSION
-                NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_SpecCopy, u, 3 )
-                #ifdef REBLUR_SH
-                    NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_SpecShCopy, u, 4 )
-                    NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_SpecSh, u, 5 )
-                #endif
+            NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_SpecCopy, u, 3 )
+            #ifdef REBLUR_SH
+                NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_SpecShCopy, u, 4 )
+                NRD_OUTPUT( RWTexture2D<REBLUR_SH_TYPE>, gOut_SpecSh, u, 5 )
             #endif
         #else
             #ifdef REBLUR_SH

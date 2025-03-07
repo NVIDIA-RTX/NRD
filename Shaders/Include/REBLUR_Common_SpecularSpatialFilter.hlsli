@@ -251,7 +251,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         gOut_SpecSh[ pixelPos ] = specSh;
     #endif
 
-    #if( defined( REBLUR_NO_TEMPORAL_STABILIZATION ) && !defined( REBLUR_OCCLUSION ) )
+    #ifdef REBLUR_NO_TEMPORAL_STABILIZATION
         gOut_SpecCopy[ pixelPos ] = spec;
         #ifdef REBLUR_SH
             gOut_SpecShCopy[ pixelPos ] = specSh;

@@ -65,7 +65,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 // Settings
 #define NRD_DISOCCLUSION_THRESHOLD                              0.02 // normalized % // TODO: use CommonSettings::disocclusionThreshold?
-#define NRD_CATROM_SHARPNESS                                    0.5 // [ 0; 1 ], 0.5 matches Catmull-Rom
+#define NRD_CATROM_SHARPNESS                                    0.5 // [ 0; 1 ], 0.5 matches Catmull-Rom // TODO: use 0.6?
 #define NRD_RADIANCE_COMPRESSION_MODE                           3 // 0-4, specular color compression for spatial passes
 #define NRD_EXP_WEIGHT_DEFAULT_SCALE                            3.0
 #define NRD_ROUGHNESS_SENSITIVITY                               0.01 // smaller => more sensitive
