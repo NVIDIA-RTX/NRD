@@ -75,12 +75,6 @@ jobs:
           sudo apt update
           sudo apt install -y vulkan-sdk
 
-      - name: Install compiler
-        id: install_cc
-        uses: rlalik/setup-cpp-compiler@master
-        with:
-          compiler: latest
-
       - name: Deploy
         run: |
           mkdir "build"
