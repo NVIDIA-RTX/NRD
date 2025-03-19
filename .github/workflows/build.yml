@@ -75,6 +75,10 @@ jobs:
           sudo apt update
           sudo apt install -y vulkan-sdk
 
+      - name: Update GCC
+        run: |
+          sudo apt install gcc-12 g++-12
+
       - name: Deploy
         run: |
           mkdir "build"
