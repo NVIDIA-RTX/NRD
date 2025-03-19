@@ -68,14 +68,14 @@ void nrd::InstanceImpl::AddSharedConstants_Relax(const RelaxSettings& settings, 
 
     float tanHalfFov = 1.0f / m_ViewToClip.a00;
     float aspect = m_ViewToClip.a00 / m_ViewToClip.a11;
-    float3 frustumRight = float3(m_WorldToView.GetRow0().xyz) * tanHalfFov;
-    float3 frustumUp = float3(m_WorldToView.GetRow1().xyz) * tanHalfFov * aspect;
+    float3 frustumRight = float3(m_WorldToView.Row(0).xyz) * tanHalfFov;
+    float3 frustumUp = float3(m_WorldToView.Row(1).xyz) * tanHalfFov * aspect;
     float3 frustumForward = RELAX_GetFrustumForward(m_ViewToWorld, m_Frustum);
 
     float prevTanHalfFov = 1.0f / m_ViewToClipPrev.a00;
     float prevAspect = m_ViewToClipPrev.a00 / m_ViewToClipPrev.a11;
-    float3 prevFrustumRight = float3(m_WorldToViewPrev.GetRow0().xyz) * prevTanHalfFov;
-    float3 prevFrustumUp = float3(m_WorldToViewPrev.GetRow1().xyz) * prevTanHalfFov * prevAspect;
+    float3 prevFrustumRight = float3(m_WorldToViewPrev.Row(0).xyz) * prevTanHalfFov;
+    float3 prevFrustumUp = float3(m_WorldToViewPrev.Row(1).xyz) * prevTanHalfFov * prevAspect;
     float3 prevFrustumForward = RELAX_GetFrustumForward(m_ViewToWorldPrev, m_FrustumPrev);
 
     float maxDiffuseLuminanceRelativeDifference = -log( saturate(settings.diffuseMinLuminanceWeight) );

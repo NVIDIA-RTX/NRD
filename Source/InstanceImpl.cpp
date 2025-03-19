@@ -395,15 +395,15 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
 
     if ( !(flags & PROJ_LEFT_HANDED) )
     {
-        m_ViewToClip.col2 = -m_ViewToClip[2];
-        m_ViewToClipPrev.col2 = -m_ViewToClipPrev[2];
+        m_ViewToClip[2] = -m_ViewToClip[2];
+        m_ViewToClipPrev[2] = -m_ViewToClipPrev[2];
 
         m_WorldToView.Transpose();
-        m_WorldToView.col2 = -m_WorldToView[2];
+        m_WorldToView[2] = -m_WorldToView[2];
         m_WorldToView.Transpose();
 
         m_WorldToViewPrev.Transpose();
-        m_WorldToViewPrev.col2 = -m_WorldToViewPrev[2];
+        m_WorldToViewPrev[2] = -m_WorldToViewPrev[2];
         m_WorldToViewPrev.Transpose();
     }
 
