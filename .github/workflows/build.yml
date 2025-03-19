@@ -75,9 +75,11 @@ jobs:
           sudo apt update
           sudo apt install -y vulkan-sdk
 
-      - name: Update GCC
-        run: |
-          sudo apt install gcc-12 g++-12
+      - name: Install compiler
+        id: install_cc
+        uses: rlalik/setup-cpp-compiler@master
+        with:
+          compiler: latest
 
       - name: Deploy
         run: |
