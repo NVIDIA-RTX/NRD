@@ -13,17 +13,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 {
     NRD_CTA_ORDER_DEFAULT;
 
-    // Tile-based early out
-    float isSky = gIn_Tiles[ pixelPos >> 4 ].x;
-    if( isSky != 0.0 || any( pixelPos > gRectSizeMinusOne ) )
-        return;
-
-    // Early out
+    // Copy viewZ ( including sky! ) for the next pass and frame ( potentially lower precision )
     float viewZpacked = gIn_ViewZ[ WithRectOrigin( pixelPos ) ];
     gOut_ViewZ[ pixelPos ] = viewZpacked;
 
+    // Tile-based early out and viewZ-based early out
+    float isSky = gIn_Tiles[ pixelPos >> 4 ].x;
     float viewZ = UnpackViewZ( viewZpacked );
-    if( viewZ > gDenoisingRange )
+    if( isSky != 0.0 || any( pixelPos > gRectSizeMinusOne ) || viewZ > gDenoisingRange )
         return;
 
     // Normal and roughness
