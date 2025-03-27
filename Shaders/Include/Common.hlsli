@@ -593,7 +593,7 @@ float GetEncodingAwareNormalWeight( float3 Ncurr, float3 Nprev, float maxAngle, 
 
 float GetDisocclusionThreshold( float disocclusionThreshold, float frustumSize, float NoV )
 {
-    return frustumSize * saturate( disocclusionThreshold / max( 0.01, NoV ) );
+    return frustumSize * saturate( disocclusionThreshold / max( 0.05, NoV ) ); // don't be very greedy, probably 0.1 is safer ( test 223 )
 }
 
 #define GetDisocclusionWeight( z, z0, disocclusionThreshold ) step( abs( z - z0 ), disocclusionThreshold )
