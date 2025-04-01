@@ -183,7 +183,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             float d = length( Xvs - Xv ) + NRD_EPS;
             float geometryWeight = w * saturate( hs / d );
             if( Rng::Hash::GetFloat( ) < geometryWeight )
-                hitDistForTracking = min( hitDistForTracking, hs );
+                hitDistForTracking = min( hitDistForTracking, hs ); // TODO: works badly under glancing angles, especially if blur radius is big
 
             // In rare cases, when bright samples are so sparse that any bright neighbors can't be reached,
             // pre-pass transforms a standalone bright pixel into a standalone bright blob, worsening the
@@ -218,7 +218,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #if( REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
         // Output
-        gOut_SpecHitDistForTracking[ pixelPos ] = hitDistForTracking == NRD_INF ? 0.0 : hitDistForTracking; // TODO: lerp to hitT at center based on NoV or NoD?
+        gOut_SpecHitDistForTracking[ pixelPos ] = hitDistForTracking == NRD_INF ? 0.0 : hitDistForTracking; // TODO: lerp to hitT at center based on NoV is needed, but ruins test 44 ( and other tests with contact reflections )
     }
 
     // Checkerboard resolve ( if pre-pass failed )

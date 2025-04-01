@@ -572,11 +572,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             vmbPixelUvPrev = materialID == gCameraAttachedReflectionMaterialID ? smbPixelUv : vmbPixelUvPrev;
 
             float pixelSizeAtXvirtual = PixelRadiusToWorld( gUnproject, gOrthoMode, 1.0, XvirtualLength );
-            float r = ( lobeTanHalfAngle + curvatureAngle ) * min( hitDistForTracking, hitDistForTrackingPrev ) / pixelSizeAtXvirtual; // "pixelSize" at "XvirtualPrev" seems to be not needed
+            float r = ( lobeTanHalfAngle + curvatureAngleTan ) * min( hitDistForTracking, hitDistForTrackingPrev ) / pixelSizeAtXvirtual; // "pixelSize" at "XvirtualPrev" seems to be not needed
             float d = length( ( vmbPixelUvPrev - vmbPixelUv ) * gRectSize );
 
             r = max( r, 0.1 ); // important, especially if "curvatureAngle" is not used
-            virtualHistoryParallaxBasedConfidence = Math::LinearStep( r, 0.0, d );
+            virtualHistoryParallaxBasedConfidence = Math::LinearStep( r, 0.0, d ); // TODO: using "r * 0.05" helps in tests 8 and 110, but worsens 192
         }
 
         // Virtual motion - normal & roughness prev-prev tests
@@ -689,6 +689,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         vmbSpecAccumSpeed = min( vmbSpecAccumSpeed, vmbMaxFrameNum );
 
         // Fallback to "smb" if "vmb" history is short // ***
+        float virtualHistoryAmountUnbiased = virtualHistoryAmount;
     #if( REBLUR_USE_OLD_SMB_FALLBACK_LOGIC == 1 )
         // Interactive comparison of two methods: https://www.desmos.com/calculator/syocjyk9wc
         // TODO: the amount gets shifted heavily towards "smb" if "smb" > "vmb" even by 5 frames
@@ -786,7 +787,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float smbSpecFast = lerp( smbSpecFastHistory, GetLuma( spec ), smbSpecFastNonLinearAccumSpeed );
         float vmbSpecFast = lerp( vmbSpecFastHistory, GetLuma( spec ), vmbSpecFastNonLinearAccumSpeed );
 
-        float specFastResult = lerp( smbSpecFast, vmbSpecFast, virtualHistoryAmount );
+        float specFastResult = lerp( smbSpecFast, vmbSpecFast, virtualHistoryAmountUnbiased );
 
         #if( !defined REBLUR_OCCLUSION && !defined REBLUR_DIRECTIONAL_OCCLUSION )
             // Firefly suppressor ( fixes heavy crawling under camera rotation: test 95, 120 )
