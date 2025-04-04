@@ -193,6 +193,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #endif
 
 #ifdef RELAX_SPECULAR
+    Rng::Hash::Initialize( pixelPos, gFrameIndex );
+
     bool specHasData = true;
     int2 specPos = pixelPos;
     if (gSpecCheckerboard != 2)
@@ -311,6 +313,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 sampleSpecularIllumination = gIn_Spec.SampleLevel(gNearestClamp, checkerboardUvScaled, 0);
             sampleSpecularIllumination = Denanify( sampleWeight, sampleSpecularIllumination );
 
+            if (Rng::Hash::GetFloat() < sampleWeight * NoV)
+                minHitT = min(minHitT, sampleSpecularIllumination.a == 0.0 ? NRD_INF : sampleSpecularIllumination.a);
+
             sampleWeight *= lerp(specMinHitDistanceWeight, 1.0, ComputeExponentialWeight(sampleSpecularIllumination.a, hitDistanceWeightParams.x, hitDistanceWeightParams.y));
             sampleWeight *= GetGaussianWeight(offset.z);
 
@@ -329,9 +334,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 sampleSpecularSH = Denanify( sampleWeight, sampleSpecularSH );
                 specularSH += sampleSpecularSH * sampleWeight;
             #endif
-
-            if (sampleWeight != 0.0)
-                minHitT = min(minHitT, sampleSpecularIllumination.a == 0.0 ? NRD_INF : sampleSpecularIllumination.a);
         }
         specularIllumination.rgb /= weightSum;
         specularIllumination.a = minHitT == NRD_INF ? 0.0 : minHitT;

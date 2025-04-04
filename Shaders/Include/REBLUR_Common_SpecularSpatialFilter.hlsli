@@ -180,10 +180,9 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             // Min hit distance for tracking, ignoring 0 values ( which still can be produced by VNDF sampling )
             // TODO: if trimming is off min hitDist can come from samples with very low probabilities, it worsens reprojection
             float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistParams, Ns.w );
-            float d = length( Xvs - Xv ) + NRD_EPS;
-            float geometryWeight = w * saturate( hs / d );
+            float geometryWeight = w * NoV * float( hs != 0.0 );
             if( Rng::Hash::GetFloat( ) < geometryWeight )
-                hitDistForTracking = min( hitDistForTracking, hs ); // TODO: works badly under glancing angles, especially if blur radius is big
+                hitDistForTracking = min( hitDistForTracking, hs );
 
             // In rare cases, when bright samples are so sparse that any bright neighbors can't be reached,
             // pre-pass transforms a standalone bright pixel into a standalone bright blob, worsening the
@@ -193,6 +192,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             w *= gUsePrepassNotOnlyForSpecularMotionEstimation; // TODO: is there a better solution?
 
             // Decrease weight for samples that most likely are very close to reflection contact which should not be blurred
+            float d = length( Xvs - Xv ) + NRD_EPS;
             float t = hs / ( d + hitDist );
             w *= lerp( saturate( t ), 1.0, Math::LinearStep( 0.5, 1.0, roughness ) );
         #endif
@@ -218,7 +218,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #if( REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
         // Output
-        gOut_SpecHitDistForTracking[ pixelPos ] = hitDistForTracking == NRD_INF ? 0.0 : hitDistForTracking; // TODO: lerp to hitT at center based on NoV is needed, but ruins test 44 ( and other tests with contact reflections )
+        gOut_SpecHitDistForTracking[ pixelPos ] = hitDistForTracking == NRD_INF ? 0.0 : hitDistForTracking;
     }
 
     // Checkerboard resolve ( if pre-pass failed )
