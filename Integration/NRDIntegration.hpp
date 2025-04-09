@@ -254,8 +254,8 @@ void Integration::CreatePipelines()
         nri::PipelineLayoutDesc pipelineLayoutDesc = {};
         pipelineLayoutDesc.descriptorSetNum = descriptorSetNum;
         pipelineLayoutDesc.descriptorSets = descriptorSetDescs;
-        pipelineLayoutDesc.ignoreGlobalSPIRVOffsets = true;
         pipelineLayoutDesc.shaderStages = nri::StageBits::COMPUTE_SHADER;
+        pipelineLayoutDesc.flags = nri::PipelineLayoutBits::IGNORE_GLOBAL_SPIRV_OFFSETS;
 
         nri::PipelineLayout* pipelineLayout = nullptr;
         NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRI->CreatePipelineLayout(*m_Device, pipelineLayoutDesc, pipelineLayout));
@@ -384,7 +384,7 @@ void Integration::CreateResources(uint16_t resourceWidth, uint16_t resourceHeigh
 
     // Constant buffer
     const nri::DeviceDesc& deviceDesc = m_NRI->GetDeviceDesc(*m_Device);
-    m_ConstantBufferViewSize = GetAlignedSize(instanceDesc.constantBufferMaxDataSize, deviceDesc.constantBufferOffsetAlignment);
+    m_ConstantBufferViewSize = GetAlignedSize(instanceDesc.constantBufferMaxDataSize, deviceDesc.memoryAlignment.constantBufferOffset);
     m_ConstantBufferSize = uint64_t(m_ConstantBufferViewSize) * instanceDesc.descriptorPoolDesc.setsMaxNum * m_BufferedFramesNum;
 
     nri::BufferDesc bufferDesc = {};
