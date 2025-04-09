@@ -45,7 +45,7 @@ constexpr std::array<nrd::Denoiser, (size_t)nrd::Denoiser::MAX_NUM> g_NrdSupport
 
 constexpr nrd::LibraryDesc g_NrdLibraryDesc =
 {
-    { 100, 200, 300, 400 }, // IMPORTANT: must match values used in CMake
+    {SPIRV_SREG_OFFSET, SPIRV_TREG_OFFSET, SPIRV_BREG_OFFSET, SPIRV_UREG_OFFSET},
     g_NrdSupportedDenoisers.data(),
     (uint32_t)g_NrdSupportedDenoisers.size(),
     VERSION_MAJOR,
