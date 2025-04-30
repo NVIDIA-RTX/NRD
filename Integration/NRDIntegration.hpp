@@ -90,16 +90,16 @@ template<typename T, typename A> constexpr T GetAlignedSize(const T& size, A ali
     return T(((size + alignment - 1) / alignment) * alignment);
 }
 
-bool Integration::Initialize(const IntegrationCreationDesc& integrationDesc, const InstanceCreationDesc& instanceDesc, nri::Device& nriDevice, const nri::CoreInterface& nriCore, const nri::HelperInterface& nriHelper)
+bool Integration::Initialize(const IntegrationCreationDesc& integrationDesc, const InstanceCreationDesc& instanceDesc, nri::Device& device, const nri::CoreInterface& iCore)
 {
     NRD_INTEGRATION_ASSERT(!m_Instance, "Already initialized! Did you forget to call 'Destroy'?");
-    NRD_INTEGRATION_ASSERT(!integrationDesc.promoteFloat16to32 || !integrationDesc.demoteFloat32to16, "Can't be 'true' both");
+    NRD_INTEGRATION_ASSERT(!integrationDesc.promoteFloat16to32 || !integrationDesc.demoteFloat32to16, "Can't be 'true' for both");
+    NRD_INTEGRATION_ASSERT(integrationDesc.bufferedFramesNum, "Can't be 0");
 
-    const nri::DeviceDesc& deviceDesc = nriCore.GetDeviceDesc(nriDevice);
+    const nri::DeviceDesc& deviceDesc = iCore.GetDeviceDesc(device);
     if (deviceDesc.nriVersionMajor != NRI_VERSION_MAJOR || deviceDesc.nriVersionMinor != NRI_VERSION_MINOR)
     {
         NRD_INTEGRATION_ASSERT(false, "NRI version mismatch detected!");
-
         return false;
     }
 
@@ -107,9 +107,11 @@ bool Integration::Initialize(const IntegrationCreationDesc& integrationDesc, con
     if (libraryDesc.versionMajor != NRD_VERSION_MAJOR || libraryDesc.versionMinor != NRD_VERSION_MINOR)
     {
         NRD_INTEGRATION_ASSERT(false, "NRD version mismatch detected!");
-
         return false;
     }
+
+    if (nri::nriGetInterface(device, NRI_INTERFACE(nri::HelperInterface), &m_iHelper) != nri::Result::SUCCESS)
+        return false;
 
     if (CreateInstance(instanceDesc, m_Instance) != Result::SUCCESS)
         return false;
@@ -118,9 +120,8 @@ bool Integration::Initialize(const IntegrationCreationDesc& integrationDesc, con
     m_EnableDescriptorCaching = integrationDesc.enableDescriptorCaching;
     m_PromoteFloat16to32 = integrationDesc.promoteFloat16to32;
     m_DemoteFloat32to16 = integrationDesc.demoteFloat32to16;
-    m_Device = &nriDevice;
-    m_NRI = &nriCore;
-    m_NRIHelper = &nriHelper;
+    m_Device = &device;
+    m_iCore = &iCore;
 
     strncpy(m_Name, integrationDesc.name, sizeof(m_Name));
 
@@ -142,7 +143,7 @@ void Integration::CreatePipelines()
 {
     // Assuming that the device is in IDLE state
     for (nri::Pipeline* pipeline : m_Pipelines)
-        m_NRI->DestroyPipeline(*pipeline);
+        m_iCore->DestroyPipeline(*pipeline);
     m_Pipelines.clear();
 
 #ifdef PROJECT_NAME
@@ -150,13 +151,13 @@ void Integration::CreatePipelines()
 #endif
 
     const InstanceDesc& instanceDesc = GetInstanceDesc(*m_Instance);
-    const nri::DeviceDesc& deviceDesc = m_NRI->GetDeviceDesc(*m_Device);
+    const nri::DeviceDesc& deviceDesc = m_iCore->GetDeviceDesc(*m_Device);
 
     uint32_t constantBufferOffset = 0;
     uint32_t samplerOffset = 0;
     uint32_t textureOffset = 0;
     uint32_t storageTextureAndBufferOffset = 0;
-    if (m_NRI->GetDeviceDesc(*m_Device).graphicsAPI == nri::GraphicsAPI::VK)
+    if (m_iCore->GetDeviceDesc(*m_Device).graphicsAPI == nri::GraphicsAPI::VK)
     {
         const LibraryDesc& nrdLibraryDesc = GetLibraryDesc();
         constantBufferOffset = nrdLibraryDesc.spirvBindingOffsets.constantBufferOffset;
@@ -258,7 +259,7 @@ void Integration::CreatePipelines()
         pipelineLayoutDesc.flags = nri::PipelineLayoutBits::IGNORE_GLOBAL_SPIRV_OFFSETS;
 
         nri::PipelineLayout* pipelineLayout = nullptr;
-        NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRI->CreatePipelineLayout(*m_Device, pipelineLayoutDesc, pipelineLayout));
+        NRD_INTEGRATION_ABORT_ON_FAILURE(m_iCore->CreatePipelineLayout(*m_Device, pipelineLayoutDesc, pipelineLayout));
         m_PipelineLayouts.push_back(pipelineLayout);
 
         // Pipeline
@@ -282,7 +283,7 @@ void Integration::CreatePipelines()
         pipelineDesc.shader = computeShader;
 
         nri::Pipeline* pipeline = nullptr;
-        NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRI->CreateComputePipeline(*m_Device, pipelineDesc, pipeline));
+        NRD_INTEGRATION_ABORT_ON_FAILURE(m_iCore->CreateComputePipeline(*m_Device, pipelineDesc, pipeline));
         m_Pipelines.push_back(pipeline);
     }
 
@@ -334,14 +335,14 @@ void Integration::CreateResources(uint16_t resourceWidth, uint16_t resourceHeigh
         textureDesc.mipNum = 1;
 
         nri::Texture* texture = nullptr;
-        NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRI->CreateTexture(*m_Device, textureDesc, texture));
+        NRD_INTEGRATION_ABORT_ON_FAILURE(m_iCore->CreateTexture(*m_Device, textureDesc, texture));
 
         char name[128];
         if (i < instanceDesc.permanentPoolSize)
             snprintf(name, sizeof(name), "%s::P(%u)", m_Name, i);
         else
             snprintf(name, sizeof(name), "%s::T(%u)", m_Name, i - instanceDesc.permanentPoolSize);
-        m_NRI->SetDebugName(texture, name);
+        m_iCore->SetDebugName(texture, name);
 
         // Construct NRD texture
         nri::TextureBarrierDesc& nrdTexture = m_TexturePool[i];
@@ -349,7 +350,7 @@ void Integration::CreateResources(uint16_t resourceWidth, uint16_t resourceHeigh
 
         // Adjust memory usage
         nri::MemoryDesc memoryDesc = {};
-        m_NRI->GetTextureMemoryDesc(*texture, nri::MemoryLocation::DEVICE, memoryDesc);
+        m_iCore->GetTextureMemoryDesc(*texture, nri::MemoryLocation::DEVICE, memoryDesc);
 
         if (i < instanceDesc.permanentPoolSize)
             m_PermanentPoolSize += memoryDesc.size;
@@ -378,19 +379,19 @@ void Integration::CreateResources(uint16_t resourceWidth, uint16_t resourceHeigh
         samplerDesc.filters.mag = nrdSampler == Sampler::NEAREST_CLAMP ? nri::Filter::NEAREST : nri::Filter::LINEAR;
 
         nri::Descriptor* descriptor = nullptr;
-        NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRI->CreateSampler(*m_Device, samplerDesc, descriptor));
+        NRD_INTEGRATION_ABORT_ON_FAILURE(m_iCore->CreateSampler(*m_Device, samplerDesc, descriptor));
         m_Samplers.push_back(descriptor);
     }
 
     // Constant buffer
-    const nri::DeviceDesc& deviceDesc = m_NRI->GetDeviceDesc(*m_Device);
+    const nri::DeviceDesc& deviceDesc = m_iCore->GetDeviceDesc(*m_Device);
     m_ConstantBufferViewSize = GetAlignedSize(instanceDesc.constantBufferMaxDataSize, deviceDesc.memoryAlignment.constantBufferOffset);
     m_ConstantBufferSize = uint64_t(m_ConstantBufferViewSize) * instanceDesc.descriptorPoolDesc.setsMaxNum * m_BufferedFramesNum;
 
     nri::BufferDesc bufferDesc = {};
     bufferDesc.size = m_ConstantBufferSize;
     bufferDesc.usage = nri::BufferUsageBits::CONSTANT_BUFFER;
-    NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRI->CreateBuffer(*m_Device, bufferDesc, m_ConstantBuffer));
+    NRD_INTEGRATION_ABORT_ON_FAILURE(m_iCore->CreateBuffer(*m_Device, bufferDesc, m_ConstantBuffer));
 
     AllocateAndBindMemory();
 
@@ -398,7 +399,7 @@ void Integration::CreateResources(uint16_t resourceWidth, uint16_t resourceHeigh
     constantBufferViewDesc.viewType = nri::BufferViewType::CONSTANT;
     constantBufferViewDesc.buffer = m_ConstantBuffer;
     constantBufferViewDesc.size = m_ConstantBufferViewSize;
-    NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRI->CreateBufferView(constantBufferViewDesc, m_ConstantBufferView));
+    NRD_INTEGRATION_ABORT_ON_FAILURE(m_iCore->CreateBufferView(constantBufferViewDesc, m_ConstantBufferView));
 
     // Descriptor pools
     nri::DescriptorPoolDesc descriptorPoolDesc = {};
@@ -411,7 +412,7 @@ void Integration::CreateResources(uint16_t resourceWidth, uint16_t resourceHeigh
     for (uint32_t i = 0; i < m_BufferedFramesNum; i++)
     {
         nri::DescriptorPool* descriptorPool = nullptr;
-        NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRI->CreateDescriptorPool(*m_Device, descriptorPoolDesc, descriptorPool));
+        NRD_INTEGRATION_ABORT_ON_FAILURE(m_iCore->CreateDescriptorPool(*m_Device, descriptorPoolDesc, descriptorPool));
         m_DescriptorPools.push_back(descriptorPool);
 
         m_DescriptorSetSamplers.push_back(nullptr);
@@ -439,9 +440,9 @@ void Integration::AllocateAndBindMemory()
     resourceGroupDesc.textures = textures.data();
 
     size_t baseAllocation = m_MemoryAllocations.size();
-    const size_t allocationNum = m_NRIHelper->CalculateAllocationNumber(*m_Device, resourceGroupDesc);
+    const size_t allocationNum = m_iHelper.CalculateAllocationNumber(*m_Device, resourceGroupDesc);
     m_MemoryAllocations.resize(baseAllocation + allocationNum, nullptr);
-    NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRIHelper->AllocateAndBindMemory(*m_Device, resourceGroupDesc, m_MemoryAllocations.data() + baseAllocation));
+    NRD_INTEGRATION_ABORT_ON_FAILURE(m_iHelper.AllocateAndBindMemory(*m_Device, resourceGroupDesc, m_MemoryAllocations.data() + baseAllocation));
 
     resourceGroupDesc = {};
     resourceGroupDesc.memoryLocation = nri::MemoryLocation::HOST_UPLOAD;
@@ -450,7 +451,7 @@ void Integration::AllocateAndBindMemory()
 
     baseAllocation = m_MemoryAllocations.size();
     m_MemoryAllocations.resize(baseAllocation + 1, nullptr);
-    NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRIHelper->AllocateAndBindMemory(*m_Device, resourceGroupDesc, m_MemoryAllocations.data() + baseAllocation));
+    NRD_INTEGRATION_ABORT_ON_FAILURE(m_iHelper.AllocateAndBindMemory(*m_Device, resourceGroupDesc, m_MemoryAllocations.data() + baseAllocation));
 }
 
 void Integration::NewFrame()
@@ -467,7 +468,7 @@ void Integration::NewFrame()
 
     m_DescriptorPoolIndex = m_FrameIndex % m_BufferedFramesNum;
     nri::DescriptorPool* descriptorPool = m_DescriptorPools[m_DescriptorPoolIndex];
-    m_NRI->ResetDescriptorPool(*descriptorPool);
+    m_iCore->ResetDescriptorPool(*descriptorPool);
 
     // Needs to be reset because the corresponding descriptor pool has been just reset
     m_DescriptorSetSamplers[m_DescriptorPoolIndex] = nullptr;
@@ -476,7 +477,7 @@ void Integration::NewFrame()
     if (!m_EnableDescriptorCaching)
     {
         for (const auto& entry : m_DescriptorsInFlight[m_DescriptorPoolIndex])
-            m_NRI->DestroyDescriptor(*entry);
+            m_iCore->DestroyDescriptor(*entry);
         m_DescriptorsInFlight[m_DescriptorPoolIndex].clear();
     }
 
@@ -533,7 +534,7 @@ void Integration::Denoise(const Identifier* denoisers, uint32_t denoisersNum, nr
     if (m_FrameIndex == 0)
     {
         const nri::Texture* normalRoughnessTexture = userPool[(size_t)ResourceType::IN_NORMAL_ROUGHNESS]->texture;
-        const nri::TextureDesc& normalRoughnessDesc = m_NRI->GetTextureDesc(*normalRoughnessTexture);
+        const nri::TextureDesc& normalRoughnessDesc = m_iCore->GetTextureDesc(*normalRoughnessTexture);
         const LibraryDesc& nrdLibraryDesc = GetLibraryDesc();
 
         bool isNormalRoughnessFormatValid = false;
@@ -570,7 +571,7 @@ void Integration::Denoise(const Identifier* denoisers, uint32_t denoisersNum, nr
 
     // Set descriptor pool
     nri::DescriptorPool* descriptorPool = m_DescriptorPools[m_DescriptorPoolIndex];
-    m_NRI->CmdSetDescriptorPool(commandBuffer, *descriptorPool);
+    m_iCore->CmdSetDescriptorPool(commandBuffer, *descriptorPool);
 
     // Invoke dispatches
     constexpr uint32_t lawnGreen = 0xFF7CFC00;
@@ -579,11 +580,11 @@ void Integration::Denoise(const Identifier* denoisers, uint32_t denoisersNum, nr
     for (uint32_t i = 0; i < dispatchDescsNum; i++)
     {
         const DispatchDesc& dispatchDesc = dispatchDescs[i];
-        m_NRI->CmdBeginAnnotation(commandBuffer, dispatchDesc.name, (i & 0x1) ? lawnGreen : limeGreen);
+        m_iCore->CmdBeginAnnotation(commandBuffer, dispatchDesc.name, (i & 0x1) ? lawnGreen : limeGreen);
 
         Dispatch(commandBuffer, *descriptorPool, dispatchDesc, userPool);
 
-        m_NRI->CmdEndAnnotation(commandBuffer);
+        m_iCore->CmdEndAnnotation(commandBuffer);
     }
 
     // Restore state
@@ -617,7 +618,7 @@ void Integration::Denoise(const Identifier* denoisers, uint32_t denoisersNum, nr
             transitionBarriers.textures = uniqueBarriers;
             transitionBarriers.textureNum = uniqueBarrierNum;
 
-            m_NRI->CmdBarrier(commandBuffer, transitionBarriers);
+            m_iCore->CmdBarrier(commandBuffer, transitionBarriers);
         }
     }
 }
@@ -677,17 +678,17 @@ void Integration::Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPoo
                 transitions[transitionBarriers.textureNum++] = nri::TextureBarrierFromState(*nrdTexture, next);
 
             // Create descriptor
-            uint64_t resource = m_NRI->GetTextureNativeObject(*nrdTexture->texture);
+            uint64_t resource = m_iCore->GetTextureNativeObject(*nrdTexture->texture);
             uint64_t key = CreateDescriptorKey(resource, isStorage);
             const auto& entry = m_CachedDescriptors.find(key);
 
             nri::Descriptor* descriptor = nullptr;
             if (entry == m_CachedDescriptors.end())
             {
-                const nri::TextureDesc& textureDesc = m_NRI->GetTextureDesc(*nrdTexture->texture);
+                const nri::TextureDesc& textureDesc = m_iCore->GetTextureDesc(*nrdTexture->texture);
 
                 nri::Texture2DViewDesc desc = {nrdTexture->texture, isStorage ? nri::Texture2DViewType::SHADER_RESOURCE_STORAGE_2D : nri::Texture2DViewType::SHADER_RESOURCE_2D, textureDesc.format, 0, 1};
-                NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRI->CreateTexture2DView(desc, descriptor));
+                NRD_INTEGRATION_ABORT_ON_FAILURE(m_iCore->CreateTexture2DView(desc, descriptor));
 
                 m_CachedDescriptors.insert( std::make_pair(key, descriptor) );
                 m_DescriptorsInFlight[m_DescriptorPoolIndex].push_back(descriptor);
@@ -701,7 +702,7 @@ void Integration::Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPoo
     }
 
     // Barriers
-    m_NRI->CmdBarrier(commandBuffer, transitionBarriers);
+    m_iCore->CmdBarrier(commandBuffer, transitionBarriers);
 
     // Allocating descriptor sets
     uint32_t descriptorSetSamplersIndex = instanceDesc.constantBufferSpaceIndex == instanceDesc.samplersSpaceIndex ? 0 : 1;
@@ -715,7 +716,7 @@ void Integration::Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPoo
     for (uint32_t i = 0; i < descriptorSetNum; i++)
     {
         if (!samplersAreInSeparateSet || i != descriptorSetSamplersIndex)
-            NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRI->AllocateDescriptorSets(descriptorPool, *pipelineLayout, i, &descriptorSets[i], 1, 0));
+            NRD_INTEGRATION_ABORT_ON_FAILURE(m_iCore->AllocateDescriptorSets(descriptorPool, *pipelineLayout, i, &descriptorSets[i], 1, 0));
     }
 
     // Updating constants
@@ -729,12 +730,11 @@ void Integration::Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPoo
                 m_ConstantBufferOffset = 0;
 
             // Upload CB data
-            // TODO: persistent mapping? But no D3D11 support...
-            void* data = m_NRI->MapBuffer(*m_ConstantBuffer, m_ConstantBufferOffset, dispatchDesc.constantBufferDataSize);
+            void* data = m_iCore->MapBuffer(*m_ConstantBuffer, m_ConstantBufferOffset, dispatchDesc.constantBufferDataSize);
             if (data)
             {
                 memcpy(data, dispatchDesc.constantBufferData, dispatchDesc.constantBufferDataSize);
-                m_NRI->UnmapBuffer(*m_ConstantBuffer);
+                m_iCore->UnmapBuffer(*m_ConstantBuffer);
             }
 
             // Ring-buffer logic
@@ -745,7 +745,7 @@ void Integration::Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPoo
             m_ConstantBufferOffsetPrev = dynamicConstantBufferOffset;
         }
 
-        m_NRI->UpdateDynamicConstantBuffers(*descriptorSets[0], 0, 1, &m_ConstantBufferView);
+        m_iCore->UpdateDynamicConstantBuffers(*descriptorSets[0], 0, 1, &m_ConstantBufferView);
     }
 
     // Updating samplers
@@ -755,28 +755,28 @@ void Integration::Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPoo
         nri::DescriptorSet*& descriptorSetSamplers = m_DescriptorSetSamplers[m_DescriptorPoolIndex];
         if (!descriptorSetSamplers)
         {
-            NRD_INTEGRATION_ABORT_ON_FAILURE(m_NRI->AllocateDescriptorSets(descriptorPool, *pipelineLayout, descriptorSetSamplersIndex, &descriptorSetSamplers, 1, 0));
-            m_NRI->UpdateDescriptorRanges(*descriptorSetSamplers, 0, 1, &samplersDescriptorRange);
+            NRD_INTEGRATION_ABORT_ON_FAILURE(m_iCore->AllocateDescriptorSets(descriptorPool, *pipelineLayout, descriptorSetSamplersIndex, &descriptorSetSamplers, 1, 0));
+            m_iCore->UpdateDescriptorRanges(*descriptorSetSamplers, 0, 1, &samplersDescriptorRange);
         }
 
         descriptorSets[descriptorSetSamplersIndex] = descriptorSetSamplers;
     }
     else
-        m_NRI->UpdateDescriptorRanges(*descriptorSets[descriptorSetSamplersIndex], 0, 1, &samplersDescriptorRange);
+        m_iCore->UpdateDescriptorRanges(*descriptorSets[descriptorSetSamplersIndex], 0, 1, &samplersDescriptorRange);
 
     // Updating resources
-    m_NRI->UpdateDescriptorRanges(*descriptorSets[descriptorSetResourcesIndex], instanceDesc.samplersSpaceIndex == instanceDesc.resourcesSpaceIndex ? 1 : 0, pipelineDesc.resourceRangesNum, resourceRanges);
+    m_iCore->UpdateDescriptorRanges(*descriptorSets[descriptorSetResourcesIndex], instanceDesc.samplersSpaceIndex == instanceDesc.resourcesSpaceIndex ? 1 : 0, pipelineDesc.resourceRangesNum, resourceRanges);
 
     // Rendering
-    m_NRI->CmdSetPipelineLayout(commandBuffer, *pipelineLayout);
+    m_iCore->CmdSetPipelineLayout(commandBuffer, *pipelineLayout);
 
     nri::Pipeline* pipeline = m_Pipelines[dispatchDesc.pipelineIndex];
-    m_NRI->CmdSetPipeline(commandBuffer, *pipeline);
+    m_iCore->CmdSetPipeline(commandBuffer, *pipeline);
 
     for (uint32_t i = 0; i < descriptorSetNum; i++)
-        m_NRI->CmdSetDescriptorSet(commandBuffer, i, *descriptorSets[i], i == 0 ? &dynamicConstantBufferOffset : nullptr);
+        m_iCore->CmdSetDescriptorSet(commandBuffer, i, *descriptorSets[i], i == 0 ? &dynamicConstantBufferOffset : nullptr);
 
-    m_NRI->CmdDispatch(commandBuffer, {dispatchDesc.gridWidth, dispatchDesc.gridHeight, 1});
+    m_iCore->CmdDispatch(commandBuffer, {dispatchDesc.gridWidth, dispatchDesc.gridHeight, 1});
 
     // Debug logging
 #if( NRD_INTEGRATION_DEBUG_LOGGING == 1 )
@@ -806,47 +806,46 @@ void Integration::Destroy()
 {
     NRD_INTEGRATION_ASSERT(m_Instance, "Already destroyed! Did you forget to call 'Initialize'?");
 
-    m_NRI->DestroyDescriptor(*m_ConstantBufferView);
-    m_NRI->DestroyBuffer(*m_ConstantBuffer);
+    m_iCore->DestroyDescriptor(*m_ConstantBufferView);
+    m_iCore->DestroyBuffer(*m_ConstantBuffer);
 
     for (auto& descriptors : m_DescriptorsInFlight)
     {
         for (const auto& entry : descriptors)
-            m_NRI->DestroyDescriptor(*entry);
+            m_iCore->DestroyDescriptor(*entry);
         descriptors.clear();
     }
     m_DescriptorsInFlight.clear();
     m_CachedDescriptors.clear();
 
     for (const nri::TextureBarrierDesc& nrdTexture : m_TexturePool)
-        m_NRI->DestroyTexture(*nrdTexture.texture);
+        m_iCore->DestroyTexture(*nrdTexture.texture);
     m_TexturePool.clear();
 
     for (nri::Descriptor* descriptor : m_Samplers)
-        m_NRI->DestroyDescriptor(*descriptor);
+        m_iCore->DestroyDescriptor(*descriptor);
     m_Samplers.clear();
 
     for (nri::Pipeline* pipeline : m_Pipelines)
-        m_NRI->DestroyPipeline(*pipeline);
+        m_iCore->DestroyPipeline(*pipeline);
     m_Pipelines.clear();
 
     for (nri::PipelineLayout* pipelineLayout : m_PipelineLayouts)
-        m_NRI->DestroyPipelineLayout(*pipelineLayout);
+        m_iCore->DestroyPipelineLayout(*pipelineLayout);
     m_PipelineLayouts.clear();
 
     for (nri::Memory* memory : m_MemoryAllocations)
-        m_NRI->FreeMemory(*memory);
+        m_iCore->FreeMemory(*memory);
     m_MemoryAllocations.clear();
 
     for (nri::DescriptorPool* descriptorPool : m_DescriptorPools)
-        m_NRI->DestroyDescriptorPool(*descriptorPool);
+        m_iCore->DestroyDescriptorPool(*descriptorPool);
     m_DescriptorPools.clear();
     m_DescriptorSetSamplers.clear();
 
     DestroyInstance(*m_Instance);
 
-    m_NRI = nullptr;
-    m_NRIHelper = nullptr;
+    m_iCore = nullptr;
     m_Device = nullptr;
     m_ConstantBuffer = nullptr;
     m_ConstantBufferView = nullptr;

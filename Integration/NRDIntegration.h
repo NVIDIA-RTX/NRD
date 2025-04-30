@@ -24,8 +24,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include <stdio.h>
 
 #define NRD_INTEGRATION_MAJOR 1
-#define NRD_INTEGRATION_MINOR 16
-#define NRD_INTEGRATION_DATE "7 March 2025"
+#define NRD_INTEGRATION_MINOR 17
+#define NRD_INTEGRATION_DATE "30 April 2025"
 #define NRD_INTEGRATION 1
 
 // Debugging
@@ -85,12 +85,12 @@ public:
     {}
 
     inline ~Integration()
-    { NRD_INTEGRATION_ASSERT(m_NRI == nullptr, "m_NRI must be NULL at this point!"); }
+    { NRD_INTEGRATION_ASSERT(m_iCore == nullptr, "'m_iCore' must be NULL at this point!"); }
 
     // There is no "Resize" functionality, because NRD full recreation costs nothing.
     // The main cost comes from render targets resizing, which needs to be done in any case
     // (call Destroy beforehand)
-    bool Initialize(const IntegrationCreationDesc& nrdIntegrationDesc, const InstanceCreationDesc& instanceCreationDesc, nri::Device& nriDevice, const nri::CoreInterface& nriCore, const nri::HelperInterface& nriHelper);
+    bool Initialize(const IntegrationCreationDesc& nrdIntegrationDesc, const InstanceCreationDesc& instanceCreationDesc, nri::Device& device, const nri::CoreInterface& iCore);
 
     // Must be called once on a frame start
     void NewFrame();
@@ -139,8 +139,8 @@ private:
     std::vector<nri::Descriptor*> m_Samplers;
     std::vector<nri::DescriptorPool*> m_DescriptorPools = {};
     std::vector<nri::DescriptorSet*> m_DescriptorSetSamplers = {};
-    const nri::CoreInterface* m_NRI = nullptr;
-    const nri::HelperInterface* m_NRIHelper = nullptr;
+    nri::HelperInterface m_iHelper = {};
+    const nri::CoreInterface* m_iCore = nullptr;
     nri::Device* m_Device = nullptr;
     nri::Buffer* m_ConstantBuffer = nullptr;
     nri::Descriptor* m_ConstantBufferView = nullptr;
