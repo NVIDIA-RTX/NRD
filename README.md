@@ -65,7 +65,7 @@ CMake options:
 - `NRD_EMBEDS_SPIRV_SHADERS` - *NRD* compiles and embeds SPIRV shaders (ON by default)
 - `NRD_DISABLE_SHADER_COMPILATION` - disable shader compilation on the *NRD* side, *NRD* assumes that shaders are already compiled externally and have been put into `NRD_SHADERS_PATH` folder
 
-`NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING` can be defined only *once* during project deployment. These settings are dumped in `NRDEncoding.hlsli` file, which needs to be included on the application side prior `NRD.hlsli` inclusion to deliver encoding settings matching *NRD* settings. `LibraryDesc` includes encoding settings too. It can be used to verify that the library meets the application expectations.
+`NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING` can be defined only *once* during project deployment. These settings are dumped in `NRDEncoding.hlsli` file, which needs to be optionally included on the application side prior `NRD.hlsli` inclusion to deliver encoding settings matching *NRD* settings. `LibraryDesc` includes encoding settings too. It can be used to verify that the library meets the application expectations.
 
 Tested platforms:
 
@@ -116,9 +116,9 @@ Flow:
 6. *GetComputeDispatches* - returns per-dispatch data for the list of denoisers (bound subresources with required state, constant buffer data). Returned memory is owned by the instance and gets overwritten by the next *GetComputeDispatches* call
 7. *DestroyInstance* - destroys an instance
 
-*NRD* doesn't make any graphics API calls. The application is supposed to invoke a set of compute *Dispatch* calls to actually denoise input signals. Please, refer to `NrdIntegration::Denoise()` and `NrdIntegration::Dispatch()` calls in `NRDIntegration.hpp` file as an example of an integration using low level RHI.
+*NRD* doesn't make any graphics API calls. The application is supposed to invoke a set of compute *Dispatch* calls to do denoising. Refer to `NRDIntegration.hpp` file as an example of an integration using low level RHI.
 
-*NRD* doesn’t have a "resize" functionality. On resolution change the old denoiser needs to be destroyed and a new one needs to be created with new parameters. But *NRD* supports dynamic resolution scaling via `CommonSettings::resolutionScale`.
+*NRD* doesn’t have a "resize" functionality. On a resolution change the old denoiser needs to be destroyed and a new one needs to be created with new parameters. But *NRD* supports dynamic resolution scaling via `CommonSettings::resourceSize, resourceSizePrev, rectSize, rectSizePrev`.
 
 Some textures can be requested as inputs or outputs for a method (see the next section). Required resources are specified near a denoiser declaration inside the `Denoiser` enum class. Also `NRD.hlsli` has a comment near each front-end or back-end function, clarifying which resources this function is for.
 
@@ -140,7 +140,7 @@ Commons inputs for primary hits (if *PSR* is not used, common use case) or for s
 
 * **IN\_NORMAL\_ROUGHNESS** - surface world-space normal and *linear* roughness
 
-  Normal and roughness encoding must be controlled via *Cmake* parameters `NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING`. Optional `NRDEncoding.hlsli` file is generated during project deployment, which can be included prior `NRD.hlsli` to make encoding macro definitions visible in shaders (if `NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING` are not defined in another way by the application). Encoding settings can be known at runtime by accessing `GetLibraryDesc().normalEncoding` and `GetLibraryDesc().roghnessEncoding` respectively. `NormalEncoding` and `RoughnessEncoding` enums briefly describe encoding variants. It's recommended to use `NRD_FrontEnd_PackNormalAndRoughness` from `NRD.hlsli` to match decoding.
+  Normal and roughness encoding must be controlled via *Cmake* parameters `NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING`. Optional `NRDEncoding.hlsli` file is generated during project deployment, which can be included prior `NRD.hlsli` to make encoding macro definitions visible in shaders (if `NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING` are not defined in another way by the application). Encoding settings can be known at runtime by accessing `LibraryDesc::normalEncoding` and `LibraryDesc::roghnessEncoding` respectively. `NormalEncoding` and `RoughnessEncoding` enums briefly describe encoding variants. It's recommended to use `NRD.hlsli/NRD_FrontEnd_PackNormalAndRoughness` to match decoding.
 
   *NRD* computes local curvature using provided normals. Less accurate normals can lead to banding in curvature and local flatness. `RGBA8` normals is a good baseline, but `R10G10B10A10` oct-packed normals improve curvature calculations and specular tracking as the result.
 
@@ -191,8 +191,8 @@ Hit distance (*REBLUR* and *RELAX*):
   - `hitDistanceReconstructionMode` must be set to something other than `OFF`, but bear in mind that the search area is limited to 3x3 or 5x5. In other words, it's the application's responsibility to guarantee a valid sample in this area. It can be achieved by clamping probabilities and using Bayer-like dithering (see the sample for more details and read comments for `HitDistanceReconstructionMode` fields)
   - Pre-pass must be enabled (i.e. `diffusePrepassBlurRadius` and `specularPrepassBlurRadius` must be set to 20-70 pixels) to compensate entropy increase, since radiance in valid samples is divided by probability to compensate 0 values in some neighbors
 - Probabilistic split for 2nd+ bounces is absolutely acceptable
-- In case of many paths per pixel `hitT` for specular must be "averaged" by `NRD_FrontEnd_SpecHitDistAveraging_*` functions from `NRD.hlsli`
-- For *REBLUR* hits distance must be normalized using `REBLUR_FrontEnd_GetNormHitDist`
+- In case of many paths per pixel `hitT` for specular must be "averaged" by `NRD.hlsli/NRD_FrontEnd_SpecHitDistAveraging_*` functions
+- For *REBLUR* hits distance must be normalized using `NRD.hlsli/REBLUR_FrontEnd_GetNormHitDist`
 
 Distance to occluder (*SIGMA*):
 - visibility ray must be cast from the point of interest to a light source ( i.e. *not* from a light source )
@@ -420,47 +420,47 @@ The pseudo code below demonstrates how *NRD integration* and *NRI* can be used t
 #include "Extensions/NRIWrapperD3D12.h"
 #include "Extensions/NRIWrapperVK.h"
 
+struct NriInterface
+    : public nri::CoreInterface
+    // Optional
+    , public nri::WrapperD3D12Interface
+    , public nri::WrapperD3D11Interface
+    , public nri::WrapperVKInterface
+{};
+
+NriInterface NRI;
+
 #include "NRD.h"
 #include "NRDIntegration.hpp"
 
-// bufferedFramesNum (usually 2-3 frames):
-//      The application must provide number of buffered frames, it's needed to guarantee that
-//      constant data and descriptor sets are not overwritten while being executed on the GPU.
-// enableDescriptorCaching:
-//      true - enables descriptor caching for the whole lifetime of an NrdIntegration instance
-//      false - descriptors are cached only within a single "Denoise" call
-NrdIntegration NRD = NrdIntegration(bufferedFramesNum, enableDescriptorCaching, "Name");
-
-struct NriInterface
-    : public nri::CoreInterface
-    , public nri::HelperInterface
-    , public nri::WrapperD3D12Interface
-{};
-NriInterface NRI;
+nrd::Integration NRD = {};
 
 //=======================================================================================================
 // INITIALIZATION - WRAP NATIVE DEVICE
 //=======================================================================================================
 
 // Wrap the device
+nri::QueueFamilyD3D12Desc queueFamilies[] = {
+    // Must have
+    {&d3d12GraphicsQueue, 1, nri::QueueType::GRAPHICS},
+    // Optional
+    {&d3d12ComputeQueue, 1, nri::QueueType::COMPUTE},
+    {&d3d12CopyQueue, 1, nri::QueueType::COPY},
+};
+
 nri::DeviceCreationD3D12Desc deviceDesc = {};
-deviceDesc.d3d12Device = ...;
-deviceDesc.d3d12GraphicsQueue = ...;
-deviceDesc.enableNRIValidation = false;
+deviceDesc.d3d12Device = d3d12Device;
+deviceDesc.queueFamilies = queueFamilies;
+deviceDesc.queueFamilyNum = GetCoundOf(queueFamilies);
 
 nri::Device* nriDevice = nullptr;
 nri::Result nriResult = nri::nriCreateDeviceFromD3D12Device(deviceDesc, nriDevice);
 
-// Get core functionality
-nriResult = nri::nriGetInterface(*nriDevice,
-  NRI_INTERFACE(nri::CoreInterface), (nri::CoreInterface*)&NRI);
+// Get core interface
+nriResult = nri::nriGetInterface(*nriDevice, NRI_INTERFACE(nri::CoreInterface), (nri::CoreInterface*)&NRI);
 
-nriResult = nri::nriGetInterface(*nriDevice,
-  NRI_INTERFACE(nri::HelperInterface), (nri::HelperInterface*)&NRI);
-
-// Get appropriate "wrapper" extension (XXX - can be D3D11, D3D12 or VULKAN)
-nriResult = nri::nriGetInterface(*nriDevice,
-  NRI_INTERFACE(nri::WrapperXXXInterface), (nri::WrapperXXXInterface*)&NRI);
+// Get appropriate wrapper interface (API: D3D11, D3D12 or VULKAN)
+nriResult = nri::nriGetInterface(*nriDevice, NRI_INTERFACE(nri::WrapperAPIInterface), (nri::WrapperAPIInterface*)&NRI);
 
 //=======================================================================================================
 // INITIALIZATION - INITIALIZE NRD
@@ -468,19 +468,29 @@ nriResult = nri::nriGetInterface(*nriDevice,
 
 const nrd::DenoiserDesc denoiserDescs[] =
 {
-    // Put neeeded denoisers here, like:
-    { identifier1, nrd::Denoiser::XXX },
-    { identifier2, nrd::Denoiser::YYY },
+    // Put neeeded denoisers here...
+    { identifier1, nrd::Denoiser::AAA },
+    { identifier2, nrd::Denoiser::BBB },
 };
 
 nrd::InstanceCreationDesc instanceCreationDesc = {};
 instanceCreationDesc.denoisers = denoiserDescs;
 instanceCreationDesc.denoisersNum = GetCountOf(denoiserDescs);
 
+nrd::IntegrationCreationDesc desc = {};
+desc.name = "NRD";
+desc.bufferedFramesNum = bufferedFramesNum; // i.e. number of frames "in-flight"
+desc.enableDescriptorCaching = true; // recommended, but not mandatory
+desc.promoteFloat16to32 = false;
+desc.demoteFloat32to16 = false;
+
 // NRD itself is flexible and supports any kind of dynamic resolution scaling, but NRD INTEGRATION pre-
 // allocates resources with statically defined dimensions. DRS is only supported by adjusting the viewport
 // via "CommonSettings::rectSize"
-bool result = NRD.Initialize(resourceWidth, resourceHeight, instanceCreationDesc, *nriDevice, NRI, NRI);
+desc.resourceWidth = resourceWidth;
+desc.resourceHeight = resourceHeight;
+
+bool result = NRD.Initialize(desc, instanceCreationDesc, *nriDevice, NRI);
 
 //=======================================================================================================
 // INITIALIZATION or RENDER - WRAP NATIVE POINTERS
@@ -509,8 +519,8 @@ for (uint32_t i = 0; i < N; i++)
 
     NRI.CreateTextureD3D12(*nriDevice, textureDesc, (nri::Texture*&)entryDesc.texture );
 
-    // You need to specify the current state of the resource here, after denoising NRD can modify
-    // this state. Application must continue state tracking from this point.
+    // You need to specify the current state of the resource here, after denoising NRD lefts resources in
+    // potentially other state, if "restoreInitialState" parameter of "Denoise" call is "false"
     // Useful information:
     //    SRV = nri::AccessBits::SHADER_RESOURCE, nri::TextureLayout::SHADER_RESOURCE
     //    UAV = nri::AccessBits::SHADER_RESOURCE_STORAGE, nri::TextureLayout::GENERAL
@@ -534,13 +544,13 @@ PopulateCommonSettings(commonSettings);
 NRD.SetCommonSettings(commonSettings);
 
 // Set settings for each method in the NRD instance
-nrd::XxxSettings settings1 = {};
-PopulateXxxSettings(settings1);
+nrd::AaaSettings settings1 = {};
+PopulateAaaSettings(settings1);
 
 NRD.SetDenoiserSettings(identifier1, &settings1);
 
-nrd::YyySettings settings2 = {};
-PopulateYyySettings(settings2);
+nrd::BbbSettings settings2 = {};
+PopulateBbbSettings(settings2);
 
 NRD.SetDenoiserSettings(identifier2, &settings2);
 
@@ -548,15 +558,16 @@ NRD.SetDenoiserSettings(identifier2, &settings2);
 NrdUserPool userPool = {};
 {
     // Set "entryDescs" into the "in-use" slots, applying remapping if necessary
-    NrdIntegration_SetResource(userPool, nrd::ResourceType::IN_NORMAL_ROUGHNESS, &entryDescs[0]);
-    NrdIntegration_SetResource(userPool, nrd::ResourceType::IN_VIEWZ, &entryDescs[1]);
+    nrd::Integration_SetResource(userPool, nrd::ResourceType::IN_NORMAL_ROUGHNESS, &entryDescs[0]);
+    nrd::Integration_SetResource(userPool, nrd::ResourceType::IN_VIEWZ, &entryDescs[1]);
     ...
 };
 
 const nrd::Identifier denoisers[] = {identifier1, identifier2};
-NRD.Denoise(denoisers, helper::GetCountOf(denoisers), *nriCommandBuffer, userPool);
+const bool restoreInitialState = false;
+NRD.Denoise(denoisers, helper::GetCountOf(denoisers), *nriCommandBuffer, userPool, restoreInitialState);
 
-// IMPORTANT: NRD integration binds own descriptor pool, don't forget to re-bind back your pool (heap)
+// IMPORTANT: NRD integration binds own descriptor pool, don't forget to restore your pool (heap) if needed
 
 //=======================================================================================================
 // SHUTDOWN or RENDER - CLEANUP
@@ -590,14 +601,87 @@ Shader part:
 
 #include "NRD.hlsli"
 
-// Call corresponding "front end" function to encode data for NRD (NRD.hlsli indicates which function
-// needs to be used for a specific input for a specific denoiser). For example:
+// Pseudo code
+Hit primaryHit; // aka 0 bounce, or PSR
+Out out = (Out)0;
 
-float4 nrdIn = RELAX_FrontEnd_PackRadianceAndHitDist(radiance, hitDistance);
+if (!OCCLUSION)
+  out.specHitDist = NRD_FrontEnd_SpecHitDistAveraging_Begin();
 
-// Call corresponding "back end" function to decode data produced by NRD. For example:
+for (int path = 0; path < pathNum; path++)
+{
+    float accumulatedHitDist = 0;
+    float3 ray1 = 0;
 
-float4 nrdOut = RELAX_BackEnd_UnpackRadiance(nrdOutEncoded);
+    for (int bounce = 1; bounce <= bounceMaxNum; bounce++)
+    {
+        ...
+
+        // Accumulate hit distance along the path (see NRD sample for the advanced approach)
+        if (bounce == 1)
+            accumulatedHitDist = hitDist;
+
+        // Save sampling direction of the 1st bounce for SH denoisers
+        if (bounce == 1 && SH)
+            ray1 = ray;
+    }
+
+    // Normalize hit distances for REBLUR
+    float normHitDist = accumulatedHitDist;
+    if (REBLUR)
+        normHitDist = REBLUR_FrontEnd_GetNormHitDist(accumulatedHitDist, primaryHit.viewZ, gHitDistParams, isDiffusePath ? 1.0 : primaryHit.roughness);
+
+    // Accumulate diffuse and specular separately for denoising
+    if (isDiffusePath)
+    {
+        diffPathNum++;
+
+        out.diffRadiance += Lsum;
+        out.diffHitDist += normHitDist;
+
+        if (SH)
+            out.diffDirection += ray1;
+    }
+    else
+    {
+        out.specRadiance += Lsum;
+
+        if (!OCCLUSION)
+            NRD_FrontEnd_SpecHitDistAveraging_Add(out.specHitDist, normHitDist);
+        else
+          out.specHitDist += normHitDist;
+
+        if (SH)
+            out.specDirection += ray1;
+    }
+}
+
+if (!OCCLUSION)
+  NRD_FrontEnd_SpecHitDistAveraging_End(out.specHitDist);
+
+// Radiance should already respect sampling probability => average across all paths
+float invPathNum = 1.0 / float(pathNum);
+out.diffRadiance *= invPathNum;
+out.specRadiance *= invPathNum;
+
+// Others must not include sampling probability => average only across diffuse / specular paths
+float diffNorm = diffPathNum ? 1.0 / float( diffPathNum ) : 0.0;
+out.diffHitDist *= diffNorm;
+if (SH)
+    result.diffDirection *= diffNorm;
+
+float specNorm = diffPathNum < pathNum ? 1.0 / float( pathNum - diffPathNum ) : 0.0;
+if (OCCLUSION)
+  out.specHitDist *= specNorm;
+if (SH)
+    result.specDirection *= specNorm;
+
+// Material de-modulation (convert irradiance into radiance)
+float3 diffFactor, specFactor;
+NRD_MaterialFactors(primaryHit.N, primaryHit.V, primaryHit.albedo, primaryHit.Rf0, primaryHit.roughness, diffFactor, specFactor);
+
+out.diffRadiance /= diffFactor;
+out.specRadiance /= specFactor;
 ```
 
 # RECOMMENDATIONS AND BEST PRACTICES: GREATER TIPS
@@ -615,13 +699,13 @@ Denoising is not a panacea or miracle. Denoising works best with ray tracing res
     float3 preintegratedBRDF = PreintegratedBRDF( Rf0, N, V, roughness )
     Denoising( specularRadiance * BRDF ) → NRD( specularRadiance * BRDF / preintegratedBRDF ) * preintegratedBRDF
 
-Material demodulation factors can be computed using `NRD_MaterialFactors` helper from `NRD.hlsli`. Pre-integrated specular BRDF can also be referenced as "specular albedo" or "environment BRDF".
+Use `NRD.hlsli/NRD_MaterialFactors` helper to compute material demodulation factors.
 
 ## COMBINED DENOISING OF DIRECT AND INDIRECT LIGHTING
 
 1. For specular signal use indirect `hitT` for both direct and indirect lighting
 
-The reason is that the denoiser uses `hitT` mostly for calculating motion vectors for reflections. For that purpose, the denoiser expects to see `hitT` from surfaces that are in the specular reflection lobe. When calculating direct lighting (NEE/RTXDI), we select a light per pixel, and the distance to that light becomes the `hitT` for both diffuse and specular channels. In many cases, the light is selected for a surface because of its diffuse contribution, not specular, which makes the specular channel contain the `hitT` of a diffuse light. That confuses the denoiser and breaks reprojection. On the other hand, the indirect specular `hitT` is always computed by tracing rays in the specular lobe.
+The reason is that the denoiser uses `hitT` mostly for calculating motion vectors for reflections. For that purpose, the denoiser expects to see `hitT` from surfaces that are in the specular reflection lobe. When calculating direct lighting (*NEE/RTXDI*), we select a light per pixel, and the distance to that light becomes the `hitT` for both diffuse and specular channels. In many cases, the light is selected for a surface because of its diffuse contribution, not specular, which makes the specular channel contain the `hitT` of a diffuse light. That confuses the denoiser and breaks reprojection. On the other hand, the indirect specular `hitT` is always computed by tracing rays in the specular lobe.
 
 2. For diffuse signal `hitT` can be further adjusted by mixing `hitT` from direct and indirect rays to get sharper shadows
 
@@ -658,7 +742,7 @@ Notes, requirements and restrictions:
 
 IMPORTANT: in other words, *PSR* is perfect for flat mirrors. *PSR* on curved surfaces works even without respecting curvature, but reprojection artefacts can appear.
 
-In case of *PSR* *NRD* disocclusion logic doesn't take curvature at primary hit into account, because data for primary hits is replaced. This can lead to more intense disocclusions on bumpy surfaces due to significant ray divergence. To mitigate this problem 2x-10x larger `disocclusionThreshold` can be used. This is an applicable solution if the denoiser is used to denoise surfaces with *PSR* only (glass only, for example). In a general case, when *PSR* and normal surfaces are mixed on the screen, higher disocclusion thresholds are needed only for pixels with *PSR*. This can be achieved by using `IN_DISOCCLUSION_THRESHOLD_MIX` input to smoothly mix baseline `disocclusionThreshold` into bigger `disocclusionThresholdAlternate` from `CommonSettings`. Most likely the increased disocclusion threshold is needed only for pixels with normal details at primary hits (local curvature is not zero).
+In case of *PSR* *NRD* disocclusion logic doesn't take curvature at primary hit into account, because data for primary hits is replaced. This can lead to more intense disocclusions on bumpy surfaces due to significant ray divergence. To mitigate this problem 2x-10x larger `CommonSettings::disocclusionThreshold` can be used. This is an applicable solution if the denoiser is used to denoise surfaces with *PSR* only (glass only, for example). In a general case, when *PSR* and normal surfaces are mixed on the screen, higher disocclusion thresholds are needed only for pixels with *PSR*. This can be achieved by using `IN_DISOCCLUSION_THRESHOLD_MIX` input to smoothly mix baseline `CommonSettings::disocclusionThreshold` into bigger `CommonSettings::disocclusionThresholdAlternate`. Most likely the increased disocclusion threshold is needed only for pixels with normal details at primary hits (local curvature is not zero).
 
 The illustration below shows expected inputs for secondary hits:
 
@@ -695,21 +779,23 @@ Hair strands tangent vectors *can't* be used as "normals guide" for *NRD* due to
 
 # RECOMMENDATIONS AND BEST PRACTICES: LESSER TIPS
 
-**[NRD]** The *NRD API* has been designed to support integration into native VULKAN apps. If the RHI you work with is DX11-like, not all provided data will be needed.
+**[NRD]** All denoising and path-tracing best practices are in *NRD sample*.
+
+**[NRD]** Use "debug" *NRD* during development, it has many useful debug checks saving from common pitfalls.
 
 **[NRD]** Read all comments in `NRDDescs.h`, `NRDSettings.h` and `NRD.hlsli`.
 
-**[NRD]** If you are unsure of which parameters to use - use defaults via `{}` construction. It helps to improve compatibility with future versions and offers optimal IQ, because default settings are always adjusted by recent algorithmic changes.
+**[NRD]** The *NRD API* has been designed to support integration into native VULKAN apps. If the RHI you work with is DX11-like, not all provided data will be needed. `NRDIntegration.hpp` can be used as a guide demonstrating how to map NRD API to a Vulkan-like RHI.
 
 **[NRD]** *NRD* requires linear roughness and world-space normals. See `NRD.hlsli` for more details and supported customizations.
 
 **[NRD]** *NRD* requires non-jittered matrices.
 
-**[NRD]** Most denoisers do not write into output pixels outside of `CommonSettings::denoisingRange`.
+**[NRD]** Most denoisers do not write into output pixels outside of `CommonSettings::denoisingRange`. A hack - if there are areas (besides sky), which don't require denoising (for example, casting a specular ray only if roughness is less than some threshold), providing `viewZ > CommonSettings::denoisingRange` in **IN\_VIEWZ** texture for such pixels will effectively skip denoising. Additionally, the data in such areas won't contribute to the final result.
 
 **[NRD]** When upgrading to the latest version keep an eye on `ResourceType` enumeration. The order of the input slots can be changed or something can be added, you need to adjust the inputs accordingly to match the mapping. Or use *NRD integration* to simplify the process.
 
-**[NRD]** Functions `XXX_FrontEnd_PackRadianceAndHitDist` perform optional `NAN/INF` clearing of the input signal. There is a boolean to skip these checks.
+**[NRD]** Functions `NRD.hlsli/XXX_FrontEnd_PackRadianceAndHitDist` perform optional `NAN/INF` clearing of the input signal. There is a boolean to skip these checks.
 
 **[NRD]** All denoisers work with positive RGB inputs (some denoisers can change color space in *front end* functions). For better image quality, HDR color inputs need to be in a sane range [0; 250], because the internal pipeline uses FP16 and *RELAX* tracks second moments of the input signal, i.e. `x^2` must fit into FP16 range. If the color input is in a wider range, any form of non-aggressive color compression can be applied (linear scaling, pow-based or log-based methods). *REBLUR* supports wider HDR ranges, because it doesn't track second moments. Passing pre-exposured colors (i.e. `color * exposure`) is not recommended, because a significant momentary change in exposure is hard to react to in this case.
 
@@ -732,15 +818,18 @@ Hair strands tangent vectors *can't* be used as "normals guide" for *NRD* due to
 
 **[NRD]** Additionally the quality of the input signal can be increased by re-using already denoised information from the current or the previous frame.
 
-**[NRD]** Hit distances should come from an importance sampling method. But if denoising of AO/SO is needed, AO/SO can come from cos-weighted (or VNDF) sampling in a tradeoff of IQ.
+**[NRD]** Hit distances should come from an importance sampling method. But if denoising of AO/SO is needed, AO/SO must come from cos-weighted (or VNDF) sampling in a tradeoff of IQ.
 
 **[NRD]** Low discrepancy sampling (blue noise) helps to get more stable output in 0.5-1 rpp mode. It's a must for REBLUR-based Ambient and Specular Occlusion denoisers and SIGMA.
 
-**[NRD]** It's recommended to set `CommonSettings::accumulationMode` to `RESET` for a single frame, if a history reset is needed. If history buffers are recreated or contain garbage, it's recommended to use `CLEAR_AND_RESET` for a single frame. `CLEAR_AND_RESET` is not free because clearing is done in a compute shader. Render target clears on the application side should be prioritized over this solution.
+**[NRD]** It's recommended to set `CommonSettings::accumulationMode` to `RESTART` for a single frame, if a history reset is needed. If history buffers are recreated or contain garbage, it's recommended to use `CLEAR_AND_RESTART` for a single frame. `CLEAR_AND_RESTART` is not free because clearing is done in a compute shader. Render target clears on the application side should be prioritized over this solution, if possible.
 
-**[NRD]** If there are areas (besides sky), which don't require denoising (for example, casting a specular ray only if roughness is less than some threshold), providing `viewZ > CommonSettings::denoisingRange` in **IN\_VIEWZ** texture for such pixels will effectively skip denoising. Additionally, the data in such areas won't contribute to the final result.
+**[NRD]** If normal-roughness encoding supports `materialID`, the following features become available:
+- `CommonSettings::minMaterialForDiffuse, minMaterialForSpecular` - `materialID` comparison, useful to not mix diffuse between dielectrics (non-0 diffuse) and metals (0 diffuse)
+- `CommonSettings::strandMaterialID` - marks hair (grass) geometry to enable "under-the-hood" tweaks
+- `CommonSettings::cameraAttachedReflectionMaterialID` - marks reflections of camera attached objects
 
-**[NRD]** If there are areas (besides sky), which don't require denoising (for example, skipped diffuse rays for true metals). `materialID` and `materialMask` can be used to drive spatial passes.
+**[NRD]** If you are unsure of which denoiser settings to use - use defaults via `{}` construction. It helps to improve compatibility with future versions and offers optimal IQ, because default settings are always adjusted by recent algorithmic changes.
 
 **[NRD]** Input signal quality can be improved by enabling *pre-pass* via setting `diffusePrepassBlurRadius` and `specularPrepassBlurRadius` to a non-zero value. Pre-pass is needed more for specular and less for diffuse, because pre-pass outputs optimal hit distance for specular tracking (see the sample for more details).
 
@@ -764,15 +853,15 @@ maxAccumulatedFrameNum > maxFastAccumulatedFrameNum > historyFixFrameNum
 
 **[REBLUR]** If more performance is needed, consider using `enablePerformanceMode = true`.
 
-**[REBLUR]** *REBLUR* expects hit distances in a normalized form. To avoid mismatching, `REBLUR_FrontEnd_GetNormHitDist` must be used for normalization. Normalization parameters should be passed into *NRD* as `HitDistanceParameters` for internal hit distance denormalization. Some tweaking can be needed here, but in most cases default `HitDistanceParameters` works well. *REBLUR* outputs denoised normalized hit distance, which can be used by the application as ambient or specular occlusion (AO & SO) (see unpacking functions from `NRD.hlsli`).
+**[REBLUR]** *REBLUR* expects hit distances in a normalized form. To avoid mismatching, `NRD.hlsli/REBLUR_FrontEnd_GetNormHitDist` must be used for normalization. Normalization parameters should be passed into *NRD* as `HitDistanceParameters` for internal hit distance denormalization. Some tweaking can be needed here, but in most cases default `HitDistanceParameters` works well. *REBLUR* outputs denoised normalized hit distance, which can be used by the application as ambient or specular occlusion (AO & SO) (see unpacking functions from `NRD.hlsli`).
 
 **[REBLUR/RELAX]** Antilag parameters need to be carefully tuned. Initial integration should be done with disabled antilag.
 
-**[RELAX]** *RELAX* works well with signals produced by *RTXDI* or very clean high RPP signals. The Sweet Home of *RELAX* is *RTXDI* sample. Please, consider getting familiar with this application.
+**[RELAX]** *RELAX* works well with signals produced by *RTXDI* or very clean high RPP signals. The Sweet Home of *RELAX* is *RTXDI* sample.
 
 **[SIGMA]** Using "blue" noise helps to minimize shadow shimmering and flickering. It works best if the pattern has limited number of animated frames (4-8) or it is static on the screen.
 
-**[SIGMA]** *SIGMA* can be used for multi-light shadow denoising if applied "per light". `SigmaSettings::stabilizationStrength` can be set to `0` to disable temporal history. It provides the following benefits:
+**[SIGMA]** *SIGMA* can be used for multi-light shadow denoising if applied "per light". `maxStabilizedFrameNum` can be set to `0` to disable temporal history. It provides the following benefits:
  - light count independent memory usage
  - no need to manage history buffers for lights
 
