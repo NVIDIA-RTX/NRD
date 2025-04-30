@@ -94,7 +94,7 @@ bool Integration::Initialize(const IntegrationCreationDesc& integrationDesc, con
 {
     NRD_INTEGRATION_ASSERT(!m_Instance, "Already initialized! Did you forget to call 'Destroy'?");
     NRD_INTEGRATION_ASSERT(!integrationDesc.promoteFloat16to32 || !integrationDesc.demoteFloat32to16, "Can't be 'true' for both");
-    NRD_INTEGRATION_ASSERT(integrationDesc.bufferedFramesNum, "Can't be 0");
+    NRD_INTEGRATION_ASSERT(integrationDesc.queuedFrameNum, "Can't be 0");
 
     const nri::DeviceDesc& deviceDesc = iCore.GetDeviceDesc(device);
     if (deviceDesc.nriVersionMajor != NRI_VERSION_MAJOR || deviceDesc.nriVersionMinor != NRI_VERSION_MINOR)
@@ -116,7 +116,7 @@ bool Integration::Initialize(const IntegrationCreationDesc& integrationDesc, con
     if (CreateInstance(instanceDesc, m_Instance) != Result::SUCCESS)
         return false;
 
-    m_BufferedFramesNum = integrationDesc.bufferedFramesNum;
+    m_QueuedFrameNum = integrationDesc.queuedFrameNum;
     m_EnableDescriptorCaching = integrationDesc.enableDescriptorCaching;
     m_PromoteFloat16to32 = integrationDesc.promoteFloat16to32;
     m_DemoteFloat32to16 = integrationDesc.demoteFloat32to16;
@@ -386,7 +386,7 @@ void Integration::CreateResources(uint16_t resourceWidth, uint16_t resourceHeigh
     // Constant buffer
     const nri::DeviceDesc& deviceDesc = m_iCore->GetDeviceDesc(*m_Device);
     m_ConstantBufferViewSize = GetAlignedSize(instanceDesc.constantBufferMaxDataSize, deviceDesc.memoryAlignment.constantBufferOffset);
-    m_ConstantBufferSize = uint64_t(m_ConstantBufferViewSize) * instanceDesc.descriptorPoolDesc.setsMaxNum * m_BufferedFramesNum;
+    m_ConstantBufferSize = uint64_t(m_ConstantBufferViewSize) * instanceDesc.descriptorPoolDesc.setsMaxNum * m_QueuedFrameNum;
 
     nri::BufferDesc bufferDesc = {};
     bufferDesc.size = m_ConstantBufferSize;
@@ -409,7 +409,7 @@ void Integration::CreateResources(uint16_t resourceWidth, uint16_t resourceHeigh
     descriptorPoolDesc.dynamicConstantBufferMaxNum = instanceDesc.descriptorPoolDesc.constantBuffersMaxNum;
     descriptorPoolDesc.samplerMaxNum = instanceDesc.descriptorPoolDesc.samplersMaxNum;
 
-    for (uint32_t i = 0; i < m_BufferedFramesNum; i++)
+    for (uint32_t i = 0; i < m_QueuedFrameNum; i++)
     {
         nri::DescriptorPool* descriptorPool = nullptr;
         NRD_INTEGRATION_ABORT_ON_FAILURE(m_iCore->CreateDescriptorPool(*m_Device, descriptorPoolDesc, descriptorPool));
@@ -466,7 +466,7 @@ void Integration::NewFrame()
     }
 #endif
 
-    m_DescriptorPoolIndex = m_FrameIndex % m_BufferedFramesNum;
+    m_DescriptorPoolIndex = m_FrameIndex % m_QueuedFrameNum;
     nri::DescriptorPool* descriptorPool = m_DescriptorPools[m_DescriptorPoolIndex];
     m_iCore->ResetDescriptorPool(*descriptorPool);
 
@@ -855,7 +855,7 @@ void Integration::Destroy()
     m_ConstantBufferSize = 0;
     m_ConstantBufferViewSize = 0;
     m_ConstantBufferOffset = 0;
-    m_BufferedFramesNum = 0;
+    m_QueuedFrameNum = 0;
     m_DescriptorPoolIndex = 0;
     m_FrameIndex = 0;
     m_ReloadShaders = false;

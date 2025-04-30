@@ -62,9 +62,9 @@ struct IntegrationCreationDesc
     uint16_t resourceWidth = 0;
     uint16_t resourceHeight = 0;
 
-    // (1-3) the application must provide number of buffered frames, it's needed to guarantee
+    // (1-3) the application must provide number of queued frames, it's needed to guarantee
     // that constant data and descriptor sets are not overwritten while being executed on the GPU
-    uint8_t bufferedFramesNum = 2;
+    uint8_t queuedFrameNum = 3;
 
     // true - enables descriptor caching for the whole lifetime of an Integration instance
     // false - descriptors are cached only within a single "Denoise" call
@@ -157,7 +157,7 @@ private:
     uint32_t m_PrevFrameIndexFromSettings = 0;
     uint16_t m_Width = 0;
     uint16_t m_Height = 0;
-    uint8_t m_BufferedFramesNum = 0;
+    uint8_t m_QueuedFrameNum = 0;
     char m_Name[32] = {};
     bool m_ReloadShaders = false;
     bool m_EnableDescriptorCaching = false;
