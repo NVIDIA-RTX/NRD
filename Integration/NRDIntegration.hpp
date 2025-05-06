@@ -458,6 +458,9 @@ void Integration::NewFrame()
 {
     NRD_INTEGRATION_ASSERT(m_Instance, "Uninitialized! Did you forget to call 'Initialize'?");
 
+    // Must be here since the initial value is "-1", otherwise "descriptorPool[0]" will be used twice on the 1st and 2nd frames
+    m_FrameIndex++;
+
 #if( NRD_INTEGRATION_DEBUG_LOGGING == 1 )
     if (m_Log)
     {
@@ -466,11 +469,13 @@ void Integration::NewFrame()
     }
 #endif
 
+    // Current descriptor pool index
     m_DescriptorPoolIndex = m_FrameIndex % m_QueuedFrameNum;
+
+    // Reset descriptor pool and samplers (since they are allocated from it)
     nri::DescriptorPool* descriptorPool = m_DescriptorPools[m_DescriptorPoolIndex];
     m_iCore->ResetDescriptorPool(*descriptorPool);
 
-    // Needs to be reset because the corresponding descriptor pool has been just reset
     m_DescriptorSetSamplers[m_DescriptorPoolIndex] = nullptr;
 
     // Referenced by the GPU descriptors can't be destroyed...
@@ -481,7 +486,6 @@ void Integration::NewFrame()
         m_DescriptorsInFlight[m_DescriptorPoolIndex].clear();
     }
 
-    m_FrameIndex++;
     m_PrevFrameIndexFromSettings++;
 }
 
