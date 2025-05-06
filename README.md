@@ -479,7 +479,7 @@ instanceCreationDesc.denoisersNum = GetCountOf(denoiserDescs);
 
 nrd::IntegrationCreationDesc desc = {};
 desc.name = "NRD";
-desc.bufferedFramesNum = bufferedFramesNum; // i.e. number of frames "in-flight"
+desc.queuedFrameNum = queuedFrameNum; // i.e. number of frames "in-flight"
 desc.enableDescriptorCaching = true; // recommended, but not mandatory
 desc.promoteFloat16to32 = false;
 desc.demoteFloat32to16 = false;
