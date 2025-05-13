@@ -23,10 +23,9 @@ jobs:
       - name: Install Vulkan
         run: |
           $ver = (Invoke-WebRequest -Uri "https://vulkan.lunarg.com/sdk/latest.json" | ConvertFrom-Json).windows
-          echo Vulkan SDK version $ver
+           echo "Downloading Vulkan SDK from https://sdk.lunarg.com/sdk/download/$ver/windows/vulkansdk-windows-X64-$ver.exe"
           $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ver/windows/VulkanSDK-$ver-Installer.exe" -OutFile VulkanSDK.exe
-          echo Downloaded
+           Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ver/windows/vulkansdk-windows-X64-$ver.exe" -OutFile VulkanSDK.exe
           .\VulkanSDK.exe --root C:\VulkanSDK --accept-licenses --default-answer --confirm-command install
 
       - name: Deploy
@@ -50,7 +49,7 @@ jobs:
         with:
           name: NRD SDK
           path: _NRD_SDK
-          
+
   Build-Ubuntu:
     runs-on: ubuntu-22.04
     steps:
@@ -58,15 +57,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-        
+
       - name: Setup CMake
         uses: jwlawson/actions-setup-cmake@v2
         with:
-          cmake-version: '3.16.x'
-          
+          cmake-version: '3.22.x'
+
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
-      
+
       - name: Install Vulkan
         run: |
           sudo apt install -y wget
@@ -79,7 +78,7 @@ jobs:
         run: |
           mkdir "build"
           cd "build"
-          cmake -G Ninja .. 
+          cmake -G Ninja ..
           cd ..
 
       - name: Build
