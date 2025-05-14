@@ -393,7 +393,7 @@ RHI must have the ability to do the following:
 
 ## Using NRI-based NRD integration layer
 
-If Graphics API's native pointers are retrievable from the RHI, the *NRD integration* layer can be used to greatly simplify the integration. In this case, the application should only wrap up native pointers for the *Device*, *CommandList* and *Textures* into entities, compatible with an API abstraction layer (*[NRI](https://github.com/NVIDIA-RTX/NRI)*), and all work with *NRD* library will be hidden inside the integration layer:
+If Graphics API's native pointers are retrievable from the RHI, the *NRD integration* layer can be used to greatly simplify the integration. In this case, the application should only provide native pointers for the *Device*, *CommandList* and *Textures* into entities, compatible with an API abstraction layer (*[NRI](https://github.com/NVIDIA-RTX/NRI)*), and all work with *NRD* library will be hidden inside the integration layer:
 
 *Engine or App → native objects → NRD integration layer → NRI → NRD*
 
@@ -419,7 +419,7 @@ The example below shows how to use *NRD integration*:
 
 nrd::Integration NRD = {};
 
-// Converts an app-side texture to an NRD resource
+// Converts an app-side texture into an NRD resource
 nrd::Resource GetNrdResource(MyTexture& myTexture) {
     nrd::Resource resource = {};
     resource.d3d12.resource = myTexture.GetD3D12Resource();
