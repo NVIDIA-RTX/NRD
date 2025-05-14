@@ -303,3 +303,9 @@ A single NRD instance can now include any combination of denoisers, including re
     - removed `ReblurAntilagSettings::hitDistanceSigmaScale` and `ReblurAntilagSettings::hitDistanceSensitivity`
     - removed `ReblurSettings::maxStabilizedFrameNumForHitDistance`
   - output textures are not used as history buffers on the next frame anymore
+
+## To v4.15
+- *API*:
+  - removed `ResourceRangeDesc::baseRegisterIndex`and added global `InstanceDesc::resourcesBaseRegisterIndex`
+  - spaces for constant buffer and resources merged into a single `InstanceDesc::constantBufferAndResourcesSpaceIndex`
+  - reworked `DescriptorPoolDesc`

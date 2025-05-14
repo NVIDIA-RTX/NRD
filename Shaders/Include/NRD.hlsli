@@ -8,7 +8,7 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-// NRD v4.14
+// NRD v4.15
 
 // IMPORTANT: DO NOT MODIFY THIS FILE WITHOUT FULL RECOMPILATION OF NRD LIBRARY!
 
@@ -76,12 +76,10 @@ NOISY INPUTS:
 //=================================================================================================================================
 
 // ( Optional ) Bindings
-#define NRD_CONSTANT_BUFFER_SPACE_INDEX                                                 0
 #define NRD_CONSTANT_BUFFER_REGISTER_INDEX                                              0
 
-#define NRD_SAMPLERS_SPACE_INDEX                                                        0 // TODO: better keep in a separate space for sharing
-
-#define NRD_RESOURCES_SPACE_INDEX                                                       0
+#define NRD_CONSTANT_BUFFER_AND_RESOURCES_SPACE_INDEX                                   0
+#define NRD_SAMPLERS_SPACE_INDEX                                                        1 // better keep in a separate space for sharing
 
 // ( Optional ) Entry point
 #ifndef NRD_CS_MAIN
@@ -116,16 +114,16 @@ NOISY INPUTS:
 // DXC
 #elif( defined( NRD_COMPILER_DXC ) || defined( __hlsl_dx_compiler ) )
 
-    #define NRD_CONSTANTS_START( resourceName )                                         cbuffer resourceName : register( NRD_MERGE_TOKENS( b, NRD_CONSTANT_BUFFER_REGISTER_INDEX ), NRD_MERGE_TOKENS( space, NRD_CONSTANT_BUFFER_SPACE_INDEX ) ) {
+    #define NRD_CONSTANTS_START( resourceName )                                         cbuffer resourceName : register( NRD_MERGE_TOKENS( b, NRD_CONSTANT_BUFFER_REGISTER_INDEX ), NRD_MERGE_TOKENS( space, NRD_CONSTANT_BUFFER_AND_RESOURCES_SPACE_INDEX ) ) {
     #define NRD_CONSTANT( constantType, constantName )                                  constantType constantName;
     #define NRD_CONSTANTS_END                                                           };
 
     #define NRD_INPUTS_START
-    #define NRD_INPUT( resourceType, resourceName, regName, bindingIndex )              resourceType resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ), NRD_MERGE_TOKENS( space, NRD_RESOURCES_SPACE_INDEX ) );
+    #define NRD_INPUT( resourceType, resourceName, regName, bindingIndex )              resourceType resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ), NRD_MERGE_TOKENS( space, NRD_CONSTANT_BUFFER_AND_RESOURCES_SPACE_INDEX ) );
     #define NRD_INPUTS_END
 
     #define NRD_OUTPUTS_START
-    #define NRD_OUTPUT( resourceType, resourceName, regName, bindingIndex )             resourceType resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ), NRD_MERGE_TOKENS( space, NRD_RESOURCES_SPACE_INDEX ) );
+    #define NRD_OUTPUT( resourceType, resourceName, regName, bindingIndex )             resourceType resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ), NRD_MERGE_TOKENS( space, NRD_CONSTANT_BUFFER_AND_RESOURCES_SPACE_INDEX ) );
     #define NRD_OUTPUTS_END
 
     #define NRD_SAMPLERS_START

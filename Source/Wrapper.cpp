@@ -249,7 +249,7 @@ NRD_API nrd::Result NRD_CALL nrd::CreateInstance(const InstanceCreationDesc& ins
     StdAllocator<uint8_t> memoryAllocator(modifiedInstanceCreationDesc.allocationCallbacks);
 
     InstanceImpl* implementation = Allocate<InstanceImpl>(memoryAllocator, memoryAllocator);
-    const Result result = implementation->Create(modifiedInstanceCreationDesc);
+    Result result = implementation->Create(modifiedInstanceCreationDesc);
 
     if (result == Result::SUCCESS)
     {

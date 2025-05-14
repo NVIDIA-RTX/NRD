@@ -1,4 +1,4 @@
-# NVIDIA REAL-TIME DENOISERS v4.14.3 (NRD)
+# NVIDIA REAL-TIME DENOISERS v4.15.0 (NRD)
 
 [![Build NRD SDK](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml/badge.svg)](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml)
 
@@ -382,22 +382,18 @@ The *Persistent* column (matches *NRD Permanent pool*) indicates how much of the
 
 # INTEGRATION VARIANTS
 
-## VARIANT 1: Black-box library (using the application-side Render Hardware Interface)
+## Using the application-side Render Hardware Interface (RHI)
 
 RHI must have the ability to do the following:
 * Create shaders from precompiled binary blobs
 * Create an SRV for a specific range of subresources
-* Create and bind 4 predefined samplers
+* Create and bind 2 predefined samplers
 * Invoke a Dispatch call (no raster, no VS/PS)
 * Create 2D textures with SRV / UAV access
 
-## VARIANT 2: White-box library (using the application-side Render Hardware Interface)
+## Using NRI-based NRD integration layer
 
-Logically it's close to the Method 1, but the integration takes place in the full source code (only the *NRD* project is needed). In this case *NRD* shaders are handled by the application shader compilation pipeline. The application should still use *NRD* via *NRD API* to preserve forward compatibility. This variant suits best for compilation on other platforms (consoles, ARM), unlocks *NRD* modification on the application side and increases portability.
-
-## VARIANT 3: Black-box library (using native API pointers)
-
-If Graphics API's native pointers are retrievable from the RHI, the standard *NRD integration* layer can be used to greatly simplify the integration. In this case, the application should only wrap up native pointers for the *Device*, *CommandList* and some input / output *Resources* into entities, compatible with an API abstraction layer (*[NRI](https://github.com/NVIDIA-RTX/NRI)*), and all work with *NRD* library will be hidden inside the integration layer:
+If Graphics API's native pointers are retrievable from the RHI, the *NRD integration* layer can be used to greatly simplify the integration. In this case, the application should only wrap up native pointers for the *Device*, *CommandList* and *Textures* into entities, compatible with an API abstraction layer (*[NRI](https://github.com/NVIDIA-RTX/NRI)*), and all work with *NRD* library will be hidden inside the integration layer:
 
 *Engine or App → native objects → NRD integration layer → NRI → NRD*
 
@@ -407,143 +403,87 @@ If Graphics API's native pointers are retrievable from the RHI, the standard *NR
 
 In rare cases, when the integration via the engine’s RHI is not possible and the integration using native pointers is complicated, a "DoDenoising" call can be added explicitly to the application-side RHI. It helps to avoid increasing code entropy.
 
-The pseudo code below demonstrates how *NRD integration* and *NRI* can be used to wrap native Graphics API pointers into NRI objects to establish connection between the application and NRD:
+The example below shows how to use *NRD integration*:
 
 ```cpp
 //=======================================================================================================
-// INITIALIZATION - DECLARATIONS
+// DECLARATIONS (using D3D12 as an example)
 //=======================================================================================================
 
 #include "NRI.h"
 #include "Extensions/NRIHelper.h"
-#include "Extensions/NRIWrapperD3D11.h"
-#include "Extensions/NRIWrapperD3D12.h"
-#include "Extensions/NRIWrapperVK.h"
-
-struct NriInterface
-    : public nri::CoreInterface
-    // Optional
-    , public nri::WrapperD3D12Interface
-    , public nri::WrapperD3D11Interface
-    , public nri::WrapperVKInterface
-{};
-
-NriInterface NRI;
+#include "Extensions/NRIWrapperD3D12.h" // VK, D3D11 (all of them)
 
 #include "NRD.h"
 #include "NRDIntegration.hpp"
 
 nrd::Integration NRD = {};
 
-//=======================================================================================================
-// INITIALIZATION - WRAP NATIVE DEVICE
-//=======================================================================================================
+// Converts an app-side texture to an NRD resource
+nrd::Resource GetNrdResource(MyTexture& myTexture) {
+    nrd::Resource resource = {};
+    resource.d3d12.resource = myTexture.GetD3D12Resource();
+    resource.d3d12.format = myTexture.GetFormat();
+    resource.userArg = &myTexture;
+    resource.state = myTexture->state; // "last after" state
 
-// Wrap the device
-nri::QueueFamilyD3D12Desc queueFamilies[] = {
-    // Must have
-    {&d3d12GraphicsQueue, 1, nri::QueueType::GRAPHICS},
-    // Optional
-    {&d3d12ComputeQueue, 1, nri::QueueType::COMPUTE},
-    {&d3d12CopyQueue, 1, nri::QueueType::COPY},
-};
-
-nri::DeviceCreationD3D12Desc deviceDesc = {};
-deviceDesc.d3d12Device = d3d12Device;
-deviceDesc.queueFamilies = queueFamilies;
-deviceDesc.queueFamilyNum = GetCoundOf(queueFamilies);
-
-nri::Device* nriDevice = nullptr;
-nri::Result nriResult = nri::nriCreateDeviceFromD3D12Device(deviceDesc, nriDevice);
-
-// Get core interface
-nriResult = nri::nriGetInterface(*nriDevice, NRI_INTERFACE(nri::CoreInterface), (nri::CoreInterface*)&NRI);
-
-// Get appropriate wrapper interface (API: D3D11, D3D12 or VULKAN)
-nriResult = nri::nriGetInterface(*nriDevice, NRI_INTERFACE(nri::WrapperAPIInterface), (nri::WrapperAPIInterface*)&NRI);
+    return resource;
+}
 
 //=======================================================================================================
-// INITIALIZATION - INITIALIZE NRD
+// INITIALIZATION
 //=======================================================================================================
+
+nri::QueueFamilyD3D12Desc queueFamilyD3D12Desc = {};
+queueFamilyD3D12Desc.d3d12Queues = &d3d12Queue;
+queueFamilyD3D12Desc.queueNum = 1;
+queueFamilyD3D12Desc.queueType = nri::QueueType::GRAPHICS; // or COMPUTE
+
+nri::DeviceCreationD3D12Desc deviceCreationD3D12Desc = {};
+deviceCreationD3D12Desc.d3d12Device = d3d12Device;
+deviceCreationD3D12Desc.queueFamilies = &queueFamilyD3D12Desc;
+deviceCreationD3D12Desc.queueFamilyNum = 1;
 
 const nrd::DenoiserDesc denoiserDescs[] =
 {
-    // Put neeeded denoisers here...
+    // Put needed denoisers here...
     { identifier1, nrd::Denoiser::AAA },
     { identifier2, nrd::Denoiser::BBB },
 };
 
 nrd::InstanceCreationDesc instanceCreationDesc = {};
 instanceCreationDesc.denoisers = denoiserDescs;
-instanceCreationDesc.denoisersNum = GetCountOf(denoiserDescs);
+instanceCreationDesc.denoisersNum = 2;
 
-nrd::IntegrationCreationDesc desc = {};
-desc.name = "NRD";
-desc.queuedFrameNum = queuedFrameNum; // i.e. number of frames "in-flight"
-desc.enableDescriptorCaching = true; // recommended, but not mandatory
-desc.promoteFloat16to32 = false;
-desc.demoteFloat32to16 = false;
+nrd::IntegrationCreationDesc integrationCreationDesc = {};
+integrationCreationDesc.name = "NRD";
+integrationCreationDesc.queuedFrameNum = 3; // i.e. number of frames "in-flight"
+integrationCreationDesc.enableWholeLifetimeDescriptorCaching = false; // safer, but unrecommended
+integrationCreationDesc.autoWaitForIdle = true; // for lazy people
 
 // NRD itself is flexible and supports any kind of dynamic resolution scaling, but NRD INTEGRATION pre-
 // allocates resources with statically defined dimensions. DRS is only supported by adjusting the viewport
 // via "CommonSettings::rectSize"
-desc.resourceWidth = resourceWidth;
-desc.resourceHeight = resourceHeight;
+integrationCreationDesc.resourceWidth = resourceWidth;
+integrationCreationDesc.resourceHeight = resourceHeight;
 
-bool result = NRD.Initialize(desc, instanceCreationDesc, *nriDevice, NRI);
-
-//=======================================================================================================
-// INITIALIZATION or RENDER - WRAP NATIVE POINTERS
-//=======================================================================================================
-
-// Wrap a command buffer
-nri::CommandBufferD3D12Desc commandBufferDesc = {};
-commandBufferDesc.d3d12CommandList = (ID3D12GraphicsCommandList*)d3d12CommandList;
-
-// Not needed for NRD integration layer, but needed for NRI validation layer
-commandBufferDesc.d3d12CommandAllocator = (ID3D12CommandAllocator*)d3d12CommandAllocatorOrJustNonNull;
-
-nri::CommandBuffer* nriCommandBuffer = nullptr;
-NRI.CreateCommandBufferD3D12(*nriDevice, commandBufferDesc, nriCommandBuffer);
-
-// Wrap required textures (better do it only once on initialization)
-nri::TextureBarrierDesc entryDescs[N] = {};
-
-for (uint32_t i = 0; i < N; i++)
-{
-    nri::TextureBarrierDesc& entryDesc = entryDescs[i];
-    const MyResource& myResource = GetMyResource(i);
-
-    nri::TextureD3D12Desc textureDesc = {};
-    textureDesc.d3d12Resource = myResource->GetNativePointer();
-
-    NRI.CreateTextureD3D12(*nriDevice, textureDesc, (nri::Texture*&)entryDesc.texture );
-
-    // You need to specify the current state of the resource here, after denoising NRD lefts resources in
-    // potentially other state, if "restoreInitialState" parameter of "Denoise" call is "false"
-    // Useful information:
-    //    SRV = nri::AccessBits::SHADER_RESOURCE, nri::TextureLayout::SHADER_RESOURCE
-    //    UAV = nri::AccessBits::SHADER_RESOURCE_STORAGE, nri::TextureLayout::GENERAL
-    entryDesc.after.access = ConvertResourceStateToAccess( myResource->GetCurrentState() );
-    entryDesc.after.layout = ConvertResourceStateToLayout( myResource->GetCurrentState() );
-}
+// Also NRD needs to be recreated on "resize"
+bool result = NRD.RecreateD3D12(integrationCreationDesc, instanceCreationDesc, deviceCreationD3D12Desc);
 
 //=======================================================================================================
-// RENDER - DENOISE
+// PREPARE
 //=======================================================================================================
 
 // Must be called once on a frame start
 NRD.NewFrame();
 
 // Set common settings
-//  - for the first time use defaults
-//  - currently NRD supports only the following view space: X - right, Y - top, Z - forward or backward
 nrd::CommonSettings commonSettings = {};
 PopulateCommonSettings(commonSettings);
 
 NRD.SetCommonSettings(commonSettings);
 
-// Set settings for each method in the NRD instance
+// Set settings for denoisers
 nrd::AaaSettings settings1 = {};
 PopulateAaaSettings(settings1);
 
@@ -554,40 +494,47 @@ PopulateBbbSettings(settings2);
 
 NRD.SetDenoiserSettings(identifier2, &settings2);
 
-// Fill up the user pool
-NrdUserPool userPool = {};
+//=======================================================================================================
+// RENDER
+//=======================================================================================================
+
+// Fill resource snapshot
+nrd::ResourceSnapshot resourceSnapshot = {};
 {
-    // Set "entryDescs" into the "in-use" slots, applying remapping if necessary
-    nrd::Integration_SetResource(userPool, nrd::ResourceType::IN_NORMAL_ROUGHNESS, &entryDescs[0]);
-    nrd::Integration_SetResource(userPool, nrd::ResourceType::IN_VIEWZ, &entryDescs[1]);
+    resourceSnapshot.restoreInitialState = true; // simpler, but unrecommended
+
+    // Common
+    resourceSnapshot.SetResource(nrd::ResourceType::IN_MV, GetNrdResource(myTexture_Mv));
+    resourceSnapshot.SetResource(nrd::ResourceType::IN_NORMAL_ROUGHNESS, GetNrdResource(myTexture_NormalRoughness));
+    resourceSnapshot.SetResource(nrd::ResourceType::IN_VIEWZ, GetNrdResource(myTexture_ViewZ));
+
+    // Denoiser specific
     ...
-};
+}
+
+// Denoise
+nri::CommandBufferD3D12Desc commandBufferD3D12Desc = {};
+commandBufferD3D12Desc.d3d12CommandList = d3d12CommandList;
 
 const nrd::Identifier denoisers[] = {identifier1, identifier2};
-const bool restoreInitialState = false;
-NRD.Denoise(denoisers, helper::GetCountOf(denoisers), *nriCommandBuffer, userPool, restoreInitialState);
+m_NRD.DenoiseD3D12(denoisers, 2, commandBufferD3D12Desc, resourceSnapshot);
+
+// Update state
+if (!resourceSnapshot.restoreInitialState)
+{
+    for (size_t i = 0; i < resourceSnapshot.uniqueNum; i++)
+    {
+        // use "resourceSnapshot.unique[i].userArg" to get access to an app-side resource and update its state to "resourceSnapshot.unique[i].state"
+    }
+}
 
 // IMPORTANT: NRD integration binds own descriptor pool, don't forget to restore your pool (heap) if needed
-
-//=======================================================================================================
-// SHUTDOWN or RENDER - CLEANUP
-//=======================================================================================================
-
-// Better do it only once on shutdown
-for (uint32_t i = 0; i < N; i++)
-    NRI.DestroyTexture(entryDescs[i].texture);
-
-NRI.DestroyCommandBuffer(*nriCommandBuffer);
 
 //=======================================================================================================
 // SHUTDOWN - DESTROY
 //=======================================================================================================
 
-// Also NRD needs to be recreated on "resize"
 NRD.Destroy();
-
-// Release wrapped device
-nri::nriDestroyDevice(*nriDevice);
 ```
 
 Shader part:

@@ -157,7 +157,7 @@ namespace nrd
         Identifier identifier;
         uint16_t pipelineIndex;
         uint16_t downsampleFactor;
-        uint16_t maxRepeatsNum; // mostly for internal use
+        uint16_t maxRepeatNum; // IMPORTANT: must be same for all permutations (i.e. for same "name")
         NumThreads numThreads;
     };
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.22...3.30)
 
 include(CMakeDependentOption)
 include(FetchContent)
@@ -139,6 +139,7 @@ endif()
 if(DEPS)
     message("NRD: downloading dependencies:")
     message(STATUS "${DEPS} ...")
+
     FetchContent_MakeAvailable(${DEPS})
 endif()
 

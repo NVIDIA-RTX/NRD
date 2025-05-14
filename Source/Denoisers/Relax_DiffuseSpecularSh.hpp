@@ -353,11 +353,11 @@ void nrd::InstanceImpl::Add_RelaxDiffuseSpecularSh(DenoiserData& denoiserData)
                 }
 
                 // Shaders
-                uint32_t repeatNum = isLast ? 1 : (RELAX_MAX_ATROUS_PASS_NUM - 2 + 1) / 2;
+                constexpr uint32_t maxRepeatNum = (RELAX_MAX_ATROUS_PASS_NUM - 2 + 1) / 2;
                 if (isSmem)
                     AddDispatch( RELAX_DiffuseSpecularSh_AtrousSmem, RELAX_AtrousSmem, 1 );
                 else
-                    AddDispatchRepeated( RELAX_DiffuseSpecularSh_Atrous, RELAX_Atrous, 1, repeatNum );
+                    AddDispatchRepeated( RELAX_DiffuseSpecularSh_Atrous, RELAX_Atrous, 1, maxRepeatNum );
             }
         }
     }

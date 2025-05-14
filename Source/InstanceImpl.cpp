@@ -633,17 +633,17 @@ void nrd::InstanceImpl::AddComputeDispatchDesc
     }
 
     // Dispatch
-    InternalDispatchDesc computeDispatchDesc = {};
-    computeDispatchDesc.name = m_PassName;
-    computeDispatchDesc.pipelineIndex = (uint16_t)pipelineIndex;
-    computeDispatchDesc.downsampleFactor = downsampleFactor;
-    computeDispatchDesc.maxRepeatsNum = (uint16_t)maxRepeatNum;
-    computeDispatchDesc.constantBufferDataSize = constantBufferDataSize;
-    computeDispatchDesc.resourcesNum = uint32_t(m_Resources.size() - m_ResourceOffset);
-    computeDispatchDesc.resources = (ResourceDesc*)m_ResourceOffset;
-    computeDispatchDesc.numThreads = numThreads;
+    InternalDispatchDesc dispatchDesc = {};
+    dispatchDesc.name = m_PassName;
+    dispatchDesc.pipelineIndex = (uint16_t)pipelineIndex;
+    dispatchDesc.downsampleFactor = downsampleFactor;
+    dispatchDesc.maxRepeatNum = (uint16_t)maxRepeatNum;
+    dispatchDesc.constantBufferDataSize = constantBufferDataSize;
+    dispatchDesc.resourcesNum = uint32_t(m_Resources.size() - m_ResourceOffset);
+    dispatchDesc.resources = (ResourceDesc*)m_ResourceOffset;
+    dispatchDesc.numThreads = numThreads;
 
-    m_Dispatches.push_back(computeDispatchDesc);
+    m_Dispatches.push_back(dispatchDesc);
 }
 
 void nrd::InstanceImpl::PrepareDesc()
@@ -651,7 +651,6 @@ void nrd::InstanceImpl::PrepareDesc()
     m_Desc = {};
 
     m_Desc.constantBufferRegisterIndex = NRD_CONSTANT_BUFFER_REGISTER_INDEX;
-    m_Desc.constantBufferSpaceIndex = NRD_CONSTANT_BUFFER_SPACE_INDEX;
 
     m_Desc.samplers = g_Samplers.data();
     m_Desc.samplersNum = (uint32_t)g_Samplers.size();
@@ -660,7 +659,8 @@ void nrd::InstanceImpl::PrepareDesc()
 
     m_Desc.pipelines = m_Pipelines.data();
     m_Desc.pipelinesNum = (uint32_t)m_Pipelines.size();
-    m_Desc.resourcesSpaceIndex = NRD_RESOURCES_SPACE_INDEX;
+    m_Desc.constantBufferAndResourcesSpaceIndex = NRD_CONSTANT_BUFFER_AND_RESOURCES_SPACE_INDEX;
+    m_Desc.resourcesBaseRegisterIndex = 0;
 
     m_Desc.permanentPool = m_PermanentPool.data();
     m_Desc.permanentPoolSize = (uint32_t)m_PermanentPool.size();
@@ -668,44 +668,78 @@ void nrd::InstanceImpl::PrepareDesc()
     m_Desc.transientPool = m_TransientPool.data();
     m_Desc.transientPoolSize = (uint32_t)m_TransientPool.size();
 
-    const bool samplersAreInSeparateSet = NRD_SAMPLERS_SPACE_INDEX != NRD_CONSTANT_BUFFER_SPACE_INDEX && NRD_SAMPLERS_SPACE_INDEX != NRD_RESOURCES_SPACE_INDEX;
-    if (samplersAreInSeparateSet)
-        m_Desc.descriptorPoolDesc.samplersMaxNum += m_Desc.samplersNum;
+    constexpr bool samplersInSeparateSet = NRD_SAMPLERS_SPACE_INDEX != NRD_CONSTANT_BUFFER_AND_RESOURCES_SPACE_INDEX;
+    m_Desc.samplersInSeparateSet = samplersInSeparateSet;
 
-    // Calculate descriptor heap (sets) requirements
+    if (samplersInSeparateSet)
+    {
+        m_Desc.descriptorPoolDesc.totalSamplersNum += m_Desc.samplersNum;
+        m_Desc.descriptorPoolDesc.setsMaxNum++;
+    }
+
+    // Calculate descriptor heap (pool) requirements
+    Vector<const char*> unique(GetStdAllocator());
+    unique.reserve(m_Dispatches.size());
+
     for (InternalDispatchDesc& dispatchDesc : m_Dispatches)
     {
         size_t textureOffset = (size_t)dispatchDesc.resources;
         dispatchDesc.resources = &m_Resources[textureOffset];
 
+        // Ignore permutations (we need only unique passes for descriptor pool limits)
+        size_t n = 0;
+        for (;n < unique.size(); n++)
+        {
+            // We can use "==" because all strings are static memory
+            if (dispatchDesc.name == unique[n])
+                break;
+        }
+        if (n != unique.size())
+            continue;
+
+        unique.push_back(dispatchDesc.name);
+
+        // Update limits
+        m_Desc.descriptorPoolDesc.setsMaxNum += dispatchDesc.maxRepeatNum;
+
+        uint32_t texturesMaxNum = 0;
+        uint32_t storageTexturesMaxNum = 0;
         for (uint32_t i = 0; i < dispatchDesc.resourcesNum; i++)
         {
             const ResourceDesc& resource = dispatchDesc.resources[i];
+
             if (resource.descriptorType == DescriptorType::TEXTURE)
-                m_Desc.descriptorPoolDesc.texturesMaxNum += dispatchDesc.maxRepeatsNum;
+            {
+                m_Desc.descriptorPoolDesc.totalTexturesNum += dispatchDesc.maxRepeatNum;
+                texturesMaxNum++;
+            }
             else if (resource.descriptorType == DescriptorType::STORAGE_TEXTURE)
-                m_Desc.descriptorPoolDesc.storageTexturesMaxNum += dispatchDesc.maxRepeatsNum;
+            {
+                m_Desc.descriptorPoolDesc.totalStorageTexturesNum += dispatchDesc.maxRepeatNum;
+                storageTexturesMaxNum++;
+            }
         }
 
-        m_Desc.descriptorPoolDesc.setsMaxNum += dispatchDesc.maxRepeatsNum;
-
-        if (!samplersAreInSeparateSet)
-            m_Desc.descriptorPoolDesc.samplersMaxNum += dispatchDesc.maxRepeatsNum * m_Desc.samplersNum;
+        if (!samplersInSeparateSet)
+            m_Desc.descriptorPoolDesc.totalSamplersNum += dispatchDesc.maxRepeatNum * m_Desc.samplersNum;
 
         if (dispatchDesc.constantBufferDataSize != 0)
         {
-            m_Desc.descriptorPoolDesc.constantBuffersMaxNum += dispatchDesc.maxRepeatsNum;
+            m_Desc.descriptorPoolDesc.totalConstantBuffersNum += dispatchDesc.maxRepeatNum;
             m_Desc.constantBufferMaxDataSize = max(dispatchDesc.constantBufferDataSize, m_Desc.constantBufferMaxDataSize);
         }
+
+        m_Desc.descriptorPoolDesc.perSetTexturesMaxNum = std::max(m_Desc.descriptorPoolDesc.perSetTexturesMaxNum, texturesMaxNum);
+        m_Desc.descriptorPoolDesc.perSetStorageTexturesMaxNum = std::max(m_Desc.descriptorPoolDesc.perSetStorageTexturesMaxNum, storageTexturesMaxNum);
     }
 
     // For potential clears
     uint32_t clearNum = (uint32_t)m_ClearResources.size();
-    m_Desc.descriptorPoolDesc.storageTexturesMaxNum += clearNum;
     m_Desc.descriptorPoolDesc.setsMaxNum += clearNum;
+    m_Desc.descriptorPoolDesc.totalStorageTexturesNum += clearNum;
 
-    if (!samplersAreInSeparateSet)
-        m_Desc.descriptorPoolDesc.samplersMaxNum += clearNum * m_Desc.samplersNum;
+    if (!samplersInSeparateSet)
+        m_Desc.descriptorPoolDesc.totalSamplersNum += clearNum * m_Desc.samplersNum;
 
     // Assign resources
     for (PipelineDesc& pipelineDesc : m_Pipelines)
@@ -713,15 +747,6 @@ void nrd::InstanceImpl::PrepareDesc()
         size_t descriptorRangeffset = (size_t)pipelineDesc.resourceRanges;
         pipelineDesc.resourceRanges = &m_ResourceRanges[descriptorRangeffset];
     }
-
-    // *= number of "spaces"
-    uint32_t descriptorSetNum = 1;
-    if (m_Desc.constantBufferSpaceIndex != m_Desc.samplersSpaceIndex)
-        descriptorSetNum++;
-    if (m_Desc.samplersSpaceIndex != m_Desc.resourcesSpaceIndex)
-        descriptorSetNum++;
-
-    m_Desc.descriptorPoolDesc.setsMaxNum *= descriptorSetNum;
 }
 
 void nrd::InstanceImpl::UpdatePingPong(const DenoiserData& denoiserData)

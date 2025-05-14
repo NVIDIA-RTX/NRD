@@ -11,7 +11,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #pragma once
 
 #define NRD_DESCS_VERSION_MAJOR 4
-#define NRD_DESCS_VERSION_MINOR 14
+#define NRD_DESCS_VERSION_MINOR 15
 
 static_assert(NRD_VERSION_MAJOR == NRD_DESCS_VERSION_MAJOR && NRD_VERSION_MINOR == NRD_DESCS_VERSION_MINOR, "Please, update all NRD SDK files");
 
@@ -426,7 +426,6 @@ namespace nrd
     struct ResourceRangeDesc
     {
         DescriptorType descriptorType;
-        uint32_t baseRegisterIndex;
         uint32_t descriptorsNum;
     };
 
@@ -443,8 +442,8 @@ namespace nrd
         ComputeShaderDesc computeShaderSPIRV;
         const char* shaderFileName;
         const char* shaderEntryPointName;
-        const ResourceRangeDesc* resourceRanges; // up to 2 ranges: "TEXTURE" inputs (optional) and "TEXTURE_STORAGE" outputs
-        uint32_t resourceRangesNum;
+        const ResourceRangeDesc* resourceRanges;
+        uint32_t resourceRangesNum; // up to 2 ranges: "TEXTURE" inputs (optional) and "TEXTURE_STORAGE" outputs
 
         // Hint that pipeline has a constant buffer with shared parameters from "InstanceDesc"
         bool hasConstantData;
@@ -452,30 +451,42 @@ namespace nrd
 
     struct DescriptorPoolDesc
     {
+        // Useful for tight (per pipeline) pipeline layouts (root signatures)
+        // - summed up across all dispatches
+        // - samplers are summed only if "samplersInSeparateSet = false", otherwise "totalSamplersNum = Sampler::MAX_NUM"
+        uint32_t totalConstantBuffersNum;
+        uint32_t totalSamplersNum;                       // not needed if used as static/immutable samplers
+        uint32_t totalTexturesNum;
+        uint32_t totalStorageTexturesNum;
+
+        // Useful for a shared pipeline layout
+        //  - show max usage
+        //  - always 1 constant buffer
+        //  - always "Sampler::MAX_NUM" samplers
+        uint32_t perSetTexturesMaxNum;
+        uint32_t perSetStorageTexturesMaxNum;
+
         uint32_t setsMaxNum;
-        uint32_t constantBuffersMaxNum;
-        uint32_t samplersMaxNum;
-        uint32_t texturesMaxNum;
-        uint32_t storageTexturesMaxNum;
     };
 
     struct InstanceDesc
     {
-        // Constant buffer (shared)
+        // Constant buffer
         uint32_t constantBufferMaxDataSize;
-        uint32_t constantBufferSpaceIndex; // = NRD_CONSTANT_BUFFER_SPACE_INDEX
-        uint32_t constantBufferRegisterIndex; // = NRD_CONSTANT_BUFFER_REGISTER_INDEX
+        uint32_t constantBufferRegisterIndex;           // = "NRD_CONSTANT_BUFFER_REGISTER_INDEX"
+        uint32_t constantBufferAndResourcesSpaceIndex;  // = "NRD_CONSTANT_BUFFER_AND_RESOURCES_SPACE_INDEX"
 
-        // Samplers (shared)
+        // Samplers
         const Sampler* samplers;
-        uint32_t samplersNum; // = Sampler::MAX_NUM
-        uint32_t samplersSpaceIndex; // = NRD_SAMPLERS_SPACE_INDEX
+        uint32_t samplersNum;                           // = "Sampler::MAX_NUM"
+        uint32_t samplersSpaceIndex;                    // = "NRD_SAMPLERS_SPACE_INDEX"
         uint32_t samplersBaseRegisterIndex;
+        bool samplersInSeparateSet;                     // "true" if "NRD_SAMPLERS_SPACE_INDEX" is unique and not shared with other spaces
 
         // Pipelines
         const PipelineDesc* pipelines;
         uint32_t pipelinesNum;
-        uint32_t resourcesSpaceIndex; // = NRD_RESOURCES_SPACE_INDEX
+        uint32_t resourcesBaseRegisterIndex;
 
         // Textures
         const TextureDesc* permanentPool;
@@ -483,10 +494,7 @@ namespace nrd
         const TextureDesc* transientPool;
         uint32_t transientPoolSize;
 
-        // ( Optional) Limits
-        // - "DescriptorPoolDesc::samplersMaxNum" counts samplers across all dispatches, assuming naive usage
-        // - "DescriptorPoolDesc::samplersMaxNum" is not needed, if "samplers" are used as static/immutable samplers
-        // - "DescriptorPoolDesc::samplersMaxNum" = "InstanceDesc::samplersNum", if "InstanceDesc::samplersBaseRegisterIndex" is a unique space
+        // ( Optional ) Limits
         DescriptorPoolDesc descriptorPoolDesc;
     };
 
