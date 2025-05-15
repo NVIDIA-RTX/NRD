@@ -8,9 +8,9 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "NRD.h"
-#include "InstanceImpl.h"
 #include "../Resources/Version.h"
+#include "InstanceImpl.h"
+#include "NRD.h"
 
 #include <array>
 
@@ -20,8 +20,7 @@ static_assert(VERSION_BUILD == NRD_VERSION_BUILD, "VERSION_BUILD & NRD_VERSION_B
 static_assert(NRD_NORMAL_ENCODING >= 0 && NRD_NORMAL_ENCODING < (uint32_t)nrd::NormalEncoding::MAX_NUM, "NRD_NORMAL_ENCODING out of bounds!");
 static_assert(NRD_ROUGHNESS_ENCODING >= 0 && NRD_ROUGHNESS_ENCODING < (uint32_t)nrd::RoughnessEncoding::MAX_NUM, "NRD_ROUGHNESS_ENCODING out of bounds!");
 
-constexpr std::array<nrd::Denoiser, (size_t)nrd::Denoiser::MAX_NUM> g_NrdSupportedDenoisers =
-{
+constexpr std::array<nrd::Denoiser, (size_t)nrd::Denoiser::MAX_NUM> g_NrdSupportedDenoisers = {
     nrd::Denoiser::REBLUR_DIFFUSE,
     nrd::Denoiser::REBLUR_DIFFUSE_OCCLUSION,
     nrd::Denoiser::REBLUR_DIFFUSE_SH,
@@ -43,8 +42,7 @@ constexpr std::array<nrd::Denoiser, (size_t)nrd::Denoiser::MAX_NUM> g_NrdSupport
     nrd::Denoiser::REFERENCE,
 };
 
-constexpr nrd::LibraryDesc g_NrdLibraryDesc =
-{
+constexpr nrd::LibraryDesc g_NrdLibraryDesc = {
     {SPIRV_SREG_OFFSET, SPIRV_TREG_OFFSET, SPIRV_BREG_OFFSET, SPIRV_UREG_OFFSET},
     g_NrdSupportedDenoisers.data(),
     (uint32_t)g_NrdSupportedDenoisers.size(),
@@ -52,11 +50,9 @@ constexpr nrd::LibraryDesc g_NrdLibraryDesc =
     VERSION_MINOR,
     VERSION_BUILD,
     (nrd::NormalEncoding)NRD_NORMAL_ENCODING,
-    (nrd::RoughnessEncoding)NRD_ROUGHNESS_ENCODING
-};
+    (nrd::RoughnessEncoding)NRD_ROUGHNESS_ENCODING};
 
-const char* g_NrdResourceTypeNames[] =
-{
+const char* g_NrdResourceTypeNames[] = {
     "IN_MV",
     "IN_NORMAL_ROUGHNESS",
     "IN_VIEWZ",
@@ -93,10 +89,9 @@ const char* g_NrdResourceTypeNames[] =
     "TRANSIENT_POOL",
     "PERMANENT_POOL",
 };
-static_assert( GetCountOf(g_NrdResourceTypeNames) == (uint32_t)nrd::ResourceType::MAX_NUM );
+static_assert(GetCountOf(g_NrdResourceTypeNames) == (uint32_t)nrd::ResourceType::MAX_NUM);
 
-const char* g_NrdDenoiserNames[] =
-{
+const char* g_NrdDenoiserNames[] = {
     "REBLUR_DIFFUSE",
     "REBLUR_DIFFUSE_OCCLUSION",
     "REBLUR_DIFFUSE_SH",
@@ -120,15 +115,13 @@ const char* g_NrdDenoiserNames[] =
 
     "REFERENCE",
 };
-static_assert( GetCountOf(g_NrdDenoiserNames) == (uint32_t)nrd::Denoiser::MAX_NUM );
+static_assert(GetCountOf(g_NrdDenoiserNames) == (uint32_t)nrd::Denoiser::MAX_NUM);
 
-NRD_API const nrd::LibraryDesc& NRD_CALL nrd::GetLibraryDesc()
-{
+NRD_API const nrd::LibraryDesc& NRD_CALL nrd::GetLibraryDesc() {
     return g_NrdLibraryDesc;
 }
 
-NRD_API nrd::Result NRD_CALL nrd::CreateInstance(const InstanceCreationDesc& instanceCreationDesc, Instance*& instance)
-{
+NRD_API nrd::Result NRD_CALL nrd::CreateInstance(const InstanceCreationDesc& instanceCreationDesc, Instance*& instance) {
 #if 0
     // REBLUR shader source files generator
     static std::array<const char*, 3> typeNames             = {"Diffuse", "Specular", "DiffuseSpecular"};
@@ -251,8 +244,7 @@ NRD_API nrd::Result NRD_CALL nrd::CreateInstance(const InstanceCreationDesc& ins
     InstanceImpl* implementation = Allocate<InstanceImpl>(memoryAllocator, memoryAllocator);
     Result result = implementation->Create(modifiedInstanceCreationDesc);
 
-    if (result == Result::SUCCESS)
-    {
+    if (result == Result::SUCCESS) {
         instance = (Instance*)implementation;
         return Result::SUCCESS;
     }
@@ -262,41 +254,34 @@ NRD_API nrd::Result NRD_CALL nrd::CreateInstance(const InstanceCreationDesc& ins
     return result;
 }
 
-NRD_API const nrd::InstanceDesc& NRD_CALL nrd::GetInstanceDesc(const Instance& denoiser)
-{
+NRD_API const nrd::InstanceDesc& NRD_CALL nrd::GetInstanceDesc(const Instance& denoiser) {
     return ((const InstanceImpl&)denoiser).GetDesc();
 }
 
-NRD_API nrd::Result NRD_CALL nrd::SetCommonSettings(Instance& instance, const CommonSettings& commonSettings)
-{
+NRD_API nrd::Result NRD_CALL nrd::SetCommonSettings(Instance& instance, const CommonSettings& commonSettings) {
     return ((InstanceImpl&)instance).SetCommonSettings(commonSettings);
 }
 
-NRD_API nrd::Result NRD_CALL nrd::SetDenoiserSettings(Instance& instance, Identifier identifier, const void* denoiserSettings)
-{
+NRD_API nrd::Result NRD_CALL nrd::SetDenoiserSettings(Instance& instance, Identifier identifier, const void* denoiserSettings) {
     return ((InstanceImpl&)instance).SetDenoiserSettings(identifier, denoiserSettings);
 }
 
-NRD_API nrd::Result NRD_CALL nrd::GetComputeDispatches(Instance& instance, const Identifier* identifiers, uint32_t identifiersNum, const DispatchDesc*& dispatchDescs, uint32_t& dispatchDescsNum)
-{
+NRD_API nrd::Result NRD_CALL nrd::GetComputeDispatches(Instance& instance, const Identifier* identifiers, uint32_t identifiersNum, const DispatchDesc*& dispatchDescs, uint32_t& dispatchDescsNum) {
     return ((InstanceImpl&)instance).GetComputeDispatches(identifiers, identifiersNum, dispatchDescs, dispatchDescsNum);
 }
 
-NRD_API void NRD_CALL nrd::DestroyInstance(Instance& instance)
-{
+NRD_API void NRD_CALL nrd::DestroyInstance(Instance& instance) {
     StdAllocator<uint8_t> memoryAllocator = ((InstanceImpl&)instance).GetStdAllocator();
     Deallocate(memoryAllocator, (InstanceImpl*)&instance);
 }
 
-NRD_API const char* NRD_CALL nrd::GetResourceTypeString(ResourceType resourceType)
-{
+NRD_API const char* NRD_CALL nrd::GetResourceTypeString(ResourceType resourceType) {
     uint32_t i = (uint32_t)resourceType;
 
     return i < (uint32_t)ResourceType::MAX_NUM ? g_NrdResourceTypeNames[i] : nullptr;
 }
 
-NRD_API const char* NRD_CALL nrd::GetDenoiserString(Denoiser denoiser)
-{
+NRD_API const char* NRD_CALL nrd::GetDenoiserString(Denoiser denoiser) {
     uint32_t i = (uint32_t)denoiser;
 
     return i < (uint32_t)Denoiser::MAX_NUM ? g_NrdDenoiserNames[i] : nullptr;

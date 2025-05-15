@@ -42,7 +42,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #endif
 
 // NRI-based NRD integration layer
-#define NRD_VERSION 18
+#define NRD_VERSION          18
 #define NRD_INTEGRATION_DATE "9 May 2025"
 
 namespace nrd {
@@ -194,6 +194,9 @@ struct IntegrationCreationDesc {
 
     // Promote FP16 to FP32 (overkill, kills performance)
     bool promoteFloat16to32 = false;
+
+    // TODO: there can be an option for UNORM/SNORM 8/16-bit promotion/demotion, but only for resources
+    // marked as history (i.e. not normal-roughness and internal data resources)
 };
 
 // Threadsafe: no

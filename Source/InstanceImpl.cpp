@@ -9,87 +9,84 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
 #include "../Shaders/Include/NRD.hlsli"
+
 #include "InstanceImpl.h"
 
 #include <assert.h> // assert
 #include <array>
 
-constexpr std::array<nrd::Sampler, (size_t)nrd::Sampler::MAX_NUM> g_Samplers =
-{
+constexpr std::array<nrd::Sampler, (size_t)nrd::Sampler::MAX_NUM> g_Samplers = {
     nrd::Sampler::NEAREST_CLAMP,
     nrd::Sampler::LINEAR_CLAMP,
 };
 
-constexpr std::array<bool, (size_t)nrd::Format::MAX_NUM> g_IsIntegerFormat =
-{
-    false,        // R8_UNORM
-    false,        // R8_SNORM
-    true,         // R8_UINT
-    false,        // R8_SINT
-    false,        // RG8_UNORM
-    false,        // RG8_SNORM
-    true,         // RG8_UINT
-    false,        // RG8_SINT
-    false,        // RGBA8_UNORM
-    false,        // RGBA8_SNORM
-    true,         // RGBA8_UINT
-    false,        // RGBA8_SINT
-    false,        // RGBA8_SRGB
-    false,        // R16_UNORM
-    false,        // R16_SNORM
-    true,         // R16_UINT
-    false,        // R16_SINT
-    false,        // R16_SFLOAT
-    false,        // RG16_UNORM
-    false,        // RG16_SNORM
-    true,         // RG16_UINT
-    false,        // RG16_SINT
-    false,        // RG16_SFLOAT
-    false,        // RGBA16_UNORM
-    false,        // RGBA16_SNORM
-    true,         // RGBA16_UINT
-    false,        // RGBA16_SINT
-    false,        // RGBA16_SFLOAT
-    true,         // R32_UINT
-    false,        // R32_SINT
-    false,        // R32_SFLOAT
-    true,         // RG32_UINT
-    false,        // RG32_SINT
-    false,        // RG32_SFLOAT
-    true,         // RGB32_UINT
-    false,        // RGB32_SINT
-    false,        // RGB32_SFLOAT
-    true,         // RGBA32_UINT
-    false,        // RGBA32_SINT
-    false,        // RGBA32_SFLOAT
-    false,        // R10_G10_B10_A2_UNORM
-    true,         // R10_G10_B10_A2_UINT
-    false,        // R11_G11_B10_UFLOAT
-    false,        // R9_G9_B9_E5_UFLOAT
+constexpr std::array<bool, (size_t)nrd::Format::MAX_NUM> g_IsIntegerFormat = {
+    false, // R8_UNORM
+    false, // R8_SNORM
+    true,  // R8_UINT
+    false, // R8_SINT
+    false, // RG8_UNORM
+    false, // RG8_SNORM
+    true,  // RG8_UINT
+    false, // RG8_SINT
+    false, // RGBA8_UNORM
+    false, // RGBA8_SNORM
+    true,  // RGBA8_UINT
+    false, // RGBA8_SINT
+    false, // RGBA8_SRGB
+    false, // R16_UNORM
+    false, // R16_SNORM
+    true,  // R16_UINT
+    false, // R16_SINT
+    false, // R16_SFLOAT
+    false, // RG16_UNORM
+    false, // RG16_SNORM
+    true,  // RG16_UINT
+    false, // RG16_SINT
+    false, // RG16_SFLOAT
+    false, // RGBA16_UNORM
+    false, // RGBA16_SNORM
+    true,  // RGBA16_UINT
+    false, // RGBA16_SINT
+    false, // RGBA16_SFLOAT
+    true,  // R32_UINT
+    false, // R32_SINT
+    false, // R32_SFLOAT
+    true,  // RG32_UINT
+    false, // RG32_SINT
+    false, // RG32_SFLOAT
+    true,  // RGB32_UINT
+    false, // RGB32_SINT
+    false, // RGB32_SFLOAT
+    true,  // RGBA32_UINT
+    false, // RGBA32_SINT
+    false, // RGBA32_SFLOAT
+    false, // R10_G10_B10_A2_UNORM
+    true,  // R10_G10_B10_A2_UINT
+    false, // R11_G11_B10_UFLOAT
+    false, // R9_G9_B9_E5_UFLOAT
 };
 
 #include "../Shaders/Resources/Clear_Float.resources.hlsli"
 #include "../Shaders/Resources/Clear_Uint.resources.hlsli"
 
 #ifdef NRD_EMBEDS_DXBC_SHADERS
-    #include "Clear_Float.cs.dxbc.h"
-    #include "Clear_Uint.cs.dxbc.h"
+#    include "Clear_Float.cs.dxbc.h"
+#    include "Clear_Uint.cs.dxbc.h"
 #endif
 
 #ifdef NRD_EMBEDS_DXIL_SHADERS
-    #include "Clear_Float.cs.dxil.h"
-    #include "Clear_Uint.cs.dxil.h"
+#    include "Clear_Float.cs.dxil.h"
+#    include "Clear_Uint.cs.dxil.h"
 #endif
 
 #ifdef NRD_EMBEDS_SPIRV_SHADERS
-    #include "Clear_Float.cs.spirv.h"
-    #include "Clear_Uint.cs.spirv.h"
+#    include "Clear_Float.cs.spirv.h"
+#    include "Clear_Uint.cs.spirv.h"
 #endif
 
-inline bool IsInList(nrd::Identifier identifier, const nrd::Identifier* identifiers, uint32_t identifiersNum)
-{
-    for (uint32_t i = 0; i < identifiersNum; i++)
-    {
+inline bool IsInList(nrd::Identifier identifier, const nrd::Identifier* identifiers, uint32_t identifiersNum) {
+    for (uint32_t i = 0; i < identifiersNum; i++) {
         if (identifiers[i] == identifier)
             return true;
     }
@@ -97,19 +94,16 @@ inline bool IsInList(nrd::Identifier identifier, const nrd::Identifier* identifi
     return false;
 }
 
-nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreationDesc)
-{
+nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreationDesc) {
     const LibraryDesc& libraryDesc = GetLibraryDesc();
 
     // Collect dispatches from all denoisers
-    for (uint32_t i = 0; i < instanceCreationDesc.denoisersNum; i++)
-    {
+    for (uint32_t i = 0; i < instanceCreationDesc.denoisersNum; i++) {
         const DenoiserDesc& denoiserDesc = instanceCreationDesc.denoisers[i];
 
         // Check that denoiser is supported
         uint32_t j = 0;
-        for (; j < libraryDesc.supportedDenoisersNum; j++)
-        {
+        for (; j < libraryDesc.supportedDenoisersNum; j++) {
             if (denoiserDesc.denoiser == libraryDesc.supportedDenoisers[j])
                 break;
         }
@@ -117,8 +111,7 @@ nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreati
             return Result::UNSUPPORTED;
 
         // Check that identifier is unique
-        for (j = 0; j < instanceCreationDesc.denoisersNum; j++)
-        {
+        for (j = 0; j < instanceCreationDesc.denoisersNum; j++) {
             if (i != j && instanceCreationDesc.denoisers[j].identifier == denoiserDesc.identifier)
                 return Result::NON_UNIQUE_IDENTIFIER;
         }
@@ -180,15 +173,13 @@ nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreati
         denoiserData.pingPongNum = m_PingPongs.size() - denoiserData.pingPongOffset;
 
         // Patch identifiers
-        for (size_t dispatchIndex = denoiserData.dispatchOffset; dispatchIndex < m_Dispatches.size(); dispatchIndex++)
-        {
+        for (size_t dispatchIndex = denoiserData.dispatchOffset; dispatchIndex < m_Dispatches.size(); dispatchIndex++) {
             InternalDispatchDesc& internalDispatchDesc = m_Dispatches[dispatchIndex];
             internalDispatchDesc.identifier = denoiserDesc.identifier;
         }
 
         // Gather resources, which need to be cleared
-        for (size_t resourceIndex = resourceOffset; resourceIndex < m_Resources.size(); resourceIndex++)
-        {
+        for (size_t resourceIndex = resourceOffset; resourceIndex < m_Resources.size(); resourceIndex++) {
             const ResourceDesc& resource = m_Resources[resourceIndex];
 
             // Loop through all resources and find all used as STORAGE (i.e. ignore read-only user provided inputs)
@@ -201,40 +192,32 @@ nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreati
 
             // Keep only unique instances
             bool isFound = false;
-            for (const ClearResource& temp : m_ClearResources)
-            {
-                if (temp.resource.descriptorType == resource.descriptorType &&
-                    temp.resource.type == resource.type &&
-                    temp.resource.indexInPool == resource.indexInPool)
-                {
+            for (const ClearResource& temp : m_ClearResources) {
+                if (temp.resource.descriptorType == resource.descriptorType && temp.resource.type == resource.type && temp.resource.indexInPool == resource.indexInPool) {
                     isFound = true;
                     break;
                 }
             }
 
-            if (!isFound)
-            {
+            if (!isFound) {
                 // Is integer?
                 bool isInteger = false;
                 uint16_t downsampleFactor = 1;
-                if (resource.type == ResourceType::PERMANENT_POOL || resource.type == ResourceType::TRANSIENT_POOL)
-                {
+                if (resource.type == ResourceType::PERMANENT_POOL || resource.type == ResourceType::TRANSIENT_POOL) {
                     TextureDesc& textureDesc = resource.type == ResourceType::PERMANENT_POOL ? m_PermanentPool[resource.indexInPool] : m_TransientPool[resource.indexInPool];
                     isInteger = g_IsIntegerFormat[(size_t)textureDesc.format];
                     downsampleFactor = textureDesc.downsampleFactor;
                 }
 
                 // Add PING resource
-                m_ClearResources.push_back( {denoiserDesc.identifier, resource, downsampleFactor, isInteger} );
+                m_ClearResources.push_back({denoiserDesc.identifier, resource, downsampleFactor, isInteger});
 
                 // Add PONG resource
-                for (uint32_t p = 0; p < denoiserData.pingPongNum; p++)
-                {
+                for (uint32_t p = 0; p < denoiserData.pingPongNum; p++) {
                     const PingPong& pingPong = m_PingPongs[denoiserData.pingPongOffset + p];
-                    if (pingPong.resourceIndex == (uint32_t)resourceIndex)
-                    {
+                    if (pingPong.resourceIndex == (uint32_t)resourceIndex) {
                         ResourceDesc resourcePong = {resource.descriptorType, resource.type, pingPong.indexInPoolToSwapWith};
-                        m_ClearResources.push_back( {denoiserDesc.identifier, resourcePong, downsampleFactor, isInteger} );
+                        m_ClearResources.push_back({denoiserDesc.identifier, resourcePong, downsampleFactor, isInteger});
                         break;
                     }
                 }
@@ -249,14 +232,14 @@ nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreati
     _PushPass("Clear (f)");
     {
         PushOutput(0);
-        AddDispatchNoConstants( Clear_Float, Clear_Float, 1 );
+        AddDispatchNoConstants(Clear_Float, Clear_Float, 1);
     }
 
     m_DispatchClearIndex[1] = m_Dispatches.size();
     _PushPass("Clear (ui)");
     {
         PushOutput(0);
-        AddDispatchNoConstants( Clear_Uint, Clear_Uint, 1 );
+        AddDispatchNoConstants(Clear_Uint, Clear_Uint, 1);
     }
 
     PrepareDesc();
@@ -266,21 +249,18 @@ nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreati
     return Result::SUCCESS;
 }
 
-nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSettings)
-{
+nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSettings) {
     m_SplitScreenPrev = m_CommonSettings.splitScreen;
 
     memcpy(&m_CommonSettings, &commonSettings, sizeof(commonSettings));
 
     // Silently fix settings for known cases
-    if (m_IsFirstUse)
-    {
+    if (m_IsFirstUse) {
         m_CommonSettings.accumulationMode = AccumulationMode::CLEAR_AND_RESTART;
         m_IsFirstUse = false;
     }
 
-    if (m_CommonSettings.accumulationMode != AccumulationMode::CONTINUE)
-    {
+    if (m_CommonSettings.accumulationMode != AccumulationMode::CONTINUE) {
         m_SplitScreenPrev = 0.0f;
 
         m_WorldToViewPrev = m_WorldToView;
@@ -349,52 +329,41 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
     m_RotatorPost = Geometry::CombineRotators(Geometry::GetRotator(a2), Geometry::GetRotator(a3));
 
     // Main matrices
-    m_ViewToClip = float4x4
-    (
+    m_ViewToClip = float4x4(
         float4(m_CommonSettings.viewToClipMatrix),
         float4(m_CommonSettings.viewToClipMatrix + 4),
         float4(m_CommonSettings.viewToClipMatrix + 8),
-        float4(m_CommonSettings.viewToClipMatrix + 12)
-    );
+        float4(m_CommonSettings.viewToClipMatrix + 12));
 
-    m_ViewToClipPrev = float4x4
-    (
+    m_ViewToClipPrev = float4x4(
         float4(m_CommonSettings.viewToClipMatrixPrev),
         float4(m_CommonSettings.viewToClipMatrixPrev + 4),
         float4(m_CommonSettings.viewToClipMatrixPrev + 8),
-        float4(m_CommonSettings.viewToClipMatrixPrev + 12)
-    );
+        float4(m_CommonSettings.viewToClipMatrixPrev + 12));
 
-    m_WorldToView = float4x4
-    (
+    m_WorldToView = float4x4(
         float4(m_CommonSettings.worldToViewMatrix),
         float4(m_CommonSettings.worldToViewMatrix + 4),
         float4(m_CommonSettings.worldToViewMatrix + 8),
-        float4(m_CommonSettings.worldToViewMatrix + 12)
-    );
+        float4(m_CommonSettings.worldToViewMatrix + 12));
 
-    m_WorldToViewPrev = float4x4
-    (
+    m_WorldToViewPrev = float4x4(
         float4(m_CommonSettings.worldToViewMatrixPrev),
         float4(m_CommonSettings.worldToViewMatrixPrev + 4),
         float4(m_CommonSettings.worldToViewMatrixPrev + 8),
-        float4(m_CommonSettings.worldToViewMatrixPrev + 12)
-    );
+        float4(m_CommonSettings.worldToViewMatrixPrev + 12));
 
-    m_WorldPrevToWorld = float4x4
-    (
+    m_WorldPrevToWorld = float4x4(
         float4(m_CommonSettings.worldPrevToWorldMatrix),
         float4(m_CommonSettings.worldPrevToWorldMatrix + 4),
         float4(m_CommonSettings.worldPrevToWorldMatrix + 8),
-        float4(m_CommonSettings.worldPrevToWorldMatrix + 12)
-    );
+        float4(m_CommonSettings.worldPrevToWorldMatrix + 12));
 
     // Convert to LH
     uint32_t flags = 0;
     DecomposeProjection(STYLE_D3D, STYLE_D3D, m_ViewToClip, &flags, nullptr, nullptr, m_Frustum.a, nullptr, nullptr);
 
-    if ( !(flags & PROJ_LEFT_HANDED) )
-    {
+    if (!(flags & PROJ_LEFT_HANDED)) {
         m_ViewToClip[2] = -m_ViewToClip[2];
         m_ViewToClipPrev[2] = -m_ViewToClipPrev[2];
 
@@ -419,11 +388,11 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
     float3 translationDelta = cameraPositionPrev - cameraPosition;
 
     // IMPORTANT: this part is mandatory needed to preserve precision by making matrices camera relative
-    m_ViewToWorld.SetTranslation( float3::Zero() );
+    m_ViewToWorld.SetTranslation(float3::Zero());
     m_WorldToView = m_ViewToWorld;
     m_WorldToView.InvertOrtho();
 
-    m_ViewToWorldPrev.SetTranslation( translationDelta );
+    m_ViewToWorldPrev.SetTranslation(translationDelta);
     m_WorldToViewPrev = m_ViewToWorldPrev;
     m_WorldToViewPrev.InvertOrtho();
 
@@ -472,12 +441,9 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
     return isValid ? Result::SUCCESS : Result::INVALID_ARGUMENT;
 }
 
-nrd::Result nrd::InstanceImpl::SetDenoiserSettings(Identifier identifier, const void* denoiserSettings)
-{
-    for (DenoiserData& denoiserData : m_DenoiserData)
-    {
-        if (denoiserData.desc.identifier == identifier)
-        {
+nrd::Result nrd::InstanceImpl::SetDenoiserSettings(Identifier identifier, const void* denoiserSettings) {
+    for (DenoiserData& denoiserData : m_DenoiserData) {
+        if (denoiserData.desc.identifier == identifier) {
             memcpy(&denoiserData.settings, denoiserSettings, denoiserData.settingsSize);
 
             return Result::SUCCESS;
@@ -487,14 +453,12 @@ nrd::Result nrd::InstanceImpl::SetDenoiserSettings(Identifier identifier, const 
     return Result::INVALID_ARGUMENT;
 }
 
-nrd::Result nrd::InstanceImpl::GetComputeDispatches(const Identifier* identifiers, uint32_t identifiersNum, const DispatchDesc*& dispatchDescs, uint32_t& dispatchDescsNum)
-{
+nrd::Result nrd::InstanceImpl::GetComputeDispatches(const Identifier* identifiers, uint32_t identifiersNum, const DispatchDesc*& dispatchDescs, uint32_t& dispatchDescsNum) {
     m_ConstantDataOffset = 0;
     m_ActiveDispatches.clear();
 
     // Trivial checks
-    if (!identifiers || !identifiersNum)
-    {
+    if (!identifiers || !identifiersNum) {
         dispatchDescs = nullptr;
         dispatchDescsNum = 0;
 
@@ -502,16 +466,14 @@ nrd::Result nrd::InstanceImpl::GetComputeDispatches(const Identifier* identifier
     }
 
     // Inject "clear" calls if needed
-    if (m_CommonSettings.accumulationMode == AccumulationMode::CLEAR_AND_RESTART)
-    {
-        for (const ClearResource& clearResource : m_ClearResources)
-        {
+    if (m_CommonSettings.accumulationMode == AccumulationMode::CLEAR_AND_RESTART) {
+        for (const ClearResource& clearResource : m_ClearResources) {
             // If current denoiser is in list
             if (!IsInList(clearResource.identifier, identifiers, identifiersNum))
                 continue;
 
             // Add a clear dispatch
-            const InternalDispatchDesc& internalDispatchDesc = m_Dispatches[ m_DispatchClearIndex[clearResource.isInteger ? 1 : 0] ];
+            const InternalDispatchDesc& internalDispatchDesc = m_Dispatches[m_DispatchClearIndex[clearResource.isInteger ? 1 : 0]];
 
             uint16_t w = DivideUp(m_CommonSettings.resourceSize[0], clearResource.downsampleFactor);
             uint16_t h = DivideUp(m_CommonSettings.resourceSize[1], clearResource.downsampleFactor);
@@ -530,8 +492,7 @@ nrd::Result nrd::InstanceImpl::GetComputeDispatches(const Identifier* identifier
     }
 
     // Collect dispatches for requested denoisers
-    for (const DenoiserData& denoiserData : m_DenoiserData)
-    {
+    for (const DenoiserData& denoiserData : m_DenoiserData) {
         // If current denoiser is in list
         if (!IsInList(denoiserData.desc.identifier, identifiers, identifiersNum))
             continue;
@@ -539,18 +500,11 @@ nrd::Result nrd::InstanceImpl::GetComputeDispatches(const Identifier* identifier
         // Update denoiser and gather dispatches
         UpdatePingPong(denoiserData);
 
-        if (denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE || denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE_SH ||
-            denoiserData.desc.denoiser == Denoiser::REBLUR_SPECULAR || denoiserData.desc.denoiser == Denoiser::REBLUR_SPECULAR_SH ||
-            denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE_SPECULAR || denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE_SPECULAR_SH ||
-            denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE_DIRECTIONAL_OCCLUSION)
+        if (denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE || denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE_SH || denoiserData.desc.denoiser == Denoiser::REBLUR_SPECULAR || denoiserData.desc.denoiser == Denoiser::REBLUR_SPECULAR_SH || denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE_SPECULAR || denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE_SPECULAR_SH || denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE_DIRECTIONAL_OCCLUSION)
             Update_Reblur(denoiserData);
-        else if (denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE_OCCLUSION ||
-            denoiserData.desc.denoiser == Denoiser::REBLUR_SPECULAR_OCCLUSION ||
-            denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE_SPECULAR_OCCLUSION)
+        else if (denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE_OCCLUSION || denoiserData.desc.denoiser == Denoiser::REBLUR_SPECULAR_OCCLUSION || denoiserData.desc.denoiser == Denoiser::REBLUR_DIFFUSE_SPECULAR_OCCLUSION)
             Update_ReblurOcclusion(denoiserData);
-        else if (denoiserData.desc.denoiser == Denoiser::RELAX_DIFFUSE || denoiserData.desc.denoiser == Denoiser::RELAX_DIFFUSE_SH ||
-            denoiserData.desc.denoiser == Denoiser::RELAX_SPECULAR || denoiserData.desc.denoiser == Denoiser::RELAX_SPECULAR_SH ||
-            denoiserData.desc.denoiser == Denoiser::RELAX_DIFFUSE_SPECULAR || denoiserData.desc.denoiser == Denoiser::RELAX_DIFFUSE_SPECULAR_SH)
+        else if (denoiserData.desc.denoiser == Denoiser::RELAX_DIFFUSE || denoiserData.desc.denoiser == Denoiser::RELAX_DIFFUSE_SH || denoiserData.desc.denoiser == Denoiser::RELAX_SPECULAR || denoiserData.desc.denoiser == Denoiser::RELAX_SPECULAR_SH || denoiserData.desc.denoiser == Denoiser::RELAX_DIFFUSE_SPECULAR || denoiserData.desc.denoiser == Denoiser::RELAX_DIFFUSE_SPECULAR_SH)
             Update_Relax(denoiserData);
         else if (denoiserData.desc.denoiser == Denoiser::SIGMA_SHADOW || denoiserData.desc.denoiser == Denoiser::SIGMA_SHADOW_TRANSLUCENCY)
             Update_SigmaShadow(denoiserData);
@@ -559,12 +513,10 @@ nrd::Result nrd::InstanceImpl::GetComputeDispatches(const Identifier* identifier
     }
 
     // Maximize CB reuse
-    for (size_t i = 1; i < m_ActiveDispatches.size(); i++)
-    {
+    for (size_t i = 1; i < m_ActiveDispatches.size(); i++) {
         const DispatchDesc& dispatchDescPrev = m_ActiveDispatches[i - 1];
         DispatchDesc& dispatchDescCurr = m_ActiveDispatches[i];
-        if (dispatchDescPrev.constantBufferDataSize == dispatchDescCurr.constantBufferDataSize)
-        {
+        if (dispatchDescPrev.constantBufferDataSize == dispatchDescCurr.constantBufferDataSize) {
             if (!memcmp(dispatchDescPrev.constantBufferData, dispatchDescCurr.constantBufferData, dispatchDescCurr.constantBufferDataSize))
                 dispatchDescCurr.constantBufferDataMatchesPreviousDispatch = true;
         }
@@ -577,8 +529,7 @@ nrd::Result nrd::InstanceImpl::GetComputeDispatches(const Identifier* identifier
     return dispatchDescsNum ? Result::SUCCESS : Result::INVALID_ARGUMENT;
 }
 
-void nrd::InstanceImpl::AddComputeDispatchDesc
-(
+void nrd::InstanceImpl::AddComputeDispatchDesc(
     NumThreads numThreads,
     uint16_t downsampleFactor,
     uint32_t constantBufferDataSize,
@@ -586,21 +537,17 @@ void nrd::InstanceImpl::AddComputeDispatchDesc
     const char* shaderFileName,
     const ComputeShaderDesc& dxbc,
     const ComputeShaderDesc& dxil,
-    const ComputeShaderDesc& spirv
-)
-{
+    const ComputeShaderDesc& spirv) {
     // Pipeline (unique only)
     size_t pipelineIndex = 0;
-    for (; pipelineIndex < m_Pipelines.size(); pipelineIndex++)
-    {
+    for (; pipelineIndex < m_Pipelines.size(); pipelineIndex++) {
         const PipelineDesc& pipeline = m_Pipelines[pipelineIndex];
 
         if (!strcmp(pipeline.shaderFileName, shaderFileName))
             break;
     }
 
-    if (pipelineIndex == m_Pipelines.size())
-    {
+    if (pipelineIndex == m_Pipelines.size()) {
         PipelineDesc pipelineDesc = {};
         pipelineDesc.shaderFileName = shaderFileName;
         pipelineDesc.shaderEntryPointName = NRD_STRINGIFY(NRD_CS_MAIN);
@@ -610,26 +557,23 @@ void nrd::InstanceImpl::AddComputeDispatchDesc
         pipelineDesc.resourceRanges = (ResourceRangeDesc*)m_ResourceRanges.size();
         pipelineDesc.hasConstantData = constantBufferDataSize != 0;
 
-        for (size_t r = 0; r < 2; r++)
-        {
+        for (size_t r = 0; r < 2; r++) {
             ResourceRangeDesc descriptorRange = {};
             descriptorRange.descriptorType = r == 0 ? DescriptorType::TEXTURE : DescriptorType::STORAGE_TEXTURE;
 
-            for (size_t i = m_ResourceOffset; i < m_Resources.size(); i++ )
-            {
+            for (size_t i = m_ResourceOffset; i < m_Resources.size(); i++) {
                 const ResourceDesc& resource = m_Resources[i];
                 if (descriptorRange.descriptorType == resource.descriptorType)
                     descriptorRange.descriptorsNum++;
             }
 
-            if (descriptorRange.descriptorsNum != 0)
-            {
+            if (descriptorRange.descriptorsNum != 0) {
                 m_ResourceRanges.push_back(descriptorRange);
                 pipelineDesc.resourceRangesNum++;
             }
         }
 
-        m_Pipelines.push_back( pipelineDesc );
+        m_Pipelines.push_back(pipelineDesc);
     }
 
     // Dispatch
@@ -646,8 +590,7 @@ void nrd::InstanceImpl::AddComputeDispatchDesc
     m_Dispatches.push_back(dispatchDesc);
 }
 
-void nrd::InstanceImpl::PrepareDesc()
-{
+void nrd::InstanceImpl::PrepareDesc() {
     m_Desc = {};
 
     m_Desc.constantBufferRegisterIndex = NRD_CONSTANT_BUFFER_REGISTER_INDEX;
@@ -671,8 +614,7 @@ void nrd::InstanceImpl::PrepareDesc()
     constexpr bool samplersInSeparateSet = NRD_SAMPLERS_SPACE_INDEX != NRD_CONSTANT_BUFFER_AND_RESOURCES_SPACE_INDEX;
     m_Desc.samplersInSeparateSet = samplersInSeparateSet;
 
-    if (samplersInSeparateSet)
-    {
+    if (samplersInSeparateSet) {
         m_Desc.descriptorPoolDesc.totalSamplersNum += m_Desc.samplersNum;
         m_Desc.descriptorPoolDesc.setsMaxNum++;
     }
@@ -681,15 +623,13 @@ void nrd::InstanceImpl::PrepareDesc()
     Vector<const char*> unique(GetStdAllocator());
     unique.reserve(m_Dispatches.size());
 
-    for (InternalDispatchDesc& dispatchDesc : m_Dispatches)
-    {
+    for (InternalDispatchDesc& dispatchDesc : m_Dispatches) {
         size_t textureOffset = (size_t)dispatchDesc.resources;
         dispatchDesc.resources = &m_Resources[textureOffset];
 
         // Ignore permutations (we need only unique passes for descriptor pool limits)
         size_t n = 0;
-        for (;n < unique.size(); n++)
-        {
+        for (; n < unique.size(); n++) {
             // We can use "==" because all strings are static memory
             if (dispatchDesc.name == unique[n])
                 break;
@@ -704,17 +644,13 @@ void nrd::InstanceImpl::PrepareDesc()
 
         uint32_t texturesMaxNum = 0;
         uint32_t storageTexturesMaxNum = 0;
-        for (uint32_t i = 0; i < dispatchDesc.resourcesNum; i++)
-        {
+        for (uint32_t i = 0; i < dispatchDesc.resourcesNum; i++) {
             const ResourceDesc& resource = dispatchDesc.resources[i];
 
-            if (resource.descriptorType == DescriptorType::TEXTURE)
-            {
+            if (resource.descriptorType == DescriptorType::TEXTURE) {
                 m_Desc.descriptorPoolDesc.totalTexturesNum += dispatchDesc.maxRepeatNum;
                 texturesMaxNum++;
-            }
-            else if (resource.descriptorType == DescriptorType::STORAGE_TEXTURE)
-            {
+            } else if (resource.descriptorType == DescriptorType::STORAGE_TEXTURE) {
                 m_Desc.descriptorPoolDesc.totalStorageTexturesNum += dispatchDesc.maxRepeatNum;
                 storageTexturesMaxNum++;
             }
@@ -723,8 +659,7 @@ void nrd::InstanceImpl::PrepareDesc()
         if (!samplersInSeparateSet)
             m_Desc.descriptorPoolDesc.totalSamplersNum += dispatchDesc.maxRepeatNum * m_Desc.samplersNum;
 
-        if (dispatchDesc.constantBufferDataSize != 0)
-        {
+        if (dispatchDesc.constantBufferDataSize != 0) {
             m_Desc.descriptorPoolDesc.totalConstantBuffersNum += dispatchDesc.maxRepeatNum;
             m_Desc.constantBufferMaxDataSize = max(dispatchDesc.constantBufferDataSize, m_Desc.constantBufferMaxDataSize);
         }
@@ -742,17 +677,14 @@ void nrd::InstanceImpl::PrepareDesc()
         m_Desc.descriptorPoolDesc.totalSamplersNum += clearNum * m_Desc.samplersNum;
 
     // Assign resources
-    for (PipelineDesc& pipelineDesc : m_Pipelines)
-    {
+    for (PipelineDesc& pipelineDesc : m_Pipelines) {
         size_t descriptorRangeffset = (size_t)pipelineDesc.resourceRanges;
         pipelineDesc.resourceRanges = &m_ResourceRanges[descriptorRangeffset];
     }
 }
 
-void nrd::InstanceImpl::UpdatePingPong(const DenoiserData& denoiserData)
-{
-    for (uint32_t i = 0; i < denoiserData.pingPongNum; i++)
-    {
+void nrd::InstanceImpl::UpdatePingPong(const DenoiserData& denoiserData) {
+    for (uint32_t i = 0; i < denoiserData.pingPongNum; i++) {
         PingPong& pingPong = m_PingPongs[denoiserData.pingPongOffset + i];
         ResourceDesc& resource = m_Resources[pingPong.resourceIndex];
 
@@ -760,61 +692,50 @@ void nrd::InstanceImpl::UpdatePingPong(const DenoiserData& denoiserData)
     }
 }
 
-void nrd::InstanceImpl::PushTexture(DescriptorType descriptorType, uint16_t localIndex, uint16_t indexToSwapWith)
-{
+void nrd::InstanceImpl::PushTexture(DescriptorType descriptorType, uint16_t localIndex, uint16_t indexToSwapWith) {
     ResourceType resourceType = (ResourceType)localIndex;
     uint16_t globalIndex = 0;
 
-    if (localIndex >= TRANSIENT_POOL_START)
-    {
+    if (localIndex >= TRANSIENT_POOL_START) {
         resourceType = ResourceType::TRANSIENT_POOL;
         globalIndex = m_IndexRemap[localIndex - TRANSIENT_POOL_START];
 
-        if (indexToSwapWith != uint16_t(-1))
-        {
+        if (indexToSwapWith != uint16_t(-1)) {
             assert(indexToSwapWith >= TRANSIENT_POOL_START && indexToSwapWith < PERMANENT_POOL_START);
 
             indexToSwapWith = m_IndexRemap[indexToSwapWith - TRANSIENT_POOL_START];
-            m_PingPongs.push_back( {m_Resources.size(), indexToSwapWith} );
+            m_PingPongs.push_back({m_Resources.size(), indexToSwapWith});
         }
-    }
-    else if (localIndex >= PERMANENT_POOL_START)
-    {
+    } else if (localIndex >= PERMANENT_POOL_START) {
         resourceType = ResourceType::PERMANENT_POOL;
         globalIndex = m_PermanentPoolOffset + localIndex - PERMANENT_POOL_START;
 
-        if (indexToSwapWith != uint16_t(-1))
-        {
+        if (indexToSwapWith != uint16_t(-1)) {
             assert(indexToSwapWith >= PERMANENT_POOL_START);
 
             indexToSwapWith = m_PermanentPoolOffset + indexToSwapWith - PERMANENT_POOL_START;
-            m_PingPongs.push_back( {m_Resources.size(), indexToSwapWith} );
+            m_PingPongs.push_back({m_Resources.size(), indexToSwapWith});
         }
     }
 
-    m_Resources.push_back( {descriptorType, resourceType, globalIndex} );
+    m_Resources.push_back({descriptorType, resourceType, globalIndex});
 }
 
-void nrd::InstanceImpl::AddTextureToTransientPool(const TextureDesc& textureDesc)
-{
+void nrd::InstanceImpl::AddTextureToTransientPool(const TextureDesc& textureDesc) {
     // Try to find a replacement from previous denoisers
-    for (uint16_t i = 0; i < m_TransientPoolOffset; i++)
-    {
+    for (uint16_t i = 0; i < m_TransientPoolOffset; i++) {
         // Format and dimensions must match
         const TextureDesc& t = m_TransientPool[i];
-        if (t.format == textureDesc.format && t.downsampleFactor == textureDesc.downsampleFactor)
-        {
+        if (t.format == textureDesc.format && t.downsampleFactor == textureDesc.downsampleFactor) {
             // The candidate must not be already in use in the current denoiser
             size_t j = 0;
-            for (; j < m_IndexRemap.size(); j++)
-            {
+            for (; j < m_IndexRemap.size(); j++) {
                 if (m_IndexRemap[j] == i)
                     break;
             }
 
             // A replacement is found - reuse memory
-            if (j == m_IndexRemap.size())
-            {
+            if (j == m_IndexRemap.size()) {
                 m_IndexRemap.push_back(i);
 
                 return;
@@ -823,12 +744,11 @@ void nrd::InstanceImpl::AddTextureToTransientPool(const TextureDesc& textureDesc
     }
 
     // A replacement is not found - add memory
-    m_IndexRemap.push_back( (uint16_t)m_TransientPool.size() );
+    m_IndexRemap.push_back((uint16_t)m_TransientPool.size());
     m_TransientPool.push_back(textureDesc);
 }
 
-void* nrd::InstanceImpl::PushDispatch(const DenoiserData& denoiserData, uint32_t localIndex)
-{
+void* nrd::InstanceImpl::PushDispatch(const DenoiserData& denoiserData, uint32_t localIndex) {
     size_t dispatchIndex = denoiserData.dispatchOffset + localIndex;
     const InternalDispatchDesc& internalDispatchDesc = m_Dispatches[dispatchIndex];
 
@@ -841,12 +761,10 @@ void* nrd::InstanceImpl::PushDispatch(const DenoiserData& denoiserData, uint32_t
     dispatchDesc.pipelineIndex = internalDispatchDesc.pipelineIndex;
 
     // Update constant data
-    if (m_ConstantDataOffset + internalDispatchDesc.constantBufferDataSize > CONSTANT_DATA_SIZE)
-    {
+    if (m_ConstantDataOffset + internalDispatchDesc.constantBufferDataSize > CONSTANT_DATA_SIZE) {
         assert("Constant data doesn't fit into the prealocated array!" && false);
         dispatchDesc.constantBufferData = nullptr; // TODO: better crash
-    }
-    else
+    } else
         dispatchDesc.constantBufferData = m_ConstantData + m_ConstantDataOffset;
 
     dispatchDesc.constantBufferDataSize = internalDispatchDesc.constantBufferDataSize;
@@ -861,14 +779,11 @@ void* nrd::InstanceImpl::PushDispatch(const DenoiserData& denoiserData, uint32_t
     uint16_t h = m_CommonSettings.rectSize[1];
     uint16_t d = internalDispatchDesc.downsampleFactor;
 
-    if (d == USE_MAX_DIMS)
-    {
+    if (d == USE_MAX_DIMS) {
         w = max(w, m_CommonSettings.rectSizePrev[0]);
         h = max(h, m_CommonSettings.rectSizePrev[1]);
         d = 1;
-    }
-    else if (d == IGNORE_RS)
-    {
+    } else if (d == IGNORE_RS) {
         w = m_CommonSettings.resourceSize[0];
         h = m_CommonSettings.resourceSize[1];
         d = 1;

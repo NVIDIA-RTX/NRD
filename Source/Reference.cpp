@@ -12,18 +12,18 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 // REFERENCE
 #ifdef NRD_EMBEDS_DXBC_SHADERS
-    #include "REFERENCE_TemporalAccumulation.cs.dxbc.h"
-    #include "REFERENCE_Copy.cs.dxbc.h"
+#    include "REFERENCE_Copy.cs.dxbc.h"
+#    include "REFERENCE_TemporalAccumulation.cs.dxbc.h"
 #endif
 
 #ifdef NRD_EMBEDS_DXIL_SHADERS
-    #include "REFERENCE_TemporalAccumulation.cs.dxil.h"
-    #include "REFERENCE_Copy.cs.dxil.h"
+#    include "REFERENCE_Copy.cs.dxil.h"
+#    include "REFERENCE_TemporalAccumulation.cs.dxil.h"
 #endif
 
 #ifdef NRD_EMBEDS_SPIRV_SHADERS
-    #include "REFERENCE_TemporalAccumulation.cs.spirv.h"
-    #include "REFERENCE_Copy.cs.spirv.h"
+#    include "REFERENCE_Copy.cs.spirv.h"
+#    include "REFERENCE_TemporalAccumulation.cs.spirv.h"
 #endif
 
 #include "Denoisers/Reference.hpp"
