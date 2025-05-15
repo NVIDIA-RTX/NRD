@@ -6,9 +6,11 @@ include(FetchContent)
 # Options
 option(NRD_STATIC_LIBRARY "Build static library" OFF)
 option(NRD_EMBEDS_SPIRV_SHADERS "NRD embeds SPIRV shaders" ON)
+option(NRD_DISABLE_SHADER_COMPILATION "Disable shader compilation" OFF)
+option(NRD_NRI "Pull, build and include NRI into NRD SDK package" OFF)
+
 cmake_dependent_option(NRD_EMBEDS_DXIL_SHADERS "NRD embeds DXIL shaders" ON "WIN32" OFF)
 cmake_dependent_option(NRD_EMBEDS_DXBC_SHADERS "NRD embeds DXBC shaders" ON "WIN32" OFF)
-option(NRD_DISABLE_SHADER_COMPILATION "Disable shader compilation" OFF)
 
 # Is submodule?
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
@@ -23,7 +25,6 @@ if(NOT IS_SUBMODULE)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/_Bin" CACHE STRING "")
 endif()
 
-set(NRD_DXC_CUSTOM_PATH "custom/path/to/dxc" CACHE STRING "Custom DXC to use if Vulkan SDK is not installed")
 set(NRD_SHADERS_PATH "" CACHE STRING "Shader output path override")
 set(NRD_NORMAL_ENCODING "2" CACHE STRING "Normal encoding variant (0-4, matches nrd::NormalEncoding)")
 set(NRD_ROUGHNESS_ENCODING "1" CACHE STRING "Roughness encoding variant (0-2, matches nrd::RoughnessEncoding)")
@@ -36,10 +37,10 @@ string(REGEX MATCH "VERSION_MINOR ([0-9]*)" _ ${ver_h})
 set(VERSION_MINOR ${CMAKE_MATCH_1})
 string(REGEX MATCH "VERSION_BUILD ([0-9]*)" _ ${ver_h})
 set(VERSION_BUILD ${CMAKE_MATCH_1})
-message("NRD v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}")
+message("NRD: v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}")
 
 project(NRD LANGUAGES C CXX)
-message("NRD encoding: NRD_NORMAL_ENCODING = ${NRD_NORMAL_ENCODING}; NRD_ROUGHNESS_ENCODING = ${NRD_ROUGHNESS_ENCODING}")
+message("NRD: NRD_NORMAL_ENCODING = ${NRD_NORMAL_ENCODING}; NRD_ROUGHNESS_ENCODING = ${NRD_ROUGHNESS_ENCODING}")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -106,7 +107,7 @@ if(NRD_EMBEDS_DXBC_SHADERS)
 endif()
 
 if(WIN32)
-    set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} WIN32_LEAN_AND_MEAN NOMINMAX _CRT_SECURE_NO_WARNINGS _UNICODE UNICODE _ENFORCE_MATCHING_ALLOCATORS=0)
+    set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} WIN32_LEAN_AND_MEAN NOMINMAX _CRT_SECURE_NO_WARNINGS)
 endif()
 
 # Download dependencies
@@ -130,10 +131,39 @@ if(NOT TARGET MathLib)
     FetchContent_Declare(
         mathlib
         GIT_REPOSITORY https://github.com/NVIDIA-RTX/MathLib.git
-        GIT_TAG v1.3
+        GIT_TAG v1.4
         GIT_SHALLOW 1
     )
     list(APPEND DEPS mathlib)
+endif()
+
+if(NOT TARGET NRI AND NRD_NRI)
+    # Not needed...
+    option(NRI_ENABLE_D3D_EXTENSIONS "" OFF)
+    option(NRI_ENABLE_NVTX_SUPPORT "" OFF)
+    option(NRI_ENABLE_NONE_SUPPORT "" OFF)
+
+    # Not needed if no shaders
+    if(NOT NRD_EMBEDS_SPIRV_SHADERS)
+        option(NRI_ENABLE_VK_SUPPORT "" OFF)
+    endif()
+
+    if(NOT NRD_EMBEDS_DXIL_SHADERS)
+        option(NRI_ENABLE_D3D12_SUPPORT "" OFF)
+    endif()
+
+    if(NOT NRD_EMBEDS_DXBC_SHADERS)
+        option(NRI_ENABLE_D3D11_SUPPORT "" OFF)
+    endif()
+
+    # NRI
+    FetchContent_Declare(
+        nri
+        GIT_REPOSITORY https://github.com/NVIDIA-RTX/NRI.git
+        GIT_TAG main # TODO: add tag
+        GIT_SHALLOW 1
+    )
+    list(APPEND DEPS nri)
 endif()
 
 if(DEPS)
@@ -185,7 +215,7 @@ else()
     set(NRD_SHADER_BINARIES "--binary")
 endif()
 
-message("NRD shaders path: '${NRD_SHADERS_PATH}'")
+message("NRD: shaders path '${NRD_SHADERS_PATH}'")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE MathLib)
 target_include_directories(${PROJECT_NAME} PUBLIC "Include")
@@ -195,7 +225,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS})
 set_property(TARGET ${PROJECT_NAME} PROPERTY FOLDER ${PROJECT_NAME})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-message("NRD output path: '${CMAKE_RUNTIME_OUTPUT_DIRECTORY}'")
+message("NRD: output path '${CMAKE_RUNTIME_OUTPUT_DIRECTORY}'")
 
 # NRD integration
 file(GLOB GLOB_INTEGRATION "Integration/*")
@@ -223,7 +253,7 @@ if(NOT NRD_DISABLE_SHADER_COMPILATION)
 
     # ShaderMake general arguments
     get_target_property(ML_SOURCE_DIR MathLib INTERFACE_INCLUDE_DIRECTORIES)
-    message("NRD MathLib path: '${ML_SOURCE_DIR}'")
+    message("NRD: MathLib path '${ML_SOURCE_DIR}'")
 
     set(SHADERMAKE_GENERAL_ARGS
         --useAPI --flatten --stripReflection --WX

@@ -57,7 +57,6 @@ For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "
 CMake options:
 - `NRD_SHADERS_PATH` - shader output path override
 - `NRD_STATIC_LIBRARY` - build static library (OFF by default)
-- `NRD_DXC_CUSTOM_PATH` - custom DXC to use if Vulkan SDK is not installed
 - `NRD_NORMAL_ENCODING` - *normal* encoding for the entire library
 - `NRD_ROUGHNESS_ENCODING` - *roughness* encoding for the entire library
 - `NRD_EMBEDS_DXBC_SHADERS` - *NRD* compiles and embeds DXBC shaders (ON by default on Windows)
@@ -76,7 +75,7 @@ Tested platforms:
 
 SDK packaging:
 - Compile the solution (*Debug* / *Release* or both, depending on what you want to get in *NRD* package)
-- Run `3-Prepare NRD SDK`
+- Run `3-PrepareSDK`
 - Grab generated in the root directory `_NRD_SDK` and `_NRI_SDK` (if needed) folders and use them in your project
 
 # HOW TO UPDATE?

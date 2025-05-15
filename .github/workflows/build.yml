@@ -40,16 +40,6 @@ jobs:
           $Env:Path += ";C:/VulkanSDK/Bin"
           .\2-Build.bat
 
-      - name: Prepare
-        run: |
-          &'.\3-Prepare NRD SDK.bat' --shaders
-
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: NRD SDK
-          path: _NRD_SDK
-
   Build-Ubuntu:
     runs-on: ubuntu-22.04
     steps:
