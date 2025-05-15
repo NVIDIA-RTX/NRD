@@ -1,31 +1,5 @@
-# cmake
-CMakeFiles/
-.cmake/
-*.dir/
-*.tlog/
-CMakeCache.txt
-cmake_install.cmake
-*.recipe
-
-# make
-Makefile
-
-# VS
-*.vcxproj*
-*.sln
-.vs/
-
 # VS Code
 .vscode/
-
-# shaders
-*.dxbc
-*.dxil
-*.spirv
-*.dxbc.h
-*.dxil.h
-*.spirv.h
-NRDEncoding.hlsli
 
 # ninja
 .ninja_deps
@@ -34,17 +8,10 @@ build.ninja
 compile_commands.json
 *.log
 
-# library
-*.lib
-*.exp
-*.dll
-*.ilk
-*.pdb
-*.so
-*.so.*
-*.manifest
-
-# generated folders
+# generated
 _Bin/
 _Build/
+_Shaders/
 _NRD_SDK/
+_NRI_SDK/
+NRDEncoding.hlsli
