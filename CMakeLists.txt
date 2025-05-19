@@ -62,10 +62,14 @@ file(WRITE Shaders/Include/NRDEncoding.hlsli
     "#define NRD_ROUGHNESS_ENCODING ${NRD_ROUGHNESS_ENCODING}\n")
 
 # Compile options
+if(NOT(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64") OR(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64"))
+    set(SIMD -msse3 -mssse3)
+endif()
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(COMPILE_OPTIONS -Wextra)
+    set(COMPILE_OPTIONS ${SIMD} -Wextra)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    set(COMPILE_OPTIONS -Wextra)
+    set(COMPILE_OPTIONS ${SIMD} -Wextra)
 elseif(MSVC)
     set(COMPILE_OPTIONS /W4 /WX
         /wd4324 # padding was added at the end of a structure because you specified an alignment specifier
