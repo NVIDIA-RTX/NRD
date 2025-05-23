@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - master
+
 jobs:
   Build-Windows:
     runs-on: windows-latest
@@ -20,25 +21,11 @@ jobs:
         with:
           args: install windows-sdk-10.0 cmake -y
 
-      - name: Install Vulkan
-        run: |
-          $ver = (Invoke-WebRequest -Uri "https://vulkan.lunarg.com/sdk/latest.json" | ConvertFrom-Json).windows
-           echo "Downloading Vulkan SDK from https://sdk.lunarg.com/sdk/download/$ver/windows/vulkansdk-windows-X64-$ver.exe"
-          $ProgressPreference = 'SilentlyContinue'
-           Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ver/windows/vulkansdk-windows-X64-$ver.exe" -OutFile VulkanSDK.exe
-          .\VulkanSDK.exe --root C:\VulkanSDK --accept-licenses --default-answer --confirm-command install
-
       - name: Deploy
-        run: |
-          $Env:VULKAN_SDK = "C:/VulkanSDK/"
-          $Env:Path += ";C:/VulkanSDK/Bin"
-          .\1-Deploy.bat
+        run: .\1-Deploy.bat
 
       - name: Build
-        run: |
-          $Env:VULKAN_SDK = "C:/VulkanSDK/"
-          $Env:Path += ";C:/VulkanSDK/Bin"
-          .\2-Build.bat
+        run: .\2-Build.bat
 
   Build-Ubuntu:
     runs-on: ubuntu-22.04
@@ -56,23 +43,8 @@ jobs:
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
 
-      - name: Install Vulkan
-        run: |
-          sudo apt install -y wget
-          wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.asc
-          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list https://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
-          sudo apt update
-          sudo apt install -y vulkan-sdk
-
       - name: Deploy
-        run: |
-          mkdir "build"
-          cd "build"
-          cmake -G Ninja ..
-          cd ..
+        run: bash 1-Deploy.sh
 
       - name: Build
-        run: |
-          cd "build"
-          cmake --build .
-          cd ..
+        run: bash 2-Build.sh
