@@ -16,7 +16,7 @@ NRD_CONSTANTS_START( REFERENCE_CopyConstants )
 NRD_CONSTANTS_END
 
 NRD_INPUTS_START
-    NRD_OUTPUT( Texture2D<float4>, gIn_Input, t, 0 )
+    NRD_INPUT( Texture2D<float4>, gIn_Input, t, 0 )
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
