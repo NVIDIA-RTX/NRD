@@ -41,11 +41,7 @@ For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "
 
 # HOW TO BUILD?
 
-- Install [*Cmake*](https://cmake.org/download/) 3.16+
-- Install on
-    - Windows: latest *WindowsSDK* and *VulkanSDK*
-    - Linux (x86-64): latest *VulkanSDK*
-    - Linux (aarch64): find a precompiled binary for [*DXC*](https://github.com/microsoft/DirectXShaderCompiler) or disable shader compilation `NRD_EMBEDS_SPIRV_SHADERS=OFF`
+- Install [*Cmake*](https://cmake.org/download/) 3.22+
 - Build (variant 1) - using *Git* and *CMake* explicitly
     - Clone project and init submodules
     - Generate and build the project using *CMake*
@@ -66,13 +62,6 @@ CMake options:
 
 `NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING` can be defined only *once* during project deployment. These settings are dumped in `NRDEncoding.hlsli` file, which needs to be optionally included on the application side prior `NRD.hlsli` inclusion to deliver encoding settings matching *NRD* settings. `LibraryDesc` includes encoding settings too. It can be used to verify that the library meets the application expectations.
 
-Tested platforms:
-
-| OS                | Architectures  | Compilers   |
-|-------------------|----------------|-------------|
-| Windows           | AMD64          | MSVC, Clang |
-| Linux             | AMD64, ARM64   | GCC, Clang  |
-
 SDK packaging:
 - Compile the solution (*Debug* / *Release* or both, depending on what you want to get in *NRD* package)
 - Run `3-PrepareSDK`
@@ -80,7 +69,7 @@ SDK packaging:
 
 # HOW TO UPDATE?
 
-- Clone latest with all dependencies
+- Clone latest
 - Run `4-Clean.bat`
 - Run `1-Deploy`
 - Run `2-Build`
@@ -455,7 +444,7 @@ instanceCreationDesc.denoisers = denoiserDescs;
 instanceCreationDesc.denoisersNum = 2;
 
 nrd::IntegrationCreationDesc integrationCreationDesc = {};
-integrationCreationDesc.name = "NRD";
+strncpy(integrationCreationDesc.name, "NRD", sizeof(integrationCreationDesc.name));
 integrationCreationDesc.queuedFrameNum = 3; // i.e. number of frames "in-flight"
 integrationCreationDesc.enableWholeLifetimeDescriptorCaching = false; // safer, but unrecommended
 integrationCreationDesc.autoWaitForIdle = true; // for lazy people
@@ -467,7 +456,7 @@ integrationCreationDesc.resourceWidth = resourceWidth;
 integrationCreationDesc.resourceHeight = resourceHeight;
 
 // Also NRD needs to be recreated on "resize"
-bool result = NRD.RecreateD3D12(integrationCreationDesc, instanceCreationDesc, deviceCreationD3D12Desc);
+nrd::Result result = NRD.RecreateD3D12(integrationCreationDesc, instanceCreationDesc, deviceCreationD3D12Desc);
 
 //=======================================================================================================
 // PREPARE
@@ -527,7 +516,7 @@ if (!resourceSnapshot.restoreInitialState)
     }
 }
 
-// IMPORTANT: NRD integration binds own descriptor pool, don't forget to restore your pool (heap) if needed
+// IMPORTANT: NRD integration binds own descriptor pool and pipeline layout (root signature), don't forget to restore them if needed
 
 //=======================================================================================================
 // SHUTDOWN - DESTROY
