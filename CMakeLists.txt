@@ -142,8 +142,6 @@ if(NOT TARGET NRI AND NRD_NRI)
     option(NRI_ENABLE_D3D_EXTENSIONS "" OFF)
     option(NRI_ENABLE_NVTX_SUPPORT "" OFF)
     option(NRI_ENABLE_NONE_SUPPORT "" OFF)
-    option(NRI_ENABLE_WAYLAND_SUPPORT "" OFF)
-    option(NRI_ENABLE_XLIB_SUPPORT "" OFF)
 
     # Not needed if no shaders
     if(NOT NRD_EMBEDS_SPIRV_SHADERS)
