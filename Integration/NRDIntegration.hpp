@@ -95,7 +95,7 @@ static inline uint64_t CreateDescriptorKey(uint64_t texture, bool isStorage) {
 }
 
 template <typename T, typename A>
-constexpr T GetAlignedSize(const T& size, A alignment) {
+constexpr T Align(const T& size, A alignment) {
     return T(((size + alignment - 1) / alignment) * alignment);
 }
 
@@ -342,7 +342,7 @@ bool Integration::_CreateResources() {
     }
 
     { // Constant buffer
-        m_ConstantBufferViewSize = GetAlignedSize(instanceDesc.constantBufferMaxDataSize, deviceDesc.memoryAlignment.constantBufferOffset);
+        m_ConstantBufferViewSize = Align(instanceDesc.constantBufferMaxDataSize, deviceDesc.memoryAlignment.constantBufferOffset);
         m_ConstantBufferSize = uint64_t(m_ConstantBufferViewSize) * instanceDesc.descriptorPoolDesc.setsMaxNum * m_Desc.queuedFrameNum;
 
         nri::BufferDesc bufferDesc = {};
@@ -870,16 +870,15 @@ void Integration::_Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPo
             if (m_ConstantBufferOffset + m_ConstantBufferViewSize > m_ConstantBufferSize)
                 m_ConstantBufferOffset = 0;
 
+            dynamicConstantBufferOffset = m_ConstantBufferOffset;
+            m_ConstantBufferOffset += m_ConstantBufferViewSize;
+
             // Upload CB data
-            void* data = m_iCore.MapBuffer(*m_ConstantBuffer, m_ConstantBufferOffset, dispatchDesc.constantBufferDataSize);
+            void* data = m_iCore.MapBuffer(*m_ConstantBuffer, dynamicConstantBufferOffset, dispatchDesc.constantBufferDataSize);
             if (data) {
                 memcpy(data, dispatchDesc.constantBufferData, dispatchDesc.constantBufferDataSize);
                 m_iCore.UnmapBuffer(*m_ConstantBuffer);
             }
-
-            // Ring-buffer logic
-            dynamicConstantBufferOffset = m_ConstantBufferOffset;
-            m_ConstantBufferOffset += m_ConstantBufferViewSize;
 
             // Save previous offset for potential CB data reuse
             m_ConstantBufferOffsetPrev = dynamicConstantBufferOffset;

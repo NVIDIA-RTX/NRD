@@ -77,7 +77,7 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
     [[maybe_unused]] uint16_t rectWprev = m_CommonSettings.rectSizePrev[0]; \
     [[maybe_unused]] uint16_t rectHprev = m_CommonSettings.rectSizePrev[1];
 
-// IMPORTANT: needed only for DXBC produced by ShaderMake without "--useAPI"
+// IMPORTANT: needed only for DXBC
 #undef BYTE
 #define BYTE uint8_t
 
