@@ -58,7 +58,6 @@ CMake options:
 - `NRD_EMBEDS_DXBC_SHADERS` - *NRD* compiles and embeds DXBC shaders (ON by default on Windows)
 - `NRD_EMBEDS_DXIL_SHADERS` - *NRD* compiles and embeds DXIL shaders (ON by default on Windows)
 - `NRD_EMBEDS_SPIRV_SHADERS` - *NRD* compiles and embeds SPIRV shaders (ON by default)
-- `NRD_DISABLE_SHADER_COMPILATION` - disable shader compilation on the *NRD* side, *NRD* assumes that shaders are already compiled externally and have been put into `NRD_SHADERS_PATH` folder
 
 `NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING` can be defined only *once* during project deployment. These settings are dumped in `NRDEncoding.hlsli` file, which needs to be optionally included on the application side prior `NRD.hlsli` inclusion to deliver encoding settings matching *NRD* settings. `LibraryDesc` includes encoding settings too. It can be used to verify that the library meets the application expectations.
 
