@@ -120,8 +120,7 @@ if(NOT TARGET ShaderMake AND NOT NRD_DISABLE_SHADER_COMPILATION)
     FetchContent_Declare(
         shadermake
         GIT_REPOSITORY https://github.com/NVIDIA-RTX/ShaderMake.git
-        GIT_TAG main
-        GIT_SHALLOW 1
+        GIT_TAG 674e713091cf76b4b9c9c67eb094ba3fd440f306
     )
     list(APPEND DEPS shadermake)
 endif()
