@@ -259,8 +259,6 @@ get_target_property(ML_SOURCE_DIR MathLib INTERFACE_INCLUDE_DIRECTORIES)
 message("NRD: MathLib path '${ML_SOURCE_DIR}'")
 
 set(SHADERMAKE_GENERAL_ARGS
-    --project "NRD"
-    --compactProgress
     --flatten
     --stripReflection
     --WX
@@ -282,6 +280,16 @@ set(SHADERMAKE_GENERAL_ARGS
     -D NRD_ROUGHNESS_ENCODING=${NRD_ROUGHNESS_ENCODING}
     -D NRD_INTERNAL
 )
+
+if (SHADERMAKE_PATH)
+    set(SHADERMAKE_GENERAL_ARGS ${SHADERMAKE_GENERAL_ARGS} --project "NRD" --compactProgress)
+else()
+    # TODO: needed only to support integrations in products with old ShaderMake
+    set(SHADERMAKE_PATH "ShaderMake")
+    set(SHADERMAKE_DXC_PATH ${DXC_PATH})
+    set(SHADERMAKE_DXC_VK_PATH ${DXC_SPIRV_PATH})
+    set(SHADERMAKE_FXC_PATH ${FXC_PATH})
+endif()
 
 # ShaderMake commands for each shader code container
 set(SHADERMAKE_COMMANDS "")
