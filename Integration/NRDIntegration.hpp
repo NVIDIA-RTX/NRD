@@ -17,7 +17,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #endif
 
 static_assert(NRD_VERSION_MAJOR >= 4 && NRD_VERSION_MINOR >= 15, "Unsupported NRD version!");
-static_assert(NRI_VERSION >= 170, "Unsupported NRI version!");
+static_assert(NRI_VERSION >= 171, "Unsupported NRI version!");
 
 #define NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(expr) \
     if ((expr) != nri::Result::SUCCESS) \
@@ -149,7 +149,7 @@ Result Integration::Recreate(const IntegrationCreationDesc& integrationDesc, con
     return result;
 }
 
-#ifdef NRI_WRAPPER_D3D11
+#ifdef NRI_WRAPPER_D3D11_H
 Result Integration::RecreateD3D11(const IntegrationCreationDesc& nrdIntegrationDesc, const InstanceCreationDesc& instanceCreationDesc, const nri::DeviceCreationD3D11Desc& deviceCreationD3D11Desc) {
     Destroy();
 
@@ -166,7 +166,7 @@ Result Integration::RecreateD3D11(const IntegrationCreationDesc& nrdIntegrationD
 }
 #endif
 
-#ifdef NRI_WRAPPER_D3D12
+#ifdef NRI_WRAPPER_D3D12_H
 Result Integration::RecreateD3D12(const IntegrationCreationDesc& nrdIntegrationDesc, const InstanceCreationDesc& instanceCreationDesc, const nri::DeviceCreationD3D12Desc& deviceCreationD3D12Desc) {
     Destroy();
 
@@ -183,7 +183,7 @@ Result Integration::RecreateD3D12(const IntegrationCreationDesc& nrdIntegrationD
 }
 #endif
 
-#ifdef NRI_WRAPPER_VK
+#ifdef NRI_WRAPPER_VK_H
 Result Integration::RecreateVK(const IntegrationCreationDesc& nrdIntegrationDesc, const InstanceCreationDesc& instanceCreationDesc, const nri::DeviceCreationVKDesc& deviceCreationVKDesc) {
     Destroy();
 
@@ -644,7 +644,7 @@ void Integration::Denoise(const Identifier* denoisers, uint32_t denoisersNum, nr
     }
 }
 
-#ifdef NRI_WRAPPER_D3D11
+#ifdef NRI_WRAPPER_D3D11_H
 void Integration::DenoiseD3D11(const Identifier* denoisers, uint32_t denoisersNum, const nri::CommandBufferD3D11Desc& commandBufferD3D11Desc, ResourceSnapshot& resourceSnapshot) {
     NRD_INTEGRATION_ASSERT(m_Wrapped == nri::GraphicsAPI::D3D11, "GAPI mismatch");
 
@@ -675,7 +675,7 @@ void Integration::DenoiseD3D11(const Identifier* denoisers, uint32_t denoisersNu
 }
 #endif
 
-#ifdef NRI_WRAPPER_D3D12
+#ifdef NRI_WRAPPER_D3D12_H
 void Integration::DenoiseD3D12(const Identifier* denoisers, uint32_t denoisersNum, const nri::CommandBufferD3D12Desc& commandBufferD3D12Desc, ResourceSnapshot& resourceSnapshot) {
     NRD_INTEGRATION_ASSERT(m_Wrapped == nri::GraphicsAPI::D3D12, "GAPI mismatch");
 
@@ -706,7 +706,7 @@ void Integration::DenoiseD3D12(const Identifier* denoisers, uint32_t denoisersNu
 }
 #endif
 
-#ifdef NRI_WRAPPER_VK
+#ifdef NRI_WRAPPER_VK_H
 void Integration::DenoiseVK(const Identifier* denoisers, uint32_t denoisersNum, const nri::CommandBufferVKDesc& commandBufferVKDesc, ResourceSnapshot& resourceSnapshot) {
     NRD_INTEGRATION_ASSERT(m_Wrapped == nri::GraphicsAPI::VK, "GAPI mismatch");
 

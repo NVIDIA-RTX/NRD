@@ -23,7 +23,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #    error "NRI.h" is not included
 #endif
 
-#ifndef NRI_HELPER
+#ifndef NRI_HELPER_H
 #    error "Extensions/NRIHelper.h" is not included
 #endif
 
@@ -58,7 +58,7 @@ struct TextureNRI {
 };
 
 // For "RecreateD3D11" and "DenoiseD3D11"
-#ifdef NRI_WRAPPER_D3D11
+#ifdef NRI_WRAPPER_D3D11_H
 struct TextureD3D11 {
     ID3D11Resource* resource;
     DXGIFormat format; // (optional) needed only if the resource is typeless
@@ -66,7 +66,7 @@ struct TextureD3D11 {
 #endif
 
 // For "RecreateD3D12" and "DenoiseD3D12"
-#ifdef NRI_WRAPPER_D3D12
+#ifdef NRI_WRAPPER_D3D12_H
 struct TextureD3D12 {
     ID3D12Resource* resource;
     DXGIFormat format; // (optional) needed only if the resource is typeless
@@ -74,7 +74,7 @@ struct TextureD3D12 {
 #endif
 
 // For "RecreateVK" and "DenoiseVK"
-#ifdef NRI_WRAPPER_VK
+#ifdef NRI_WRAPPER_VK_H
 struct TextureVK {
     VKNonDispatchableHandle image;
     VKEnum format;
@@ -89,13 +89,13 @@ struct Resource {
     // FOR INTERNAL USE ONLY
     union {
         TextureNRI nri = {};
-#ifdef NRI_WRAPPER_D3D11
+#ifdef NRI_WRAPPER_D3D11_H
         TextureD3D11 d3d11;
 #endif
-#ifdef NRI_WRAPPER_D3D12
+#ifdef NRI_WRAPPER_D3D12_H
         TextureD3D12 d3d12;
 #endif
-#ifdef NRI_WRAPPER_VK
+#ifdef NRI_WRAPPER_VK_H
         TextureVK vk;
 #endif
     };
@@ -211,13 +211,13 @@ struct Integration {
 
     // Creation and re-creation, aka resize. "Destroy" is called under the hood
     Result Recreate(const IntegrationCreationDesc& nrdIntegrationDesc, const InstanceCreationDesc& instanceCreationDesc, nri::Device* device);
-#ifdef NRI_WRAPPER_D3D11
+#ifdef NRI_WRAPPER_D3D11_H
     Result RecreateD3D11(const IntegrationCreationDesc& nrdIntegrationDesc, const InstanceCreationDesc& instanceCreationDesc, const nri::DeviceCreationD3D11Desc& deviceCreationD3D11Desc);
 #endif
-#ifdef NRI_WRAPPER_D3D12
+#ifdef NRI_WRAPPER_D3D12_H
     Result RecreateD3D12(const IntegrationCreationDesc& nrdIntegrationDesc, const InstanceCreationDesc& instanceCreationDesc, const nri::DeviceCreationD3D12Desc& deviceCreationD3D12Desc);
 #endif
-#ifdef NRI_WRAPPER_VK
+#ifdef NRI_WRAPPER_VK_H
     Result RecreateVK(const IntegrationCreationDesc& nrdIntegrationDesc, const InstanceCreationDesc& instanceCreationDesc, const nri::DeviceCreationVKDesc& deviceCreationVKDesc);
 #endif
 
@@ -233,13 +233,13 @@ struct Integration {
     // which must be used as "before" state in next "barrier" calls. The initial state of resources
     // can be restored by using "resourceSnapshot.restoreInitialState = true" (suboptimal).
     void Denoise(const Identifier* denoisers, uint32_t denoisersNum, nri::CommandBuffer& commandBuffer, ResourceSnapshot& resourceSnapshot);
-#ifdef NRI_WRAPPER_D3D11
+#ifdef NRI_WRAPPER_D3D11_H
     void DenoiseD3D11(const Identifier* denoisers, uint32_t denoisersNum, const nri::CommandBufferD3D11Desc& commandBufferD3D11Desc, ResourceSnapshot& resourceSnapshot);
 #endif
-#ifdef NRI_WRAPPER_D3D12
+#ifdef NRI_WRAPPER_D3D12_H
     void DenoiseD3D12(const Identifier* denoisers, uint32_t denoisersNum, const nri::CommandBufferD3D12Desc& commandBufferD3D12Desc, ResourceSnapshot& resourceSnapshot);
 #endif
-#ifdef NRI_WRAPPER_VK
+#ifdef NRI_WRAPPER_VK_H
     void DenoiseVK(const Identifier* denoisers, uint32_t denoisersNum, const nri::CommandBufferVKDesc& commandBufferVKDesc, ResourceSnapshot& resourceSnapshot);
 #endif
 
@@ -285,13 +285,13 @@ private:
     std::map<uint64_t, nri::Descriptor*> m_CachedDescriptors;
     IntegrationCreationDesc m_Desc = {};
     nri::CoreInterface m_iCore = {};
-#ifdef NRI_WRAPPER_D3D11
+#ifdef NRI_WRAPPER_D3D11_H
     nri::WrapperD3D11Interface m_iWrapperD3D11 = {};
 #endif
-#ifdef NRI_WRAPPER_D3D12
+#ifdef NRI_WRAPPER_D3D12_H
     nri::WrapperD3D12Interface m_iWrapperD3D12 = {};
 #endif
-#ifdef NRI_WRAPPER_VK
+#ifdef NRI_WRAPPER_VK_H
     nri::WrapperVKInterface m_iWrapperVK = {};
 #endif
     nri::Device* m_Device = nullptr;
