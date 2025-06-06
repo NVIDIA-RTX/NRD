@@ -24,6 +24,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_USE_SCREEN_SPACE_SAMPLING_FOR_DIFFUSE            1 // almost matches world-space sampling but simpler code
 
 // Switches ( default 0 )
+#define REBLUR_PERFORMANCE_MODE                                 0 // better perf, worse IQ
 #define REBLUR_USE_SCREEN_SPACE_SAMPLING_FOR_SPECULAR           0 // specular is more complicated
 #define REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION      0 // compression helps to preserve "lobe important" values
 #define REBLUR_USE_OLD_SMB_FALLBACK_LOGIC                       0 // TODO: here to avoid regressions
@@ -196,7 +197,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #endif
 */
 
-#ifdef REBLUR_PERFORMANCE_MODE
+#if( REBLUR_PERFORMANCE_MODE == 1 )
     #undef REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA
     #define REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA          0
 

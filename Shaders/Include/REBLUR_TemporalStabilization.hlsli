@@ -116,7 +116,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 diffLumaM2 += d * d;
 
                 // RCRS
-                #ifndef REBLUR_PERFORMANCE_MODE
+                #if( REBLUR_PERFORMANCE_MODE == 0 )
                     diffMin = min( diffMin, d );
                     diffMax = max( diffMax, d );
                 #endif
@@ -129,7 +129,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float diffLumaSigma = GetStdDev( diffLumaM1, diffLumaM2 );
 
         // RCRS
-        #ifndef REBLUR_PERFORMANCE_MODE
+        #if( REBLUR_PERFORMANCE_MODE == 0 )
             [flatten]
             if( gMaxBlurRadius != 0 )
                 diffLuma = clamp( diffLuma, diffMin, diffMax );
@@ -209,7 +209,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 specLumaM2 += s * s;
 
                 // RCRS
-                #ifndef REBLUR_PERFORMANCE_MODE
+                #if( REBLUR_PERFORMANCE_MODE == 0 )
                     specMin = min( specMin, s );
                     specMax = max( specMax, s );
                 #endif
@@ -222,7 +222,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float specLumaSigma = GetStdDev( specLumaM1, specLumaM2 );
 
         // RCRS
-        #ifndef REBLUR_PERFORMANCE_MODE
+        #if( REBLUR_PERFORMANCE_MODE == 0 )
             [flatten]
             if( gMaxBlurRadius != 0 )
                 specLuma = clamp( specLuma, specMin, specMax );

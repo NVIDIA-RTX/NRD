@@ -85,13 +85,10 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
             PushOutput(SPEC_TEMP1);
 
             // Shaders
-            if (is5x5) {
+            if (is5x5)
                 AddDispatch(REBLUR_DiffuseSpecularOcclusion_HitDistReconstruction_5x5, REBLUR_HitDistReconstruction, 1);
-                AddDispatch(REBLUR_Perf_DiffuseSpecularOcclusion_HitDistReconstruction_5x5, REBLUR_HitDistReconstruction, 1);
-            } else {
+            else
                 AddDispatch(REBLUR_DiffuseSpecularOcclusion_HitDistReconstruction, REBLUR_HitDistReconstruction, 1);
-                AddDispatch(REBLUR_Perf_DiffuseSpecularOcclusion_HitDistReconstruction, REBLUR_HitDistReconstruction, 1);
-            }
         }
     }
 
@@ -131,7 +128,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
 
             // Shaders
             AddDispatch(REBLUR_DiffuseSpecularOcclusion_TemporalAccumulation, REBLUR_TemporalAccumulation, 1);
-            AddDispatch(REBLUR_Perf_DiffuseSpecularOcclusion_TemporalAccumulation, REBLUR_TemporalAccumulation, 1);
         }
     }
 
@@ -155,7 +151,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
 
         // Shaders
         AddDispatch(REBLUR_DiffuseSpecularOcclusion_HistoryFix, REBLUR_HistoryFix, 1);
-        AddDispatch(REBLUR_Perf_DiffuseSpecularOcclusion_HistoryFix, REBLUR_HistoryFix, 1);
     }
 
     PushPass("Blur");
@@ -175,7 +170,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
 
         // Shaders
         AddDispatch(REBLUR_DiffuseSpecularOcclusion_Blur, REBLUR_Blur, 1);
-        AddDispatch(REBLUR_Perf_DiffuseSpecularOcclusion_Blur, REBLUR_Blur, 1);
     }
 
     PushPass("Post-blur");
@@ -198,7 +192,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
 
         // Shaders
         AddDispatch(REBLUR_DiffuseSpecularOcclusion_PostBlur_NoTemporalStabilization, REBLUR_PostBlur, 1);
-        AddDispatch(REBLUR_Perf_DiffuseSpecularOcclusion_PostBlur_NoTemporalStabilization, REBLUR_PostBlur, 1);
     }
 
     PushPass("Split screen");

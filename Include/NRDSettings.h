@@ -282,6 +282,10 @@ namespace nrd
         // [1; 3] - undesired sporadic outliers suppression to keep output stable (smaller values maximize suppression in exchange of bias)
         float fireflySuppressorMinRelativeScale = 2.0f;
 
+        // (Optional) material ID comparison: max(m0, minMaterial) == max(m1, minMaterial) (requires "NormalEncoding::R10_G10_B10_A2_UNORM")
+        float minMaterialForDiffuse = 4.0f;
+        float minMaterialForSpecular = 4.0f;
+
         // If not OFF and used for DIFFUSE_SPECULAR, defines diffuse orientation, specular orientation is the opposite
         CheckerboardMode checkerboardMode = CheckerboardMode::OFF;
 
@@ -290,13 +294,6 @@ namespace nrd
 
         // Adds bias in case of badly defined signals, but tries to fight with fireflies
         bool enableAntiFirefly = false;
-
-        // Boosts performance by sacrificing IQ
-        bool enablePerformanceMode = false;
-
-        // (Optional) material ID comparison: max(m0, minMaterial) == max(m1, minMaterial) (requires "NormalEncoding::R10_G10_B10_A2_UNORM")
-        float minMaterialForDiffuse = 4.0f;
-        float minMaterialForSpecular = 4.0f;
 
         // In rare cases, when bright samples are so sparse that any other bright neighbor can't
         // be reached, pre-pass transforms a standalone bright pixel into a standalone bright blob,
@@ -411,15 +408,15 @@ namespace nrd
         // Must be used only in case of probabilistic sampling (not checkerboarding), when a pixel can be skipped and have "0" (invalid) hit distance
         HitDistanceReconstructionMode hitDistanceReconstructionMode = HitDistanceReconstructionMode::OFF;
 
+        // (Optional) material ID comparison: max(m0, minMaterial) == max(m1, minMaterial) (requires "NormalEncoding::R10_G10_B10_A2_UNORM")
+        float minMaterialForDiffuse = 4.0f;
+        float minMaterialForSpecular = 4.0f;
+
         // Firefly suppression
         bool enableAntiFirefly = false;
 
         // Roughness based rejection
         bool enableRoughnessEdgeStopping = true;
-
-        // (Optional) material ID comparison: max(m0, minMaterial) == max(m1, minMaterial) (requires "NormalEncoding::R10_G10_B10_A2_UNORM")
-        float minMaterialForDiffuse = 4.0f;
-        float minMaterialForSpecular = 4.0f;
     };
 
     //====================================================================================================================================================

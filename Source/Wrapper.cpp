@@ -145,87 +145,81 @@ NRD_API nrd::Result NRD_CALL nrd::CreateInstance(const InstanceCreationDesc& ins
                 {
                     for (size_t passPermutation = 0; passPermutation < passPermutationNums[pass]; passPermutation++)
                     {
-                        for (uint32_t perf = 0; perf < 2; perf++)
+                        // Skip "PostBlur" for "Occlusion" denoisers
+                        if (permutation == 1 && pass == 5 && passPermutation == 0)
+                            continue;
+
+                        // Skip "TemporalStabilization" for "Occlusion" denoisers
+                        if (permutation == 1 && pass == 7)
+                            continue;
+
+                        // Skip "CopyStabilizedHistory" for "Occlusion" & "DirectionalOcclusion" denoisers
+                        if ((permutation == 1 || permutation == 3) && pass == 6)
+                            continue;
+
+                        // Skip "CopyStabilizedHistory" for performance mode
+                        if (pass == 6)
+                            continue;
+
+                        // Skip "HitDistReconstruction" for "Sh" & "DirectionalOcclusion" denoisers
+                        if (permutation > 1 && pass == 0)
+                            continue;
+
+                        // Skip non-diffuse "DirectionalOcclusion" denoisers
+                        if (type != 0 && permutation == 3)
+                            continue;
+
+                        // Skip "SplitScreen" for "Occlusion" & "DirectionalOcclusion" denoisers
+                        if ((permutation == 1 || permutation == 3) && pass == 8)
+                            continue;
+
+                        // Skip "SplitScreen" for performance mode
+                        if (pass == 8)
+                            continue;
+
+                        char filename[256];
+                        snprintf(filename, sizeof(filename) - 1, "./_temp/REBLUR_%s%s_%s%s.cs.hlsl",
+                            typeNames[type],
+                            permutationNames[permutation],
+                            passNames[pass],
+                            passPermutation == 0 ? "" : passPermutationNames[pass]
+                        );
+
+                        FILE* fp = fopen(filename, "w");
+                        if (fp)
                         {
-                            // Skip "PostBlur" for "Occlusion" denoisers
-                            if (permutation == 1 && pass == 5 && passPermutation == 0)
-                                continue;
-
-                            // Skip "TemporalStabilization" for "Occlusion" denoisers
-                            if (permutation == 1 && pass == 7)
-                                continue;
-
-                            // Skip "CopyStabilizedHistory" for "Occlusion" & "DirectionalOcclusion" denoisers
-                            if ((permutation == 1 || permutation == 3) && pass == 6)
-                                continue;
-
-                            // Skip "CopyStabilizedHistory" for performance mode
-                            if (pass == 6 && perf == 1)
-                                continue;
-
-                            // Skip "HitDistReconstruction" for "Sh" & "DirectionalOcclusion" denoisers
-                            if (permutation > 1 && pass == 0)
-                                continue;
-
-                            // Skip non-diffuse "DirectionalOcclusion" denoisers
-                            if (type != 0 && permutation == 3)
-                                continue;
-
-                            // Skip "SplitScreen" for "Occlusion" & "DirectionalOcclusion" denoisers
-                            if ((permutation == 1 || permutation == 3) && pass == 8)
-                                continue;
-
-                            // Skip "SplitScreen" for performance mode
-                            if (pass == 8 && perf == 1)
-                                continue;
-
-                            char filename[256];
-                            snprintf(filename, sizeof(filename) - 1, "./_temp/REBLUR_%s%s%s_%s%s.cs.hlsl",
-                                perf == 0 ? "" : "Perf_",
-                                typeNames[type],
-                                permutationNames[permutation],
+                            fprintf(fp,
+                                "/*\n"
+                                "Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.\n"
+                                "\n"
+                                "NVIDIA CORPORATION and its licensors retain all intellectual property\n"
+                                "and proprietary rights in and to this software, related documentation\n"
+                                "and any modifications thereto. Any use, reproduction, disclosure or\n"
+                                "distribution of this software and related documentation without an express\n"
+                                "license agreement from NVIDIA CORPORATION is strictly prohibited.\n"
+                                "*/\n"
+                                "\n"
+                                "#include \"NRD.hlsli\"\n"
+                                "#include \"ml.hlsli\"\n"
+                                "\n"
+                                "%s"
+                                "%s"
+                                "%s"
+                                "\n"
+                                "#include \"REBLUR/REBLUR_Config.hlsli\"\n"
+                                "#include \"REBLUR_DiffuseSpecular_%s.resources.hlsli\"\n"
+                                "\n"
+                                "#include \"Common.hlsli\"\n"
+                                "%s"
+                                "#include \"REBLUR/REBLUR_DiffuseSpecular_%s.hlsli\"\n",
+                                typeMacros[type],
+                                permutationMacros[permutation],
+                                passPermutation == 0 ? "" : passPermutationMacros[pass],
                                 passNames[pass],
-                                passPermutation == 0 ? "" : passPermutationNames[pass]
+                                pass == 6 ? "" : "#include \"REBLUR/REBLUR_Common.hlsli\"\n",
+                                passNames[pass]
                             );
-
-                            FILE* fp = fopen(filename, "w");
-                            if (fp)
-                            {
-                                fprintf(fp,
-                                    "/*\n"
-                                    "Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.\n"
-                                    "\n"
-                                    "NVIDIA CORPORATION and its licensors retain all intellectual property\n"
-                                    "and proprietary rights in and to this software, related documentation\n"
-                                    "and any modifications thereto. Any use, reproduction, disclosure or\n"
-                                    "distribution of this software and related documentation without an express\n"
-                                    "license agreement from NVIDIA CORPORATION is strictly prohibited.\n"
-                                    "*/\n"
-                                    "\n"
-                                    "#include \"NRD.hlsli\"\n"
-                                    "#include \"ml.hlsli\"\n"
-                                    "\n"
-                                    "%s"
-                                    "%s"
-                                    "%s"
-                                    "%s"
-                                    "\n"
-                                    "#include \"REBLUR/REBLUR_Config.hlsli\"\n"
-                                    "#include \"REBLUR_DiffuseSpecular_%s.resources.hlsli\"\n"
-                                    "\n"
-                                    "#include \"Common.hlsli\"\n"
-                                    "%s"
-                                    "#include \"REBLUR/REBLUR_DiffuseSpecular_%s.hlsli\"\n",
-                                    perf == 0 ? "" : "#define REBLUR_PERFORMANCE_MODE\n",
-                                    typeMacros[type],
-                                    permutationMacros[permutation],
-                                    passPermutation == 0 ? "" : passPermutationMacros[pass],
-                                    passNames[pass],
-                                    pass == 6 ? "" : "#include \"REBLUR/REBLUR_Common.hlsli\"\n",
-                                    passNames[pass]
-                                );
-                                fclose(fp);
-                            }
+                            fclose(fp);
                         }
                     }
                 }

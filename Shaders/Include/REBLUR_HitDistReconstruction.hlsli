@@ -103,7 +103,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
 
             float2 ww = w;
-            #ifndef REBLUR_PERFORMANCE_MODE
+            #if( REBLUR_PERFORMANCE_MODE == 0 )
                 float4 normalAndRoughness = s_Normal_Roughness[ pos.y ][ pos.x ];
 
                 float cosa = dot( N, normalAndRoughness.xyz );

@@ -118,7 +118,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv, diffNonLinearAccumSpeed );
 
             float sumd = 1.0 + frameNum.x;
-            #ifdef REBLUR_PERFORMANCE_MODE
+            #if( REBLUR_PERFORMANCE_MODE == 1 )
                 sumd = 1.0 + 1.0 / ( 1.0 + gMaxAccumulatedFrameNum ) - diffNonLinearAccumSpeed;
             #endif
 
@@ -169,7 +169,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     w *= CompareMaterials( materialID, materialIDs, gDiffMinMaterial );
                     w *= ComputeExponentialWeight( angle, normalWeightParam, 0.0 );
 
-                    #ifndef REBLUR_PERFORMANCE_MODE
+                    #if( REBLUR_PERFORMANCE_MODE == 0 )
                         w *= 1.0 + UnpackData1( gIn_Data1[ pos ] ).x;
                     #endif
 
@@ -322,7 +322,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float2 hitDistanceWeightParams = GetHitDistanceWeightParams( hitDistFactor, specNonLinearAccumSpeed, roughness );
 
             float sums = 1.0 + frameNum.y;
-            #ifdef REBLUR_PERFORMANCE_MODE
+            #if( REBLUR_PERFORMANCE_MODE == 1 )
                 sums = 1.0 + 1.0 / ( 1.0 + gMaxAccumulatedFrameNum ) - specNonLinearAccumSpeed;
             #endif
 
@@ -368,7 +368,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     w *= ComputeExponentialWeight( angle, normalWeightParam, 0.0 );
                     w *= ComputeExponentialWeight( Ns.w * Ns.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
 
-                    #ifndef REBLUR_PERFORMANCE_MODE
+                    #if( REBLUR_PERFORMANCE_MODE == 0 )
                         w *= 1.0 + UnpackData1( gIn_Data1[ pos ] ).y;
                     #endif
 

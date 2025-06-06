@@ -88,13 +88,10 @@ void nrd::InstanceImpl::Add_ReblurSpecularSh(DenoiserData& denoiserData) {
             PushOutput(isPrepassEnabled ? SPEC_TEMP2 : SPEC_TEMP1);
 
             // Shaders
-            if (is5x5) {
+            if (is5x5)
                 AddDispatch(REBLUR_Specular_HitDistReconstruction_5x5, REBLUR_HitDistReconstruction, 1);
-                AddDispatch(REBLUR_Perf_Specular_HitDistReconstruction_5x5, REBLUR_HitDistReconstruction, 1);
-            } else {
+            else
                 AddDispatch(REBLUR_Specular_HitDistReconstruction, REBLUR_HitDistReconstruction, 1);
-                AddDispatch(REBLUR_Perf_Specular_HitDistReconstruction, REBLUR_HitDistReconstruction, 1);
-            }
         }
     }
 
@@ -117,7 +114,6 @@ void nrd::InstanceImpl::Add_ReblurSpecularSh(DenoiserData& denoiserData) {
 
             // Shaders
             AddDispatch(REBLUR_SpecularSh_PrePass, REBLUR_PrePass, 1);
-            AddDispatch(REBLUR_Perf_SpecularSh_PrePass, REBLUR_PrePass, 1);
         }
     }
 
@@ -156,7 +152,6 @@ void nrd::InstanceImpl::Add_ReblurSpecularSh(DenoiserData& denoiserData) {
 
             // Shaders
             AddDispatch(REBLUR_SpecularSh_TemporalAccumulation, REBLUR_TemporalAccumulation, 1);
-            AddDispatch(REBLUR_Perf_SpecularSh_TemporalAccumulation, REBLUR_TemporalAccumulation, 1);
         }
     }
 
@@ -177,7 +172,6 @@ void nrd::InstanceImpl::Add_ReblurSpecularSh(DenoiserData& denoiserData) {
         PushOutput(SPEC_SH_TEMP1);
 
         AddDispatch(REBLUR_SpecularSh_HistoryFix, REBLUR_HistoryFix, 1);
-        AddDispatch(REBLUR_Perf_SpecularSh_HistoryFix, REBLUR_HistoryFix, 1);
     }
 
     PushPass("Blur");
@@ -197,7 +191,6 @@ void nrd::InstanceImpl::Add_ReblurSpecularSh(DenoiserData& denoiserData) {
 
         // Shaders
         AddDispatch(REBLUR_SpecularSh_Blur, REBLUR_Blur, 1);
-        AddDispatch(REBLUR_Perf_SpecularSh_Blur, REBLUR_Blur, 1);
     }
 
     for (int i = 0; i < REBLUR_POST_BLUR_PERMUTATION_NUM; i++) {
@@ -226,13 +219,10 @@ void nrd::InstanceImpl::Add_ReblurSpecularSh(DenoiserData& denoiserData) {
             PushOutput(AsUint(Permanent::SPEC_SH_HISTORY));
 
             // Shaders
-            if (isTemporalStabilization) {
+            if (isTemporalStabilization)
                 AddDispatch(REBLUR_SpecularSh_PostBlur, REBLUR_PostBlur, 1);
-                AddDispatch(REBLUR_Perf_SpecularSh_PostBlur, REBLUR_PostBlur, 1);
-            } else {
+            else
                 AddDispatch(REBLUR_SpecularSh_PostBlur_NoTemporalStabilization, REBLUR_PostBlur, 1);
-                AddDispatch(REBLUR_Perf_SpecularSh_PostBlur_NoTemporalStabilization, REBLUR_PostBlur, 1);
-            }
         }
     }
 
@@ -262,7 +252,6 @@ void nrd::InstanceImpl::Add_ReblurSpecularSh(DenoiserData& denoiserData) {
 
             // Shaders
             AddDispatch(REBLUR_SpecularSh_TemporalStabilization, REBLUR_TemporalStabilization, 1);
-            AddDispatch(REBLUR_Perf_SpecularSh_TemporalStabilization, REBLUR_TemporalStabilization, 1);
         }
     }
 

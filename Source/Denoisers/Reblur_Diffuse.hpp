@@ -76,13 +76,10 @@ void nrd::InstanceImpl::Add_ReblurDiffuse(DenoiserData& denoiserData) {
             PushOutput(isPrepassEnabled ? DIFF_TEMP2 : DIFF_TEMP1);
 
             // Shaders
-            if (is5x5) {
+            if (is5x5)
                 AddDispatch(REBLUR_Diffuse_HitDistReconstruction_5x5, REBLUR_HitDistReconstruction, 1);
-                AddDispatch(REBLUR_Perf_Diffuse_HitDistReconstruction_5x5, REBLUR_HitDistReconstruction, 1);
-            } else {
+            else
                 AddDispatch(REBLUR_Diffuse_HitDistReconstruction, REBLUR_HitDistReconstruction, 1);
-                AddDispatch(REBLUR_Perf_Diffuse_HitDistReconstruction, REBLUR_HitDistReconstruction, 1);
-            }
         }
     }
 
@@ -102,7 +99,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuse(DenoiserData& denoiserData) {
 
             // Shaders
             AddDispatch(REBLUR_Diffuse_PrePass, REBLUR_PrePass, 1);
-            AddDispatch(REBLUR_Perf_Diffuse_PrePass, REBLUR_PrePass, 1);
         }
     }
 
@@ -135,7 +131,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuse(DenoiserData& denoiserData) {
 
             // Shaders
             AddDispatch(REBLUR_Diffuse_TemporalAccumulation, REBLUR_TemporalAccumulation, 1);
-            AddDispatch(REBLUR_Perf_Diffuse_TemporalAccumulation, REBLUR_TemporalAccumulation, 1);
         }
     }
 
@@ -155,7 +150,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuse(DenoiserData& denoiserData) {
 
         // Shaders
         AddDispatch(REBLUR_Diffuse_HistoryFix, REBLUR_HistoryFix, 1);
-        AddDispatch(REBLUR_Perf_Diffuse_HistoryFix, REBLUR_HistoryFix, 1);
     }
 
     PushPass("Blur");
@@ -173,7 +167,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuse(DenoiserData& denoiserData) {
 
         // Shaders
         AddDispatch(REBLUR_Diffuse_Blur, REBLUR_Blur, 1);
-        AddDispatch(REBLUR_Perf_Diffuse_Blur, REBLUR_Blur, 1);
     }
 
     for (int i = 0; i < REBLUR_POST_BLUR_PERMUTATION_NUM; i++) {
@@ -198,13 +191,10 @@ void nrd::InstanceImpl::Add_ReblurDiffuse(DenoiserData& denoiserData) {
             }
 
             // Shaders
-            if (isTemporalStabilization) {
+            if (isTemporalStabilization)
                 AddDispatch(REBLUR_Diffuse_PostBlur, REBLUR_PostBlur, 1);
-                AddDispatch(REBLUR_Perf_Diffuse_PostBlur, REBLUR_PostBlur, 1);
-            } else {
+            else
                 AddDispatch(REBLUR_Diffuse_PostBlur_NoTemporalStabilization, REBLUR_PostBlur, 1);
-                AddDispatch(REBLUR_Perf_Diffuse_PostBlur_NoTemporalStabilization, REBLUR_PostBlur, 1);
-            }
         }
     }
 
@@ -228,7 +218,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuse(DenoiserData& denoiserData) {
 
             // Shaders
             AddDispatch(REBLUR_Diffuse_TemporalStabilization, REBLUR_TemporalStabilization, 1);
-            AddDispatch(REBLUR_Perf_Diffuse_TemporalStabilization, REBLUR_TemporalStabilization, 1);
         }
     }
 

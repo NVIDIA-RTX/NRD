@@ -69,13 +69,10 @@ void nrd::InstanceImpl::Add_ReblurDiffuseOcclusion(DenoiserData& denoiserData) {
             PushOutput(DIFF_TEMP1);
 
             // Shaders
-            if (is5x5) {
+            if (is5x5)
                 AddDispatch(REBLUR_DiffuseOcclusion_HitDistReconstruction_5x5, REBLUR_HitDistReconstruction, 1);
-                AddDispatch(REBLUR_Perf_DiffuseOcclusion_HitDistReconstruction_5x5, REBLUR_HitDistReconstruction, 1);
-            } else {
+            else
                 AddDispatch(REBLUR_DiffuseOcclusion_HitDistReconstruction, REBLUR_HitDistReconstruction, 1);
-                AddDispatch(REBLUR_Perf_DiffuseOcclusion_HitDistReconstruction, REBLUR_HitDistReconstruction, 1);
-            }
         }
     }
 
@@ -107,7 +104,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuseOcclusion(DenoiserData& denoiserData) {
 
             // Shaders
             AddDispatch(REBLUR_DiffuseOcclusion_TemporalAccumulation, REBLUR_TemporalAccumulation, 1);
-            AddDispatch(REBLUR_Perf_DiffuseOcclusion_TemporalAccumulation, REBLUR_TemporalAccumulation, 1);
         }
     }
 
@@ -127,7 +123,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuseOcclusion(DenoiserData& denoiserData) {
 
         // Shaders
         AddDispatch(REBLUR_DiffuseOcclusion_HistoryFix, REBLUR_HistoryFix, 1);
-        AddDispatch(REBLUR_Perf_DiffuseOcclusion_HistoryFix, REBLUR_HistoryFix, 1);
     }
 
     PushPass("Blur");
@@ -145,7 +140,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuseOcclusion(DenoiserData& denoiserData) {
 
         // Shaders
         AddDispatch(REBLUR_DiffuseOcclusion_Blur, REBLUR_Blur, 1);
-        AddDispatch(REBLUR_Perf_DiffuseOcclusion_Blur, REBLUR_Blur, 1);
     }
 
     PushPass("Post-blur");
@@ -165,7 +159,6 @@ void nrd::InstanceImpl::Add_ReblurDiffuseOcclusion(DenoiserData& denoiserData) {
 
         // Shaders
         AddDispatch(REBLUR_DiffuseOcclusion_PostBlur_NoTemporalStabilization, REBLUR_PostBlur, 1);
-        AddDispatch(REBLUR_Perf_DiffuseOcclusion_PostBlur_NoTemporalStabilization, REBLUR_PostBlur, 1);
     }
 
     PushPass("Split screen");
