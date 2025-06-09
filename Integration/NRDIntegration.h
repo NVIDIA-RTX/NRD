@@ -159,6 +159,11 @@ struct ResourceSnapshot {
 
         NRD_INTEGRATION_ASSERT(false, "Unexpected!");
     }
+
+    // The structure stores pointers to itself, thus can't be copied
+    ResourceSnapshot(const ResourceSnapshot&) = delete;
+    ResourceSnapshot& operator=(const ResourceSnapshot&) = delete;
+    ResourceSnapshot() = default;
 };
 
 //===================================================================================================
