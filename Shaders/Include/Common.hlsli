@@ -48,6 +48,10 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 // DEFAULT SETTINGS ( can be modified )
 //==================================================================================================================
 
+// CMake options
+#define NRD_USE_VIEWPORT_OFFSET                                 0 // enable if "CommonSettings::rectOrigin" is needed
+#define NRD_USE_CHECKERBOARD                                    1 // enable if checkerboard support is needed
+
 // Switches ( default 1 )
 #define NRD_USE_TILE_CHECK                                      1 // significantly improves performance by skipping computations in "empty" regions
 #define NRD_USE_HIGH_PARALLAX_CURVATURE                         1 // flattens surface on high motion
@@ -61,7 +65,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define NRD_USE_QUADRATIC_DISTRIBUTION                          0
 #define NRD_USE_EXPONENTIAL_WEIGHTS                             0
 #define NRD_USE_HIGH_PARALLAX_CURVATURE_SILHOUETTE_FIX          0 // it fixes silhouettes, but leads to less flattening on bumpy surfaces ( worse for bumpy surfaces ) and shorter arcs on smooth curved surfaces ( worse for low bit normals )
-#define NRD_USE_VIEWPORT_OFFSET                                 0 // enable if "CommonSettings::rectOrigin" is used
 
 // Settings
 #define NRD_DISOCCLUSION_THRESHOLD                              0.02 // normalized % // TODO: use CommonSettings::disocclusionThreshold?

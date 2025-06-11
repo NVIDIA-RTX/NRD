@@ -595,7 +595,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float diffuseAlphaResponsive = (SMBReprojectionFound > 0) ? max(1.0 / (diffMaxFastAccumulatedFrameNum + 1.0), 1.0 / diffHistoryLength) : 1.0;
 
     bool diffHasData = true;
-    if (gDiffCheckerboard != 2)
+    if (NRD_USE_CHECKERBOARD == 1 && gDiffCheckerboard != 2)
         diffHasData = checkerboard == gDiffCheckerboard;
 
     if ((!diffHasData) && (diffHistoryLength > 1.0))
@@ -852,7 +852,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     specSMBResponsiveAlpha = max(specSMBAlpha, 1.0 / (1.0 + specHistoryResponsiveFrames));
 
     bool specHasData = true;
-    if (gSpecCheckerboard != 2)
+    if (NRD_USE_CHECKERBOARD == 1 && gSpecCheckerboard != 2)
         specHasData = checkerboard == gSpecCheckerboard;
 
     if (!specHasData && (smbParallaxInPixelsMax < 0.5))

@@ -27,6 +27,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Checkerboard resolve weights
+#if( NRD_USE_CHECKERBOARD == 1 )
     uint checkerboard = Sequence::CheckerBoard(pixelPos, gFrameIndex);
 
     int3 checkerboardPos = pixelPos.xxy + int3( -1, 1, 0 );
@@ -58,6 +59,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     }
 
     checkerboardPos.xy >>= 1;
+#endif
 
     float centerMaterialID;
     float4 centerNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(pixelPos)], centerMaterialID);
@@ -72,11 +74,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #ifdef RELAX_DIFFUSE
     bool diffHasData = true;
     int2 diffPos = pixelPos;
+#if( NRD_USE_CHECKERBOARD == 1 )
     if (gDiffCheckerboard != 2)
     {
         diffHasData = (checkerboard == gDiffCheckerboard);
         diffPos.x >>= 1;
     }
+#endif
 
     // Reading diffuse & resolving diffuse checkerboard
     float4 diffuseIllumination = gIn_Diff[diffPos];
@@ -84,6 +88,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float4 diffuseSH = gIn_DiffSh[diffPos];
     #endif
 
+#if( NRD_USE_CHECKERBOARD == 1 )
     if (!diffHasData)
     {
         float2 wc = checkerboardResolveWeights;
@@ -107,6 +112,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             diffuseSH = d0SH * wc.x + d1SH * wc.y;
         #endif
     }
+#endif
 
     // Pre-blur for diffuse
     if (gDiffBlurRadius > 0)
@@ -137,7 +143,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // Sample coordinates
             float2 uv = pixelUv * gRectSize + Geometry::RotateVector(rotator, offset.xy) * blurRadius;
             uv = floor(uv) + 0.5;
+        #if( NRD_USE_CHECKERBOARD == 1 )
             uv = ApplyCheckerboardShift(uv, gDiffCheckerboard, i, gFrameIndex) * gRectSizeInv;
+        #endif
 
             float2 uvScaled = ClampUvToViewport( uv );
             float2 checkerboardUvScaled = float2( uvScaled.x * ( gDiffCheckerboard != 2 ? 0.5 : 1.0 ), uvScaled.y );
@@ -197,11 +205,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     bool specHasData = true;
     int2 specPos = pixelPos;
+#if( NRD_USE_CHECKERBOARD == 1 )
     if (gSpecCheckerboard != 2)
     {
         specHasData = (checkerboard == gSpecCheckerboard);
         specPos.x >>= 1;
     }
+#endif
 
     // Reading specular & resolving specular checkerboard
     float4 specularIllumination = gIn_Spec[specPos];
@@ -209,6 +219,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float4 specularSH = gIn_SpecSh[specPos];
     #endif
 
+#if( NRD_USE_CHECKERBOARD == 1 )
     if (!specHasData)
     {
         float2 wc = checkerboardResolveWeights;
@@ -232,6 +243,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             specularSH = s0SH * wc.x + s1SH * wc.y;
         #endif
     }
+#endif
 
     specularIllumination.a = max(0, min(gDenoisingRange, specularIllumination.a));
 
@@ -280,7 +292,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // Sample coordinates
             float2 uv = pixelUv * gRectSize + Geometry::RotateVector(rotator, offset.xy) * blurRadius;
             uv = floor(uv) + 0.5;
+        #if( NRD_USE_CHECKERBOARD == 1 )
             uv = ApplyCheckerboardShift(uv, gSpecCheckerboard, i, gFrameIndex) * gRectSizeInv;
+        #endif
 
             float2 uvScaled = ClampUvToViewport( uv );
             float2 checkerboardUvScaled = float2( uvScaled.x * ( gSpecCheckerboard != 2 ? 0.5 : 1.0 ), uvScaled.y );

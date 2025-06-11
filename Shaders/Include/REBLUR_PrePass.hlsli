@@ -41,6 +41,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     const float4 rotator = GetBlurKernelRotation( REBLUR_PRE_BLUR_ROTATOR_MODE, pixelPos, gRotatorPre, gFrameIndex );
 
     // Checkerboard resolve
+#if( NRD_USE_CHECKERBOARD == 1 )
     uint checkerboard = Sequence::CheckerBoard( pixelPos, gFrameIndex );
 
     int3 checkerboardPos = pixelPos.xxy + int3( -1, 1, 0 );
@@ -54,6 +55,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     wc.y = ( viewZ1 > gDenoisingRange || pixelPos.x >= gRectSizeMinusOne.x ) ? 0.0 : wc.y;
     wc *= Math::PositiveRcp( wc.x + wc.y );
     checkerboardPos.xy >>= 1;
+#endif
 
     // Spatial filtering
     #define REBLUR_SPATIAL_MODE REBLUR_PRE_BLUR
@@ -69,6 +71,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 diffSh = gIn_DiffSh[ pos ];
         #endif
 
+    #if( NRD_USE_CHECKERBOARD == 1 )
         if( gDiffCheckerboard != 2 && checkerboard != gDiffCheckerboard )
         {
             sum = 0;
@@ -77,6 +80,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 diffSh = 0;
             #endif
         }
+    #endif
 
         #include "REBLUR_Common_DiffuseSpatialFilter.hlsli"
     }
@@ -93,6 +97,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 specSh = gIn_SpecSh[ pos ];
         #endif
 
+    #if( NRD_USE_CHECKERBOARD == 1 )
         if( gSpecCheckerboard != 2 && checkerboard != gSpecCheckerboard )
         {
             sum = 0;
@@ -101,6 +106,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 specSh = 0;
             #endif
         }
+    #endif
 
         #include "REBLUR_Common_SpecularSpatialFilter.hlsli"
     }

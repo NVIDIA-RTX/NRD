@@ -334,7 +334,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         smbSpecAccumSpeed = min( smbSpecAccumSpeed, gMaxAccumulatedFrameNum );
 
         // Current
-        bool specHasData = gSpecCheckerboard == 2 || checkerboard == gSpecCheckerboard;
+        bool specHasData = NRD_USE_CHECKERBOARD == 0 || gSpecCheckerboard == 2 || checkerboard == gSpecCheckerboard;
         uint2 specPos = pixelPos;
         #ifdef REBLUR_OCCLUSION
             specPos.x >>= gSpecCheckerboard == 2 ? 0 : 1;
@@ -840,7 +840,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         diffAccumSpeed = min( diffAccumSpeed, gMaxAccumulatedFrameNum );
 
         // Current
-        bool diffHasData = gDiffCheckerboard == 2 || checkerboard == gDiffCheckerboard;
+        bool diffHasData = NRD_USE_CHECKERBOARD == 0 || gDiffCheckerboard == 2 || checkerboard == gDiffCheckerboard;
         uint2 diffPos = pixelPos;
         #ifdef REBLUR_OCCLUSION
             diffPos.x >>= gDiffCheckerboard == 2 ? 0 : 1;

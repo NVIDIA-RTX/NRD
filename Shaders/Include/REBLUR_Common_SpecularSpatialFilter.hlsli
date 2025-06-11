@@ -138,7 +138,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             uv = floor( uv * gRectSize ) + 0.5;
 
             // Apply checkerboard shift
-        #if( REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
+        #if( NRD_USE_CHECKERBOARD == 1 && REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
             uv = ApplyCheckerboardShift( uv, gSpecCheckerboard, n, gFrameIndex );
         #endif
 
@@ -147,7 +147,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
             float2 uvScaled = ClampUvToViewport( uv );
             float2 checkerboardUvScaled = uvScaled;
-        #if( REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
+        #if( NRD_USE_CHECKERBOARD == 1 && REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
             if( gSpecCheckerboard != 2 )
                 checkerboardUvScaled.x *= 0.5;
         #endif
@@ -221,6 +221,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         gOut_SpecHitDistForTracking[ pixelPos ] = hitDistForTracking == NRD_INF ? 0.0 : hitDistForTracking;
     }
 
+#if( NRD_USE_CHECKERBOARD == 1 )
     // Checkerboard resolve ( if pre-pass failed )
     [branch]
     if( sum == 0.0 )
@@ -243,6 +244,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             specSh = sh0 * wc.x + sh1 * wc.y;
         #endif
     }
+#endif
 #endif
 
     // Output
