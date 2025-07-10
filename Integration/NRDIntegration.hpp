@@ -17,7 +17,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #endif
 
 static_assert(NRD_VERSION_MAJOR >= 4 && NRD_VERSION_MINOR >= 15, "Unsupported NRD version!");
-static_assert(NRI_VERSION >= 171, "Unsupported NRI version!");
+static_assert(NRI_VERSION >= 172, "Unsupported NRI version!");
 
 #define NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(expr) \
     if ((expr) != nri::Result::SUCCESS) \
@@ -301,7 +301,7 @@ bool Integration::_CreateResources() {
             { // Construct NRD texture
                 Resource& resource = m_TexturePool[i];
                 resource.nri.texture = texture;
-                resource.state = {nri::AccessBits::UNKNOWN, nri::Layout::UNKNOWN};
+                resource.state = {nri::AccessBits::NONE, nri::Layout::UNDEFINED};
             }
 
             { // Adjust memory usage
@@ -620,7 +620,7 @@ void Integration::Denoise(const Identifier* denoisers, uint32_t denoisersNum, nr
             const nri::AccessLayoutStage& initialState = initialStates[i];
 
             bool isDifferent = resource.state.access != initialState.access || resource.state.layout != initialState.layout;
-            bool isUnknown = initialState.access == nri::AccessBits::UNKNOWN || initialState.layout == nri::Layout::UNKNOWN;
+            bool isUnknown = initialState.access == nri::AccessBits::NONE || initialState.layout == nri::Layout::UNDEFINED;
 
             if (resource.nri.texture && isDifferent && !isUnknown) {
                 nri::TextureBarrierDesc& barrier = textureBarriers[textureBarrierNum++];
@@ -1026,26 +1026,8 @@ void Integration::Destroy() {
 }
 
 void Integration::_WaitForIdle() {
-    if (!m_Desc.autoWaitForIdle)
-        return;
-
-    nri::HelperInterface iHelper = {};
-    nri::Result result = nri::nriGetInterface(*m_Device, NRI_INTERFACE(nri::HelperInterface), &iHelper);
-    NRD_INTEGRATION_ASSERT(result == nri::Result::SUCCESS, "nriGetInterface(HelperInterface) failed!");
-
-    { // GRAPHICS
-        nri::Queue* graphicsQueue = nullptr;
-        result = m_iCore.GetQueue(*m_Device, nri::QueueType::GRAPHICS, 0, graphicsQueue);
-        if (result == nri::Result::SUCCESS)
-            iHelper.WaitForIdle(*graphicsQueue);
-    }
-
-    { // COMPUTE
-        nri::Queue* computeQueue = nullptr;
-        result = m_iCore.GetQueue(*m_Device, nri::QueueType::COMPUTE, 0, computeQueue);
-        if (result == nri::Result::SUCCESS)
-            iHelper.WaitForIdle(*computeQueue);
-    }
+    if (m_Desc.autoWaitForIdle)
+        m_iCore.DeviceWaitIdle(*m_Device);
 }
 
 } // namespace nrd
