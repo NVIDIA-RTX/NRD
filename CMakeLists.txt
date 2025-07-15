@@ -5,8 +5,14 @@ include(FetchContent)
 
 # Options
 option(NRD_STATIC_LIBRARY "Build static library" OFF)
-option(NRD_EMBEDS_SPIRV_SHADERS "NRD embeds SPIRV shaders" ON)
 option(NRD_NRI "Pull, build and include NRI into NRD SDK package" OFF)
+option(NRD_SUPPORTS_VIEWPORT_OFFSET "Enable 'CommonSettings::rectOrigin' support" OFF)
+option(NRD_SUPPORTS_CHECKERBOARD "Enable 'checkerboardMode' support" ON)
+option(NRD_SUPPORTS_HISTORY_CONFIDENCE "Enable 'IN_DIFF_CONFIDENCE' and 'IN_SPEC_CONFIDENCE' support" ON)
+option(NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX "Enable 'IN_DISOCCLUSION_THRESHOLD_MIX' support" ON)
+option(NRD_SUPPORTS_BASECOLOR_METALNESS "Enable 'IN_BASECOLOR_METALNESS' support" ON)
+option(NRD_SUPPORTS_ANTIFIREFLY "Enable 'enableAntiFirefly' support" ON)
+option(NRD_EMBEDS_SPIRV_SHADERS "NRD embeds SPIRV shaders" ON)
 
 cmake_dependent_option(NRD_EMBEDS_DXIL_SHADERS "NRD embeds DXIL shaders" ON "WIN32" OFF)
 cmake_dependent_option(NRD_EMBEDS_DXBC_SHADERS "NRD embeds DXBC shaders" ON "WIN32" OFF)
@@ -42,7 +48,8 @@ set(VERSION_MINOR ${CMAKE_MATCH_1})
 string(REGEX MATCH "VERSION_BUILD ([0-9]*)" _ ${ver_h})
 set(VERSION_BUILD ${CMAKE_MATCH_1})
 message("NRD: v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}")
-message(STATUS "NRD_NORMAL_ENCODING = ${NRD_NORMAL_ENCODING}; NRD_ROUGHNESS_ENCODING = ${NRD_ROUGHNESS_ENCODING}")
+message(STATUS "NRD_NORMAL_ENCODING = ${NRD_NORMAL_ENCODING}")
+message(STATUS "NRD_ROUGHNESS_ENCODING = ${NRD_ROUGHNESS_ENCODING}")
 
 project(NRD LANGUAGES C CXX)
 
@@ -98,21 +105,28 @@ set(COMPILE_DEFINITIONS
     SPIRV_TREG_OFFSET=${SPIRV_TREG_OFFSET}
 )
 
-if(NRD_EMBEDS_SPIRV_SHADERS)
-    set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRD_EMBEDS_SPIRV_SHADERS)
-endif()
-
-if(NRD_EMBEDS_DXIL_SHADERS)
-    set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRD_EMBEDS_DXIL_SHADERS)
-endif()
-
-if(NRD_EMBEDS_DXBC_SHADERS)
-    set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NRD_EMBEDS_DXBC_SHADERS)
-endif()
-
 if(WIN32)
     set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} WIN32_LEAN_AND_MEAN NOMINMAX _CRT_SECURE_NO_WARNINGS)
 endif()
+
+function(add_compile_definition DEFINITION)
+    if(${DEFINITION})
+        message(STATUS "${DEFINITION}")
+        set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} ${DEFINITION}=1 PARENT_SCOPE)
+    else()
+        set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} ${DEFINITION}=0 PARENT_SCOPE)
+    endif()
+endfunction()
+
+add_compile_definition(NRD_EMBEDS_SPIRV_SHADERS)
+add_compile_definition(NRD_EMBEDS_DXIL_SHADERS)
+add_compile_definition(NRD_EMBEDS_DXBC_SHADERS)
+add_compile_definition(NRD_SUPPORTS_VIEWPORT_OFFSET)
+add_compile_definition(NRD_SUPPORTS_CHECKERBOARD)
+add_compile_definition(NRD_SUPPORTS_HISTORY_CONFIDENCE)
+add_compile_definition(NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX)
+add_compile_definition(NRD_SUPPORTS_BASECOLOR_METALNESS)
+add_compile_definition(NRD_SUPPORTS_ANTIFIREFLY)
 
 # Download dependencies
 set(DEPS)
@@ -124,7 +138,7 @@ if(NOT TARGET ShaderMake)
     FetchContent_Declare(
         shadermake
         GIT_REPOSITORY https://github.com/NVIDIA-RTX/ShaderMake.git
-        GIT_TAG main
+        GIT_TAG dea3ffbd46b1089d1336a368b42b121b21018af4
         GIT_SHALLOW 1
     )
     list(APPEND DEPS shadermake)
@@ -164,7 +178,7 @@ if(NOT TARGET NRI AND NRD_NRI)
     FetchContent_Declare(
         nri
         GIT_REPOSITORY https://github.com/NVIDIA-RTX/NRI.git
-        GIT_TAG v171
+        GIT_TAG v172
         GIT_SHALLOW 1
     )
     list(APPEND DEPS nri)

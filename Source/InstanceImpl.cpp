@@ -70,17 +70,17 @@ constexpr std::array<bool, (size_t)nrd::Format::MAX_NUM> g_IsIntegerFormat = {
 #include "../Shaders/Resources/Clear_Float.resources.hlsli"
 #include "../Shaders/Resources/Clear_Uint.resources.hlsli"
 
-#ifdef NRD_EMBEDS_DXBC_SHADERS
+#if NRD_EMBEDS_DXBC_SHADERS
 #    include "Clear_Float.cs.dxbc.h"
 #    include "Clear_Uint.cs.dxbc.h"
 #endif
 
-#ifdef NRD_EMBEDS_DXIL_SHADERS
+#if NRD_EMBEDS_DXIL_SHADERS
 #    include "Clear_Float.cs.dxil.h"
 #    include "Clear_Uint.cs.dxil.h"
 #endif
 
-#ifdef NRD_EMBEDS_SPIRV_SHADERS
+#if NRD_EMBEDS_SPIRV_SHADERS
 #    include "Clear_Float.cs.spirv.h"
 #    include "Clear_Uint.cs.spirv.h"
 #endif
@@ -316,6 +316,18 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
     isValid &= m_CommonSettings.cameraAttachedReflectionMaterialID != 0.0f || GetLibraryDesc().normalEncoding == NormalEncoding::R10_G10_B10_A2_UNORM;
     assert("'cameraAttachedReflectionMaterialID' can't be 0 if material ID is not supported by encoding" && isValid);
 
+    isValid &= NRD_SUPPORTS_VIEWPORT_OFFSET || (m_CommonSettings.rectOrigin[0] == 0 && m_CommonSettings.rectOrigin[1] == 0);
+    assert("'rectOrigin' must be 0 if 'NRD_SUPPORTS_VIEWPORT_OFFSET = 0'" && isValid);
+
+    isValid &= NRD_SUPPORTS_HISTORY_CONFIDENCE || !m_CommonSettings.isHistoryConfidenceAvailable;
+    assert("'isHistoryConfidenceAvailable' must be 'false' if 'NRD_SUPPORTS_HISTORY_CONFIDENCE = 0'" && isValid);
+
+    isValid &= NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX || !m_CommonSettings.isDisocclusionThresholdMixAvailable;
+    assert("'isDisocclusionThresholdMixAvailable' must be 'false' if 'NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX = 0'" && isValid);
+
+    isValid &= NRD_SUPPORTS_BASECOLOR_METALNESS || !m_CommonSettings.isBaseColorMetalnessAvailable;
+    assert("'isBaseColorMetalnessAvailable' must be 'false' if 'NRD_SUPPORTS_BASECOLOR_METALNESS = 0'" && isValid);
+
     // Rotators (respecting sample patterns symmetry)
     float angle1 = Sequence::Weyl1D(0.5f, m_CommonSettings.frameIndex) * radians(90.0f);
     m_RotatorPre = Geometry::GetRotator(angle1);
@@ -446,7 +458,27 @@ nrd::Result nrd::InstanceImpl::SetDenoiserSettings(Identifier identifier, const 
         if (denoiserData.desc.identifier == identifier) {
             memcpy(&denoiserData.settings, denoiserSettings, denoiserData.settingsSize);
 
-            return Result::SUCCESS;
+            bool enableAntiFirefly = false;
+            CheckerboardMode checkerboardMode = CheckerboardMode::OFF;
+
+            if ((uint32_t)denoiserData.desc.denoiser <= (uint32_t)Denoiser::REBLUR_DIFFUSE_DIRECTIONAL_OCCLUSION) {
+                const ReblurSettings& settings = *(ReblurSettings*)denoiserSettings;
+                enableAntiFirefly = settings.enableAntiFirefly;
+                checkerboardMode = settings.checkerboardMode;
+            }
+            else if ((uint32_t)denoiserData.desc.denoiser <= (uint32_t)Denoiser::RELAX_DIFFUSE_SPECULAR_SH) {
+                const RelaxSettings& settings = *(RelaxSettings*)denoiserSettings;
+                enableAntiFirefly = settings.enableAntiFirefly;
+                checkerboardMode = settings.checkerboardMode;
+            }
+
+            bool isValid = NRD_SUPPORTS_ANTIFIREFLY || !enableAntiFirefly;
+            assert("'enableAntiFirefly' must be 'false' if 'NRD_SUPPORTS_ANTIFIREFLY = 0'" && isValid);
+
+            isValid |= NRD_SUPPORTS_CHECKERBOARD || checkerboardMode == CheckerboardMode::OFF;
+            assert("'checkerboardMode' must be 'OFF' if 'NRD_SUPPORTS_CHECKERBOARD = 0'" && isValid);
+
+            return isValid ? Result::SUCCESS : Result::INVALID_ARGUMENT;
         }
     }
 

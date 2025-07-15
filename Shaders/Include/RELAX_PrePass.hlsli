@@ -27,7 +27,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Checkerboard resolve weights
-#if( NRD_USE_CHECKERBOARD == 1 )
+#if( NRD_SUPPORTS_CHECKERBOARD == 1 )
     uint checkerboard = Sequence::CheckerBoard(pixelPos, gFrameIndex);
 
     int3 checkerboardPos = pixelPos.xxy + int3( -1, 1, 0 );
@@ -74,7 +74,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #ifdef RELAX_DIFFUSE
     bool diffHasData = true;
     int2 diffPos = pixelPos;
-#if( NRD_USE_CHECKERBOARD == 1 )
+#if( NRD_SUPPORTS_CHECKERBOARD == 1 )
     if (gDiffCheckerboard != 2)
     {
         diffHasData = (checkerboard == gDiffCheckerboard);
@@ -88,7 +88,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float4 diffuseSH = gIn_DiffSh[diffPos];
     #endif
 
-#if( NRD_USE_CHECKERBOARD == 1 )
+#if( NRD_SUPPORTS_CHECKERBOARD == 1 )
     if (!diffHasData)
     {
         float2 wc = checkerboardResolveWeights;
@@ -143,7 +143,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // Sample coordinates
             float2 uv = pixelUv * gRectSize + Geometry::RotateVector(rotator, offset.xy) * blurRadius;
             uv = floor(uv) + 0.5;
-        #if( NRD_USE_CHECKERBOARD == 1 )
+        #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
             uv = ApplyCheckerboardShift(uv, gDiffCheckerboard, i, gFrameIndex) * gRectSizeInv;
         #endif
 
@@ -205,7 +205,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     bool specHasData = true;
     int2 specPos = pixelPos;
-#if( NRD_USE_CHECKERBOARD == 1 )
+#if( NRD_SUPPORTS_CHECKERBOARD == 1 )
     if (gSpecCheckerboard != 2)
     {
         specHasData = (checkerboard == gSpecCheckerboard);
@@ -219,7 +219,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float4 specularSH = gIn_SpecSh[specPos];
     #endif
 
-#if( NRD_USE_CHECKERBOARD == 1 )
+#if( NRD_SUPPORTS_CHECKERBOARD == 1 )
     if (!specHasData)
     {
         float2 wc = checkerboardResolveWeights;
@@ -292,7 +292,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // Sample coordinates
             float2 uv = pixelUv * gRectSize + Geometry::RotateVector(rotator, offset.xy) * blurRadius;
             uv = floor(uv) + 0.5;
-        #if( NRD_USE_CHECKERBOARD == 1 )
+        #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
             uv = ApplyCheckerboardShift(uv, gSpecCheckerboard, i, gFrameIndex) * gRectSizeInv;
         #endif
 

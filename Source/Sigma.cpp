@@ -137,23 +137,23 @@ void nrd::InstanceImpl::AddSharedConstants_Sigma(const SigmaSettings& settings, 
 }
 
 // SIGMA_SHARED
-#ifdef NRD_EMBEDS_DXBC_SHADERS
+#if NRD_EMBEDS_DXBC_SHADERS
 #    include "SIGMA_Copy.cs.dxbc.h"
 #    include "SIGMA_SmoothTiles.cs.dxbc.h"
 #endif
 
-#ifdef NRD_EMBEDS_DXIL_SHADERS
+#if NRD_EMBEDS_DXIL_SHADERS
 #    include "SIGMA_Copy.cs.dxil.h"
 #    include "SIGMA_SmoothTiles.cs.dxil.h"
 #endif
 
-#ifdef NRD_EMBEDS_SPIRV_SHADERS
+#if NRD_EMBEDS_SPIRV_SHADERS
 #    include "SIGMA_Copy.cs.spirv.h"
 #    include "SIGMA_SmoothTiles.cs.spirv.h"
 #endif
 
 // SIGMA_SHADOW
-#ifdef NRD_EMBEDS_DXBC_SHADERS
+#if NRD_EMBEDS_DXBC_SHADERS
 #    include "SIGMA_Shadow_Blur.cs.dxbc.h"
 #    include "SIGMA_Shadow_ClassifyTiles.cs.dxbc.h"
 #    include "SIGMA_Shadow_PostBlur.cs.dxbc.h"
@@ -161,7 +161,7 @@ void nrd::InstanceImpl::AddSharedConstants_Sigma(const SigmaSettings& settings, 
 #    include "SIGMA_Shadow_TemporalStabilization.cs.dxbc.h"
 #endif
 
-#ifdef NRD_EMBEDS_DXIL_SHADERS
+#if NRD_EMBEDS_DXIL_SHADERS
 #    include "SIGMA_Shadow_Blur.cs.dxil.h"
 #    include "SIGMA_Shadow_ClassifyTiles.cs.dxil.h"
 #    include "SIGMA_Shadow_PostBlur.cs.dxil.h"
@@ -169,7 +169,7 @@ void nrd::InstanceImpl::AddSharedConstants_Sigma(const SigmaSettings& settings, 
 #    include "SIGMA_Shadow_TemporalStabilization.cs.dxil.h"
 #endif
 
-#ifdef NRD_EMBEDS_SPIRV_SHADERS
+#if NRD_EMBEDS_SPIRV_SHADERS
 #    include "SIGMA_Shadow_Blur.cs.spirv.h"
 #    include "SIGMA_Shadow_ClassifyTiles.cs.spirv.h"
 #    include "SIGMA_Shadow_PostBlur.cs.spirv.h"
@@ -180,7 +180,7 @@ void nrd::InstanceImpl::AddSharedConstants_Sigma(const SigmaSettings& settings, 
 #include "Denoisers/Sigma_Shadow.hpp"
 
 // SIGMA_SHADOW_TRANSLUCENCY
-#ifdef NRD_EMBEDS_DXBC_SHADERS
+#if NRD_EMBEDS_DXBC_SHADERS
 #    include "SIGMA_ShadowTranslucency_Blur.cs.dxbc.h"
 #    include "SIGMA_ShadowTranslucency_ClassifyTiles.cs.dxbc.h"
 #    include "SIGMA_ShadowTranslucency_PostBlur.cs.dxbc.h"
@@ -188,7 +188,7 @@ void nrd::InstanceImpl::AddSharedConstants_Sigma(const SigmaSettings& settings, 
 #    include "SIGMA_ShadowTranslucency_TemporalStabilization.cs.dxbc.h"
 #endif
 
-#ifdef NRD_EMBEDS_DXIL_SHADERS
+#if NRD_EMBEDS_DXIL_SHADERS
 #    include "SIGMA_ShadowTranslucency_Blur.cs.dxil.h"
 #    include "SIGMA_ShadowTranslucency_ClassifyTiles.cs.dxil.h"
 #    include "SIGMA_ShadowTranslucency_PostBlur.cs.dxil.h"
@@ -196,7 +196,7 @@ void nrd::InstanceImpl::AddSharedConstants_Sigma(const SigmaSettings& settings, 
 #    include "SIGMA_ShadowTranslucency_TemporalStabilization.cs.dxil.h"
 #endif
 
-#ifdef NRD_EMBEDS_SPIRV_SHADERS
+#if NRD_EMBEDS_SPIRV_SHADERS
 #    include "SIGMA_ShadowTranslucency_Blur.cs.spirv.h"
 #    include "SIGMA_ShadowTranslucency_ClassifyTiles.cs.spirv.h"
 #    include "SIGMA_ShadowTranslucency_PostBlur.cs.spirv.h"

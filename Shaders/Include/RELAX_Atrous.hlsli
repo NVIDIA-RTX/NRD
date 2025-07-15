@@ -52,7 +52,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if (gStepSize <= 4)
         specularLuminanceWeightRelaxation = lerp(1.0, specularReprojectionConfidence, gLuminanceEdgeStoppingRelaxation);
 
-    if (gHasHistoryConfidence && NRD_USE_HISTORY_CONFIDENCE)
+    if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
     {
         float specConfidenceDrivenRelaxation = saturate(gConfidenceDrivenRelaxationMultiplier * (1.0 - gIn_SpecConfidence[WithRectOrigin(pixelPos)]));
 
@@ -92,7 +92,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float diffusePhiLIlluminationInv = 1.0 / max(1.0e-4, gDiffPhiLuminance * sqrt(centerDiffuseVar));
 
     float diffuseLuminanceWeightRelaxation = 1.0;
-    if (gHasHistoryConfidence && NRD_USE_HISTORY_CONFIDENCE)
+    if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
     {
         float diffConfidenceDrivenRelaxation = saturate(gConfidenceDrivenRelaxationMultiplier * (1.0 - gIn_DiffConfidence[WithRectOrigin(pixelPos)]));
 

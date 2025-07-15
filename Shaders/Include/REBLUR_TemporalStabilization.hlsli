@@ -249,7 +249,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         vmbPixelUv = materialID == gCameraAttachedReflectionMaterialID ? pixelUv : vmbPixelUv;
 
         // Modify MVs if requested
-        if( gSpecProbabilityThresholdsForMvModification.x < 1.0 && NRD_USE_BASECOLOR_METALNESS )
+        if( gSpecProbabilityThresholdsForMvModification.x < 1.0 && NRD_SUPPORTS_BASECOLOR_METALNESS )
         {
             float4 baseColorMetalness = gIn_BaseColor_Metalness[ WithRectOrigin( pixelPos ) ];
 

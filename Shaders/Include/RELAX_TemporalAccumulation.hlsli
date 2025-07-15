@@ -480,7 +480,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float disocclusionThresholdMix = 0;
     if(currentMaterialID == gStrandMaterialID)
         disocclusionThresholdMix = NRD_GetNormalizedStrandThickness(gStrandThickness, pixelSize);
-    if(gHasDisocclusionThresholdMix && NRD_USE_DISOCCLUSION_THRESHOLD_MIX)
+    if(gHasDisocclusionThresholdMix && NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX)
         disocclusionThresholdMix = gIn_DisocclusionThresholdMix[WithRectOrigin(pixelPos)];
 
     float disocclusionThreshold = lerp(gDisocclusionThreshold, gDisocclusionThresholdAlternate, disocclusionThresholdMix);
@@ -582,7 +582,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float diffMaxAccumulatedFrameNum = gDiffMaxAccumulatedFrameNum;
     float diffMaxFastAccumulatedFrameNum = gDiffMaxFastAccumulatedFrameNum;
 
-    if (gHasHistoryConfidence && NRD_USE_HISTORY_CONFIDENCE)
+    if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
     {
         float inDiffConfidence = gIn_DiffConfidence[WithRectOrigin(pixelPos)];
         diffMaxAccumulatedFrameNum *= inDiffConfidence;
@@ -595,7 +595,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float diffuseAlphaResponsive = (SMBReprojectionFound > 0) ? max(1.0 / (diffMaxFastAccumulatedFrameNum + 1.0), 1.0 / diffHistoryLength) : 1.0;
 
     bool diffHasData = true;
-    if (NRD_USE_CHECKERBOARD == 1 && gDiffCheckerboard != 2)
+    if (NRD_SUPPORTS_CHECKERBOARD == 1 && gDiffCheckerboard != 2)
         diffHasData = checkerboard == gDiffCheckerboard;
 
     if ((!diffHasData) && (diffHistoryLength > 1.0))
@@ -625,7 +625,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #ifdef RELAX_SPECULAR
     float specMaxAccumulatedFrameNum = gSpecMaxAccumulatedFrameNum;
     float specMaxFastAccumulatedFrameNum = gSpecMaxFastAccumulatedFrameNum;
-    if (gHasHistoryConfidence && NRD_USE_HISTORY_CONFIDENCE)
+    if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
     {
         float inSpecConfidence = gIn_SpecConfidence[WithRectOrigin(pixelPos)];
         specMaxAccumulatedFrameNum *= inSpecConfidence;
@@ -852,7 +852,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     specSMBResponsiveAlpha = max(specSMBAlpha, 1.0 / (1.0 + specHistoryResponsiveFrames));
 
     bool specHasData = true;
-    if (NRD_USE_CHECKERBOARD == 1 && gSpecCheckerboard != 2)
+    if (NRD_SUPPORTS_CHECKERBOARD == 1 && gSpecCheckerboard != 2)
         specHasData = checkerboard == gSpecCheckerboard;
 
     if (!specHasData && (smbParallaxInPixelsMax < 0.5))

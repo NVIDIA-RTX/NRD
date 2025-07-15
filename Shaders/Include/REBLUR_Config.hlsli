@@ -15,9 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TA              1
 #define REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TS              1
 #define REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TS              1
-#define REBLUR_USE_HISTORY_FIX                                  1
 #define REBLUR_USE_YCOCG                                        1
-#define REBLUR_USE_ANTIFIREFLY                                  1
 #define REBLUR_USE_CONFIDENCE_NON_LINEARLY                      1
 #define REBLUR_USE_STF                                          1 // gives very minor IQ boost visible only in debug visualization
 #define REBLUR_USE_ANTILAG_NOT_INVOKING_HISTORY_FIX             1 // TODO: for now full history reset is undesired
@@ -30,8 +28,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_USE_OLD_SMB_FALLBACK_LOGIC                       0 // TODO: here to avoid regressions
 
 #if( defined REBLUR_OCCLUSION || defined REBLUR_DIRECTIONAL_OCCLUSION )
-    #undef REBLUR_USE_ANTIFIREFLY
-    #define REBLUR_USE_ANTIFIREFLY                              0 // not needed in occlusion mode
+    #undef NRD_SUPPORTS_ANTIFIREFLY
+    #define NRD_SUPPORTS_ANTIFIREFLY                                 0 // not needed in occlusion mode
 #endif
 
 // Switches ( default 2 )

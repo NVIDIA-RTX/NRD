@@ -24,7 +24,7 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
 #define _NRD_STRINGIFY(s) #s
 #define NRD_STRINGIFY(s)  _NRD_STRINGIFY(s)
 
-#ifdef NRD_EMBEDS_DXBC_SHADERS
+#if NRD_EMBEDS_DXBC_SHADERS
 #    define GET_DXBC_SHADER_DESC(shaderName) {g_##shaderName##_cs_dxbc, GetCountOf(g_##shaderName##_cs_dxbc)}
 #else
 #    define GET_DXBC_SHADER_DESC(shaderName) \
@@ -32,7 +32,7 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
         }
 #endif
 
-#ifdef NRD_EMBEDS_DXIL_SHADERS
+#if NRD_EMBEDS_DXIL_SHADERS
 #    define GET_DXIL_SHADER_DESC(shaderName) {g_##shaderName##_cs_dxil, GetCountOf(g_##shaderName##_cs_dxil)}
 #else
 #    define GET_DXIL_SHADER_DESC(shaderName) \
@@ -40,7 +40,7 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
         }
 #endif
 
-#ifdef NRD_EMBEDS_SPIRV_SHADERS
+#if NRD_EMBEDS_SPIRV_SHADERS
 #    define GET_SPIRV_SHADER_DESC(shaderName) {g_##shaderName##_cs_spirv, GetCountOf(g_##shaderName##_cs_spirv)}
 #else
 #    define GET_SPIRV_SHADER_DESC(shaderName) \

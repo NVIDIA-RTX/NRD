@@ -279,23 +279,23 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 }
 
 // RELAX_SHARED
-#ifdef NRD_EMBEDS_DXBC_SHADERS
+#if NRD_EMBEDS_DXBC_SHADERS
 #    include "RELAX_ClassifyTiles.cs.dxbc.h"
 #    include "RELAX_Validation.cs.dxbc.h"
 #endif
 
-#ifdef NRD_EMBEDS_DXIL_SHADERS
+#if NRD_EMBEDS_DXIL_SHADERS
 #    include "RELAX_ClassifyTiles.cs.dxil.h"
 #    include "RELAX_Validation.cs.dxil.h"
 #endif
 
-#ifdef NRD_EMBEDS_SPIRV_SHADERS
+#if NRD_EMBEDS_SPIRV_SHADERS
 #    include "RELAX_ClassifyTiles.cs.spirv.h"
 #    include "RELAX_Validation.cs.spirv.h"
 #endif
 
 // RELAX_DIFFUSE
-#ifdef NRD_EMBEDS_DXBC_SHADERS
+#if NRD_EMBEDS_DXBC_SHADERS
 #    include "RELAX_Diffuse_AntiFirefly.cs.dxbc.h"
 #    include "RELAX_Diffuse_Atrous.cs.dxbc.h"
 #    include "RELAX_Diffuse_AtrousSmem.cs.dxbc.h"
@@ -309,7 +309,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #    include "RELAX_Diffuse_TemporalAccumulation.cs.dxbc.h"
 #endif
 
-#ifdef NRD_EMBEDS_DXIL_SHADERS
+#if NRD_EMBEDS_DXIL_SHADERS
 #    include "RELAX_Diffuse_AntiFirefly.cs.dxil.h"
 #    include "RELAX_Diffuse_Atrous.cs.dxil.h"
 #    include "RELAX_Diffuse_AtrousSmem.cs.dxil.h"
@@ -323,7 +323,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #    include "RELAX_Diffuse_TemporalAccumulation.cs.dxil.h"
 #endif
 
-#ifdef NRD_EMBEDS_SPIRV_SHADERS
+#if NRD_EMBEDS_SPIRV_SHADERS
 #    include "RELAX_Diffuse_AntiFirefly.cs.spirv.h"
 #    include "RELAX_Diffuse_Atrous.cs.spirv.h"
 #    include "RELAX_Diffuse_AtrousSmem.cs.spirv.h"
@@ -340,7 +340,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #include "Denoisers/Relax_Diffuse.hpp"
 
 // RELAX_DIFFUSE_SH
-#ifdef NRD_EMBEDS_DXBC_SHADERS
+#if NRD_EMBEDS_DXBC_SHADERS
 #    include "RELAX_DiffuseSh_AntiFirefly.cs.dxbc.h"
 #    include "RELAX_DiffuseSh_Atrous.cs.dxbc.h"
 #    include "RELAX_DiffuseSh_AtrousSmem.cs.dxbc.h"
@@ -352,7 +352,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #    include "RELAX_DiffuseSh_TemporalAccumulation.cs.dxbc.h"
 #endif
 
-#ifdef NRD_EMBEDS_DXIL_SHADERS
+#if NRD_EMBEDS_DXIL_SHADERS
 #    include "RELAX_DiffuseSh_AntiFirefly.cs.dxil.h"
 #    include "RELAX_DiffuseSh_Atrous.cs.dxil.h"
 #    include "RELAX_DiffuseSh_AtrousSmem.cs.dxil.h"
@@ -364,7 +364,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #    include "RELAX_DiffuseSh_TemporalAccumulation.cs.dxil.h"
 #endif
 
-#ifdef NRD_EMBEDS_SPIRV_SHADERS
+#if NRD_EMBEDS_SPIRV_SHADERS
 #    include "RELAX_DiffuseSh_AntiFirefly.cs.spirv.h"
 #    include "RELAX_DiffuseSh_Atrous.cs.spirv.h"
 #    include "RELAX_DiffuseSh_AtrousSmem.cs.spirv.h"
@@ -379,7 +379,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #include "Denoisers/Relax_DiffuseSh.hpp"
 
 // RELAX_SPECULAR
-#ifdef NRD_EMBEDS_DXBC_SHADERS
+#if NRD_EMBEDS_DXBC_SHADERS
 #    include "RELAX_Specular_AntiFirefly.cs.dxbc.h"
 #    include "RELAX_Specular_Atrous.cs.dxbc.h"
 #    include "RELAX_Specular_AtrousSmem.cs.dxbc.h"
@@ -393,7 +393,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #    include "RELAX_Specular_TemporalAccumulation.cs.dxbc.h"
 #endif
 
-#ifdef NRD_EMBEDS_DXIL_SHADERS
+#if NRD_EMBEDS_DXIL_SHADERS
 #    include "RELAX_Specular_AntiFirefly.cs.dxil.h"
 #    include "RELAX_Specular_Atrous.cs.dxil.h"
 #    include "RELAX_Specular_AtrousSmem.cs.dxil.h"
@@ -407,7 +407,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #    include "RELAX_Specular_TemporalAccumulation.cs.dxil.h"
 #endif
 
-#ifdef NRD_EMBEDS_SPIRV_SHADERS
+#if NRD_EMBEDS_SPIRV_SHADERS
 #    include "RELAX_Specular_AntiFirefly.cs.spirv.h"
 #    include "RELAX_Specular_Atrous.cs.spirv.h"
 #    include "RELAX_Specular_AtrousSmem.cs.spirv.h"
@@ -424,7 +424,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #include "Denoisers/Relax_Specular.hpp"
 
 // RELAX_SPECULAR_SH
-#ifdef NRD_EMBEDS_DXBC_SHADERS
+#if NRD_EMBEDS_DXBC_SHADERS
 #    include "RELAX_SpecularSh_AntiFirefly.cs.dxbc.h"
 #    include "RELAX_SpecularSh_Atrous.cs.dxbc.h"
 #    include "RELAX_SpecularSh_AtrousSmem.cs.dxbc.h"
@@ -436,7 +436,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #    include "RELAX_SpecularSh_TemporalAccumulation.cs.dxbc.h"
 #endif
 
-#ifdef NRD_EMBEDS_DXIL_SHADERS
+#if NRD_EMBEDS_DXIL_SHADERS
 #    include "RELAX_SpecularSh_AntiFirefly.cs.dxil.h"
 #    include "RELAX_SpecularSh_Atrous.cs.dxil.h"
 #    include "RELAX_SpecularSh_AtrousSmem.cs.dxil.h"
@@ -448,7 +448,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #    include "RELAX_SpecularSh_TemporalAccumulation.cs.dxil.h"
 #endif
 
-#ifdef NRD_EMBEDS_SPIRV_SHADERS
+#if NRD_EMBEDS_SPIRV_SHADERS
 #    include "RELAX_SpecularSh_AntiFirefly.cs.spirv.h"
 #    include "RELAX_SpecularSh_Atrous.cs.spirv.h"
 #    include "RELAX_SpecularSh_AtrousSmem.cs.spirv.h"
@@ -463,7 +463,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #include "Denoisers/Relax_SpecularSh.hpp"
 
 // RELAX_DIFFUSE_SPECULAR
-#ifdef NRD_EMBEDS_DXBC_SHADERS
+#if NRD_EMBEDS_DXBC_SHADERS
 #    include "RELAX_DiffuseSpecular_AntiFirefly.cs.dxbc.h"
 #    include "RELAX_DiffuseSpecular_Atrous.cs.dxbc.h"
 #    include "RELAX_DiffuseSpecular_AtrousSmem.cs.dxbc.h"
@@ -477,7 +477,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #    include "RELAX_DiffuseSpecular_TemporalAccumulation.cs.dxbc.h"
 #endif
 
-#ifdef NRD_EMBEDS_DXIL_SHADERS
+#if NRD_EMBEDS_DXIL_SHADERS
 #    include "RELAX_DiffuseSpecular_AntiFirefly.cs.dxil.h"
 #    include "RELAX_DiffuseSpecular_Atrous.cs.dxil.h"
 #    include "RELAX_DiffuseSpecular_AtrousSmem.cs.dxil.h"
@@ -491,7 +491,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #    include "RELAX_DiffuseSpecular_TemporalAccumulation.cs.dxil.h"
 #endif
 
-#ifdef NRD_EMBEDS_SPIRV_SHADERS
+#if NRD_EMBEDS_SPIRV_SHADERS
 #    include "RELAX_DiffuseSpecular_AntiFirefly.cs.spirv.h"
 #    include "RELAX_DiffuseSpecular_Atrous.cs.spirv.h"
 #    include "RELAX_DiffuseSpecular_AtrousSmem.cs.spirv.h"
@@ -508,7 +508,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #include "Denoisers/Relax_DiffuseSpecular.hpp"
 
 // RELAX_DIFFUSE_SPECULAR_SH
-#ifdef NRD_EMBEDS_DXBC_SHADERS
+#if NRD_EMBEDS_DXBC_SHADERS
 #    include "RELAX_DiffuseSpecularSh_AntiFirefly.cs.dxbc.h"
 #    include "RELAX_DiffuseSpecularSh_Atrous.cs.dxbc.h"
 #    include "RELAX_DiffuseSpecularSh_AtrousSmem.cs.dxbc.h"
@@ -520,7 +520,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #    include "RELAX_DiffuseSpecularSh_TemporalAccumulation.cs.dxbc.h"
 #endif
 
-#ifdef NRD_EMBEDS_DXIL_SHADERS
+#if NRD_EMBEDS_DXIL_SHADERS
 #    include "RELAX_DiffuseSpecularSh_AntiFirefly.cs.dxil.h"
 #    include "RELAX_DiffuseSpecularSh_Atrous.cs.dxil.h"
 #    include "RELAX_DiffuseSpecularSh_AtrousSmem.cs.dxil.h"
@@ -532,7 +532,7 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 #    include "RELAX_DiffuseSpecularSh_TemporalAccumulation.cs.dxil.h"
 #endif
 
-#ifdef NRD_EMBEDS_SPIRV_SHADERS
+#if NRD_EMBEDS_SPIRV_SHADERS
 #    include "RELAX_DiffuseSpecularSh_AntiFirefly.cs.spirv.h"
 #    include "RELAX_DiffuseSpecularSh_Atrous.cs.spirv.h"
 #    include "RELAX_DiffuseSpecularSh_AtrousSmem.cs.spirv.h"

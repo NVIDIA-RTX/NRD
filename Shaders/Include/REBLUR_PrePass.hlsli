@@ -41,7 +41,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     const float4 rotator = GetBlurKernelRotation( REBLUR_PRE_BLUR_ROTATOR_MODE, pixelPos, gRotatorPre, gFrameIndex );
 
     // Checkerboard resolve
-#if( NRD_USE_CHECKERBOARD == 1 )
+#if( NRD_SUPPORTS_CHECKERBOARD == 1 )
     uint checkerboard = Sequence::CheckerBoard( pixelPos, gFrameIndex );
 
     int3 checkerboardPos = pixelPos.xxy + int3( -1, 1, 0 );
@@ -71,7 +71,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 diffSh = gIn_DiffSh[ pos ];
         #endif
 
-    #if( NRD_USE_CHECKERBOARD == 1 )
+    #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
         if( gDiffCheckerboard != 2 && checkerboard != gDiffCheckerboard )
         {
             sum = 0;
@@ -97,7 +97,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 specSh = gIn_SpecSh[ pos ];
         #endif
 
-    #if( NRD_USE_CHECKERBOARD == 1 )
+    #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
         if( gSpecCheckerboard != 2 && checkerboard != gSpecCheckerboard )
         {
             sum = 0;

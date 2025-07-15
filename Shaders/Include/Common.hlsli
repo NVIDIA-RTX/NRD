@@ -48,17 +48,35 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 // DEFAULT SETTINGS ( can be modified )
 //==================================================================================================================
 
-// CMake options
-#define NRD_USE_VIEWPORT_OFFSET                                 0 // enable if "CommonSettings::rectOrigin" is needed
-#define NRD_USE_CHECKERBOARD                                    1 // enable if checkerboard support is needed
+// Safe defaults, but should come from CMake
+#ifndef NRD_SUPPORTS_VIEWPORT_OFFSET
+    #define NRD_SUPPORTS_VIEWPORT_OFFSET                        0
+#endif
+
+#ifndef NRD_SUPPORTS_CHECKERBOARD
+    #define NRD_SUPPORTS_CHECKERBOARD                           1
+#endif
+
+#ifndef NRD_SUPPORTS_HISTORY_CONFIDENCE
+    #define NRD_SUPPORTS_HISTORY_CONFIDENCE                     1
+#endif
+
+#ifndef NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX
+    #define NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX             1
+#endif
+
+#ifndef NRD_SUPPORTS_BASECOLOR_METALNESS
+    #define NRD_SUPPORTS_BASECOLOR_METALNESS                    1
+#endif
+
+#ifndef NRD_SUPPORTS_ANTIFIREFLY
+    #define NRD_SUPPORTS_ANTIFIREFLY                            1
+#endif
 
 // Switches ( default 1 )
 #define NRD_USE_TILE_CHECK                                      1 // significantly improves performance by skipping computations in "empty" regions
 #define NRD_USE_HIGH_PARALLAX_CURVATURE                         1 // flattens surface on high motion
 #define NRD_USE_DENANIFICATION                                  1 // needed only if inputs have NAN / INF outside of viewport or denoising range
-#define NRD_USE_HISTORY_CONFIDENCE                              1 // almost no one uses this, but constant folding and dead code elimination work well on modern drivers
-#define NRD_USE_DISOCCLUSION_THRESHOLD_MIX                      1 // almost no one uses this, but constant folding and dead code elimination work well on modern drivers
-#define NRD_USE_BASECOLOR_METALNESS                             1 // almost no one uses this, but constant folding and dead code elimination work well on modern drivers
 #define NRD_USE_SPECULAR_MOTION_V2                              1 // this method offers better IQ on bumpy and wavy surfaces, but it doesn't work on concave mirrors ( no motion acceleration )
 
 // Switches ( default 0 )
@@ -200,7 +218,7 @@ static const float3 g_Special8[ 8 ] =
 
 // Texture access
 
-#if( NRD_USE_VIEWPORT_OFFSET == 1 )
+#if( NRD_SUPPORTS_VIEWPORT_OFFSET == 1 )
     #define WithRectOrigin( pos )               ( gRectOrigin + pos )
     #define WithRectOffset( uv )                ( gRectOffset + uv )
 #else
@@ -213,7 +231,7 @@ static const float3 g_Special8[ 8 ] =
     // = clamp( uv * gRectSize * gResourceSizeInv, 0.0, ( gRectSize - 0.5 ) * gResourceSizeInv )
     // = clamp( uv * gResolutionScale, 0.0, gResolutionScale - 0.5 * gResourceSizeInv )
 
-    #if( NRD_USE_VIEWPORT_OFFSET == 1 )
+    #if( NRD_SUPPORTS_VIEWPORT_OFFSET == 1 )
         #define ClampUvToViewport( uv )         clamp( uv * gResolutionScale, 0.0, gResolutionScale - 0.5 * gResourceSizeInv )
     #else
         #define ClampUvToViewport( uv )         min( uv * gResolutionScale, gResolutionScale - 0.5 * gResourceSizeInv )

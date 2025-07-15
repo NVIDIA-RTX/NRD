@@ -29,8 +29,8 @@ CREDITS:
 
 #define NRD_VERSION_MAJOR 4
 #define NRD_VERSION_MINOR 15
-#define NRD_VERSION_BUILD 1
-#define NRD_VERSION_DATE "5 June 2025"
+#define NRD_VERSION_BUILD 2
+#define NRD_VERSION_DATE "15 July 2025"
 
 #if defined(_WIN32)
     #define NRD_CALL __stdcall

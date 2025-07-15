@@ -229,7 +229,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float diffLuma = GetLuma( diff );
 
         // Anti-firefly
-        if( gAntiFirefly && REBLUR_USE_ANTIFIREFLY == 1 )
+        if( gAntiFirefly && NRD_SUPPORTS_ANTIFIREFLY == 1 )
         {
             float m1 = 0;
             float m2 = 0;
@@ -434,7 +434,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float specLuma = GetLuma( spec );
 
         // Anti-firefly
-        if( gAntiFirefly && REBLUR_USE_ANTIFIREFLY == 1 )
+        if( gAntiFirefly && NRD_SUPPORTS_ANTIFIREFLY == 1 )
         {
             float m1 = 0;
             float m2 = 0;

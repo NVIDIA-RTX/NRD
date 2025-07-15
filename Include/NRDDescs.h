@@ -50,17 +50,17 @@ namespace nrd
         IN_VIEWZ,
 
         // (Optional) User-provided history confidence in range 0-1, i.e. antilag (R8+)
-        // Used only if "CommonSettings::isHistoryConfidenceAvailable = true" and "NRD_USE_HISTORY_CONFIDENCE = 1"
+        // Used only if "CommonSettings::isHistoryConfidenceAvailable = true" and "NRD_SUPPORTS_HISTORY_CONFIDENCE = 1"
         IN_DIFF_CONFIDENCE,
         IN_SPEC_CONFIDENCE,
 
         // (Optional) User-provided disocclusion threshold selector in range 0-1 (R8+)
         // Disocclusion threshold is mixed between "disocclusionThreshold" and "disocclusionThresholdAlternate"
-        // Used only if "CommonSettings::isDisocclusionThresholdMixAvailable = true" and "NRD_USE_DISOCCLUSION_THRESHOLD_MIX = 1"
+        // Used only if "CommonSettings::isDisocclusionThresholdMixAvailable = true" and "NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX = 1"
         IN_DISOCCLUSION_THRESHOLD_MIX,
 
         // (Optional) Base color (can be decoupled to diffuse and specular albedo based on metalness) and metalness (RGBA8+)
-        // Used only if "CommonSettings::isBaseColorMetalnessAvailable = true" and "NRD_USE_BASECOLOR_METALNESS = 1".
+        // Used only if "CommonSettings::isBaseColorMetalnessAvailable = true" and "NRD_SUPPORTS_BASECOLOR_METALNESS = 1".
         // Currently used only by REBLUR (if Temporal Stabilization pass is available and "stabilizationStrength != 0")
         // to patch MV if specular (virtual) motion prevails on diffuse (surface) motion
         IN_BASECOLOR_METALNESS,

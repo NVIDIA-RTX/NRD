@@ -217,7 +217,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float disocclusionThresholdMix = 0;
     if( materialID == gStrandMaterialID )
         disocclusionThresholdMix = NRD_GetNormalizedStrandThickness( gStrandThickness, pixelSize );
-    if( gHasDisocclusionThresholdMix && NRD_USE_DISOCCLUSION_THRESHOLD_MIX )
+    if( gHasDisocclusionThresholdMix && NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX )
         disocclusionThresholdMix = gIn_DisocclusionThresholdMix[ WithRectOrigin( pixelPos ) ];
 
     float disocclusionThreshold = lerp( gDisocclusionThreshold, gDisocclusionThresholdAlternate, disocclusionThresholdMix );
@@ -327,14 +327,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #ifdef REBLUR_SPECULAR
         // Accumulation speed
         float specHistoryConfidence = smbFootprintQuality;
-        if( gHasHistoryConfidence && NRD_USE_HISTORY_CONFIDENCE )
+        if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
             specHistoryConfidence *= gIn_SpecConfidence[ WithRectOrigin( pixelPos ) ];
 
         smbSpecAccumSpeed *= lerp( specHistoryConfidence, 1.0, 1.0 / ( 1.0 + smbSpecAccumSpeed ) );
         smbSpecAccumSpeed = min( smbSpecAccumSpeed, gMaxAccumulatedFrameNum );
 
         // Current
-        bool specHasData = NRD_USE_CHECKERBOARD == 0 || gSpecCheckerboard == 2 || checkerboard == gSpecCheckerboard;
+        bool specHasData = NRD_SUPPORTS_CHECKERBOARD == 0 || gSpecCheckerboard == 2 || checkerboard == gSpecCheckerboard;
         uint2 specPos = pixelPos;
         #ifdef REBLUR_OCCLUSION
             specPos.x >>= gSpecCheckerboard == 2 ? 0 : 1;
@@ -833,14 +833,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #ifdef REBLUR_DIFFUSE
         // Accumulation speed
         float diffHistoryConfidence = smbFootprintQuality;
-        if( gHasHistoryConfidence && NRD_USE_HISTORY_CONFIDENCE )
+        if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
             diffHistoryConfidence *= gIn_DiffConfidence[ WithRectOrigin( pixelPos ) ];
 
         diffAccumSpeed *= lerp( diffHistoryConfidence, 1.0, 1.0 / ( 1.0 + diffAccumSpeed ) );
         diffAccumSpeed = min( diffAccumSpeed, gMaxAccumulatedFrameNum );
 
         // Current
-        bool diffHasData = NRD_USE_CHECKERBOARD == 0 || gDiffCheckerboard == 2 || checkerboard == gDiffCheckerboard;
+        bool diffHasData = NRD_SUPPORTS_CHECKERBOARD == 0 || gDiffCheckerboard == 2 || checkerboard == gDiffCheckerboard;
         uint2 diffPos = pixelPos;
         #ifdef REBLUR_OCCLUSION
             diffPos.x >>= gDiffCheckerboard == 2 ? 0 : 1;

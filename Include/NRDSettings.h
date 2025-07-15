@@ -39,7 +39,7 @@ namespace nrd
     // Notes:
     //     - if checkerboarding is enabled, "mode" defines the orientation of even numbered frames
     //     - all inputs have the same resolution - logical FULL resolution
-    //     - noisy input signals (IN_DIFF_XXX / IN_SPEC_XXX) are tightly packed to the LEFT HALF of the texture (the input pixel = 2x1 screen pixel)
+    //     - noisy input signals ("IN_DIFF_XXX / IN_SPEC_XXX") are tightly packed to the LEFT HALF of the texture (the input pixel = 2x1 screen pixel)
     //     - for others the input pixel = 1x1 screen pixel
     //     - upsampling will be handled internally in checkerboard mode
     enum class CheckerboardMode : uint8_t
@@ -127,7 +127,7 @@ namespace nrd
         uint16_t rectSize[2] = {};
         uint16_t rectSizePrev[2] = {};
 
-        // (>0) - viewZ = IN_VIEWZ * viewZScale (mostly for FP16 viewZ)
+        // (>0) - "viewZ = IN_VIEWZ * viewZScale" (mostly for FP16 viewZ)
         float viewZScale = 1.0f;
 
         // (Optional) (ms) - user provided if > 0, otherwise - tracked internally
@@ -142,7 +142,7 @@ namespace nrd
 
         // (Optional) [0.02; 0.2] - an alternative disocclusion threshold, which is mixed to based on:
         // - "strandThickness", if there is "strandMaterialID" match
-        // - IN_DISOCCLUSION_THRESHOLD_MIX texture, if "isDisocclusionThresholdMixAvailable = true" (has higher priority and ignores "strandMaterialID")
+        // - "IN_DISOCCLUSION_THRESHOLD_MIX" texture, if "isDisocclusionThresholdMixAvailable = true" (has higher priority and ignores "strandMaterialID")
         float disocclusionThresholdAlternate = 0.05f;
 
         // (Optional) (>=0) - marks reflections of camera attached objects (requires "NormalEncoding::R10_G10_B10_A2_UNORM")
@@ -164,8 +164,8 @@ namespace nrd
         float debug = 0.0f;
 
         // (Optional) (pixels) - viewport origin
-        // IMPORTANT: gets applied only to non-noisy guides (aka g-buffer), including IN_DIFF_CONFIDENCE, IN_SPEC_CONFIDENCE,
-        // IN_DISOCCLUSION_THRESHOLD_MIX and IN_BASECOLOR_METALNESS. Must be manually enabled via NRD_USE_VIEWPORT_OFFSET macro switch
+        // IMPORTANT: gets applied only to non-noisy guides (aka g-buffer), including "IN_DIFF_CONFIDENCE", "IN_SPEC_CONFIDENCE",
+        // "IN_DISOCCLUSION_THRESHOLD_MIX" and "IN_BASECOLOR_METALNESS". Used only if "NRD_SUPPORTS_VIEWPORT_OFFSET = 1"
         uint32_t rectOrigin[2] = {};
 
         // A consecutively growing number. Valid usage:
@@ -177,17 +177,17 @@ namespace nrd
         // To reset history set to RESTART or CLEAR_AND_RESTART for one frame
         AccumulationMode accumulationMode = AccumulationMode::CONTINUE;
 
-        // If "true" IN_MV is 3D motion in world-space (0 should be everywhere if the scene is static, camera motion must not be included),
+        // If "true" "IN_MV" is 3D motion in world-space (0 should be everywhere if the scene is static, camera motion must not be included),
         // otherwise it's 2D (+ optional Z delta) screen-space motion (0 should be everywhere if the camera doesn't move)
         bool isMotionVectorInWorldSpace = false;
 
-        // If "true" IN_DIFF_CONFIDENCE and IN_SPEC_CONFIDENCE are available
+        // If "true" "IN_DIFF_CONFIDENCE" and "IN_SPEC_CONFIDENCE" are available
         bool isHistoryConfidenceAvailable = false;
 
-        // If "true" IN_DISOCCLUSION_THRESHOLD_MIX is available
+        // If "true" "IN_DISOCCLUSION_THRESHOLD_MIX" is available
         bool isDisocclusionThresholdMixAvailable = false;
 
-        // If "true" IN_BASECOLOR_METALNESS is available
+        // If "true" "IN_BASECOLOR_METALNESS" is available
         bool isBaseColorMetalnessAvailable = false;
 
         // Enables debug overlay in OUT_VALIDATION
@@ -276,7 +276,7 @@ namespace nrd
         // (normalized %) - represents maximum allowed deviation from the local tangent plane
         float planeDistanceSensitivity = 0.02f;
 
-        // IN_MV = lerp(IN_MV, specularMotion, smoothstep(this[0], this[1], specularProbability))
+        // "IN_MV = lerp(IN_MV, specularMotion, smoothstep(this[0], this[1], specularProbability))"
         float specularProbabilityThresholdsForMvModification[2] = {0.5f, 0.9f};
 
         // [1; 3] - undesired sporadic outliers suppression to keep output stable (smaller values maximize suppression in exchange of bias)
@@ -286,7 +286,7 @@ namespace nrd
         float minMaterialForDiffuse = 4.0f;
         float minMaterialForSpecular = 4.0f;
 
-        // If not OFF and used for DIFFUSE_SPECULAR, defines diffuse orientation, specular orientation is the opposite
+        // If not OFF and used for DIFFUSE_SPECULAR, defines diffuse orientation, specular orientation is the opposite. Used only if "NRD_SUPPORTS_CHECKERBOARD = 1"
         CheckerboardMode checkerboardMode = CheckerboardMode::OFF;
 
         // Must be used only in case of probabilistic sampling (not checkerboarding), when a pixel can be skipped and have "0" (invalid) hit distance
@@ -402,7 +402,7 @@ namespace nrd
         // How much we relax rejection for spatial filter based on roughness and view vector
         float roughnessEdgeStoppingRelaxation = 1.0f;
 
-        // If not OFF and used for DIFFUSE_SPECULAR, defines diffuse orientation, specular orientation is the opposite
+        // If not OFF and used for DIFFUSE_SPECULAR, defines diffuse orientation, specular orientation is the opposite. Used only if "NRD_SUPPORTS_CHECKERBOARD = 1"
         CheckerboardMode checkerboardMode = CheckerboardMode::OFF;
 
         // Must be used only in case of probabilistic sampling (not checkerboarding), when a pixel can be skipped and have "0" (invalid) hit distance
