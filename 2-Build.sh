@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 mkdir -p "_Build"
 
