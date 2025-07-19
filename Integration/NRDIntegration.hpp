@@ -17,7 +17,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #endif
 
 static_assert(NRD_VERSION_MAJOR >= 4 && NRD_VERSION_MINOR >= 15, "Unsupported NRD version!");
-static_assert(NRI_VERSION >= 172, "Unsupported NRI version!");
+static_assert(NRI_VERSION >= 173, "Unsupported NRI version!");
 
 #define NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(expr) \
     if ((expr) != nri::Result::SUCCESS) \
@@ -209,7 +209,7 @@ bool Integration::RecreatePipelines() {
 
     // Destroy old
     for (nri::Pipeline* pipeline : m_Pipelines)
-        m_iCore.DestroyPipeline(*pipeline);
+        m_iCore.DestroyPipeline(pipeline);
     m_Pipelines.clear();
 
     // Create new
@@ -506,7 +506,7 @@ void Integration::NewFrame() {
         auto& descriptors = m_DescriptorsInFlight[m_DescriptorPoolIndex];
 
         for (const auto& descriptor : descriptors)
-            m_iCore.DestroyDescriptor(*descriptor);
+            m_iCore.DestroyDescriptor(descriptor);
 
 #ifdef NRD_INTEGRATION_DEBUG_LOGGING
         if (m_Log)
@@ -699,10 +699,10 @@ void Integration::DenoiseD3D12(const Identifier* denoisers, uint32_t denoisersNu
     Denoise(denoisers, denoisersNum, *commandBuffer, resourceSnapshot);
 
     // Unwrap
-    m_iCore.DestroyCommandBuffer(*commandBuffer);
+    m_iCore.DestroyCommandBuffer(commandBuffer);
 
     for (size_t i = 0; i < resourceSnapshot.uniqueNum; i++)
-        m_iCore.DestroyTexture(*resourceSnapshot.unique[i].nri.texture);
+        m_iCore.DestroyTexture(resourceSnapshot.unique[i].nri.texture);
 }
 #endif
 
@@ -737,10 +737,10 @@ void Integration::DenoiseVK(const Identifier* denoisers, uint32_t denoisersNum, 
     Denoise(denoisers, denoisersNum, *commandBuffer, resourceSnapshot);
 
     // Unwrap
-    m_iCore.DestroyCommandBuffer(*commandBuffer);
+    m_iCore.DestroyCommandBuffer(commandBuffer);
 
     for (size_t i = 0; i < resourceSnapshot.uniqueNum; i++)
-        m_iCore.DestroyTexture(*resourceSnapshot.unique[i].nri.texture);
+        m_iCore.DestroyTexture(resourceSnapshot.unique[i].nri.texture);
 }
 #endif
 
@@ -807,7 +807,7 @@ void Integration::_Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPo
                 resource->state = after;
 
                 // Create descriptor
-                uint64_t nativeObject = m_iCore.GetTextureNativeObject(*resource->nri.texture);
+                uint64_t nativeObject = m_iCore.GetTextureNativeObject(resource->nri.texture);
                 uint64_t key = CreateDescriptorKey(nativeObject, isStorage);
                 const auto& entry = m_CachedDescriptors.find(key);
 
@@ -943,7 +943,7 @@ void Integration::DestroyCachedDescriptors() {
 
     for (auto& descriptors : m_DescriptorsInFlight) {
         for (const auto& descriptor : descriptors)
-            m_iCore.DestroyDescriptor(*descriptor);
+            m_iCore.DestroyDescriptor(descriptor);
 
         descriptors.clear();
     }
@@ -960,34 +960,34 @@ void Integration::Destroy() {
     if (m_iCore.GetDeviceDesc) {
         _WaitForIdle();
 
-        m_iCore.DestroyDescriptor(*m_ConstantBufferView);
-        m_iCore.DestroyBuffer(*m_ConstantBuffer);
-        m_iCore.DestroyPipelineLayout(*m_PipelineLayout);
+        m_iCore.DestroyDescriptor(m_ConstantBufferView);
+        m_iCore.DestroyBuffer(m_ConstantBuffer);
+        m_iCore.DestroyPipelineLayout(m_PipelineLayout);
 
         for (auto& descriptors : m_DescriptorsInFlight) {
             for (const auto& descriptor : descriptors)
-                m_iCore.DestroyDescriptor(*descriptor);
+                m_iCore.DestroyDescriptor(descriptor);
 
             descriptors.clear();
         }
 
         for (const Resource& resource : m_TexturePool)
-            m_iCore.DestroyTexture(*resource.nri.texture);
+            m_iCore.DestroyTexture(resource.nri.texture);
 
         for (nri::Descriptor* descriptor : m_Samplers)
-            m_iCore.DestroyDescriptor(*descriptor);
+            m_iCore.DestroyDescriptor(descriptor);
 
         for (nri::Pipeline* pipeline : m_Pipelines)
-            m_iCore.DestroyPipeline(*pipeline);
+            m_iCore.DestroyPipeline(pipeline);
 
         for (nri::Memory* memory : m_MemoryAllocations)
-            m_iCore.FreeMemory(*memory);
+            m_iCore.FreeMemory(memory);
 
         for (nri::DescriptorPool* descriptorPool : m_DescriptorPools)
-            m_iCore.DestroyDescriptorPool(*descriptorPool);
+            m_iCore.DestroyDescriptorPool(descriptorPool);
 
         if (m_Wrapped != nri::GraphicsAPI::NONE)
-            nri::nriDestroyDevice(*m_Device);
+            nri::nriDestroyDevice(m_Device);
     }
 
     if (m_Instance)
@@ -1027,7 +1027,7 @@ void Integration::Destroy() {
 
 void Integration::_WaitForIdle() {
     if (m_Desc.autoWaitForIdle)
-        m_iCore.DeviceWaitIdle(*m_Device);
+        m_iCore.DeviceWaitIdle(m_Device);
 }
 
 } // namespace nrd
