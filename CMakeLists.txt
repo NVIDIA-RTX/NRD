@@ -57,12 +57,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 99)
 
-if(MSVC)
-    # Generate PDB for Release builds
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
-endif()
-
 # Enable grouping of source files into folders in IDEs
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -73,7 +67,7 @@ file(WRITE Shaders/Include/NRDEncoding.hlsli
     "#define NRD_ROUGHNESS_ENCODING ${NRD_ROUGHNESS_ENCODING}\n")
 
 # Compile options
-if(NOT((CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64") OR(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")))
+if(NOT ((CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64") OR (CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")))
     set(SIMD -mssse3)
 endif()
 
@@ -82,8 +76,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(COMPILE_OPTIONS ${SIMD} -Wextra)
 elseif(MSVC)
-    set(COMPILE_OPTIONS /W4 /WX
+    set(COMPILE_OPTIONS
+        /W4 /WX
         /wd4324 # padding was added at the end of a structure because you specified an alignment specifier
+        $<$<CONFIG:Release>:/Zi> # generate a PDB for Release build
     )
 else()
     message(WARNING "Unknown compiler!")
@@ -138,7 +134,7 @@ if(NOT TARGET ShaderMake)
     FetchContent_Declare(
         shadermake
         GIT_REPOSITORY https://github.com/NVIDIA-RTX/ShaderMake.git
-        GIT_TAG b88310c0222a5e6ee44fdf92da9dfe3c8a1c4b37
+        GIT_TAG 757594f0539314467f74950c8d898e815ecbd383
         GIT_SHALLOW 1
     )
     list(APPEND DEPS shadermake)
@@ -225,6 +221,13 @@ else()
     else()
         target_compile_definitions(${PROJECT_NAME} PRIVATE "NRD_API=extern \"C\" __attribute__((visibility(\"default\")))")
     endif()
+
+    if(MSVC)
+        target_link_options(${PROJECT_NAME} PRIVATE
+            $<$<CONFIG:Release>:/DEBUG> # generate a PDB for Release build
+            $<$<CONFIG:Release>:/OPT:ICF> # perform identical COMDAT folding (removes duplicate code/data)
+        )
+    endif()
 endif()
 
 if("${NRD_SHADERS_PATH}" STREQUAL "")
@@ -240,9 +243,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC "Include")
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${COMPILE_DEFINITIONS})
 target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS})
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY FOLDER ${PROJECT_NAME})
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    FOLDER ${PROJECT_NAME}
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 message("NRD: output path '${CMAKE_RUNTIME_OUTPUT_DIRECTORY}'")
 
 # NRD integration
@@ -251,7 +256,7 @@ source_group("" FILES ${GLOB_INTEGRATION})
 
 if(WIN32)
     add_library(NRDIntegration INTERFACE ${GLOB_INTEGRATION})
-    set_property(TARGET NRDIntegration PROPERTY FOLDER ${PROJECT_NAME})
+    set_target_properties(NRDIntegration PROPERTIES FOLDER ${PROJECT_NAME})
 else()
     add_library(NRDIntegration INTERFACE) # TODO: fixme...
 endif()
@@ -295,7 +300,7 @@ set(SHADERMAKE_GENERAL_ARGS
     -D NRD_INTERNAL
 )
 
-if (SHADERMAKE_PATH)
+if(SHADERMAKE_PATH)
     set(SHADERMAKE_GENERAL_ARGS ${SHADERMAKE_GENERAL_ARGS} --project "NRD" --compactProgress)
 else()
     # TODO: needed only to support integrations in products with old ShaderMake
@@ -328,5 +333,5 @@ add_custom_target(${PROJECT_NAME}Shaders ALL ${SHADERMAKE_COMMANDS}
     SOURCES ${SHADERS}
 )
 
-set_property(TARGET ${PROJECT_NAME}Shaders PROPERTY FOLDER ${PROJECT_NAME})
+set_target_properties(${PROJECT_NAME}Shaders PROPERTIES FOLDER ${PROJECT_NAME})
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}Shaders)
