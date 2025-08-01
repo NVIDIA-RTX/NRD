@@ -145,7 +145,7 @@ if(NOT TARGET MathLib)
     FetchContent_Declare(
         mathlib
         GIT_REPOSITORY https://github.com/NVIDIA-RTX/MathLib.git
-        GIT_TAG v1.4
+        GIT_TAG ca2684e5400368628d46bdf67e2c08e33e2c4939
         GIT_SHALLOW 1
     )
     list(APPEND DEPS mathlib)
@@ -153,7 +153,8 @@ endif()
 
 if(NOT TARGET NRI AND NRD_NRI)
     # Not needed...
-    option(NRI_ENABLE_D3D_EXTENSIONS "" OFF)
+    option(NRI_ENABLE_NVAPI "" OFF)
+    option(NRI_ENABLE_AMDAGS "" OFF)
     option(NRI_ENABLE_NVTX_SUPPORT "" OFF)
     option(NRI_ENABLE_NONE_SUPPORT "" OFF)
 
@@ -174,7 +175,7 @@ if(NOT TARGET NRI AND NRD_NRI)
     FetchContent_Declare(
         nri
         GIT_REPOSITORY https://github.com/NVIDIA-RTX/NRI.git
-        GIT_TAG v173
+        GIT_TAG e1aa2281ecc60e7aa5afc0f67adedd29221a0a55
         GIT_SHALLOW 1
     )
     list(APPEND DEPS nri)

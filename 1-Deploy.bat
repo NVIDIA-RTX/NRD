@@ -6,7 +6,7 @@ mkdir "_Build"
 
 cd "_Build"
 
-cmake -DNRD_NRI=ON .. -A x64
+cmake -DNRD_NRI=ON .. %*
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 cd ..
