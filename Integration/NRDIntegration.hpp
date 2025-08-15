@@ -599,7 +599,7 @@ void Integration::Denoise(const Identifier* denoisers, uint32_t denoisersNum, nr
     constexpr uint32_t lawnGreen = 0xFF7CFC00;
     constexpr uint32_t limeGreen = 0xFF32CD32;
 
-    m_iCore.CmdSetPipelineLayout(commandBuffer, *m_PipelineLayout);
+    m_iCore.CmdSetPipelineLayout(commandBuffer, nri::BindPoint::COMPUTE, *m_PipelineLayout);
 
     for (uint32_t i = 0; i < dispatchDescsNum; i++) {
         const DispatchDesc& dispatchDesc = dispatchDescs[i];
@@ -635,7 +635,7 @@ void Integration::Denoise(const Identifier* denoisers, uint32_t denoisersNum, nr
         }
 
         if (textureBarrierNum) {
-            nri::BarrierGroupDesc transitionBarriers = {};
+            nri::BarrierDesc transitionBarriers = {};
             transitionBarriers.textures = textureBarriers;
             transitionBarriers.textureNum = textureBarrierNum;
 
@@ -754,7 +754,7 @@ void Integration::_Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPo
     nri::TextureBarrierDesc* transitions = (nri::TextureBarrierDesc*)alloca(sizeof(nri::TextureBarrierDesc) * dispatchDesc.resourcesNum);
     memset(transitions, 0, sizeof(nri::TextureBarrierDesc) * dispatchDesc.resourcesNum);
 
-    nri::BarrierGroupDesc transitionBarriers = {};
+    nri::BarrierDesc transitionBarriers = {};
     transitionBarriers.textures = transitions;
 
     std::array<nri::DescriptorRangeUpdateDesc, 3> descriptorRanges = {};
@@ -898,8 +898,14 @@ void Integration::_Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPo
     nri::Pipeline* pipeline = m_Pipelines[dispatchDesc.pipelineIndex];
     m_iCore.CmdSetPipeline(commandBuffer, *pipeline);
 
-    for (uint32_t i = 0; i < descriptorSetNum; i++)
-        m_iCore.CmdSetDescriptorSet(commandBuffer, i, *descriptorSets[i], i == SET_ALL ? &dynamicConstantBufferOffset : nullptr);
+    for (uint32_t i = 0; i < descriptorSetNum; i++) {
+        nri::SetDescriptorSetDesc setDesc = {};
+        setDesc.setIndex = i;
+        setDesc.descriptorSet = descriptorSets[i];
+        setDesc.dynamicConstantBufferOffsets = i == SET_ALL ? &dynamicConstantBufferOffset : nullptr;
+
+        m_iCore.CmdSetDescriptorSet(commandBuffer, setDesc);
+    }
 
     m_iCore.CmdBarrier(commandBuffer, transitionBarriers);
     m_iCore.CmdDispatch(commandBuffer, {dispatchDesc.gridWidth, dispatchDesc.gridHeight, 1});

@@ -43,21 +43,31 @@ For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "
 
 - Install [*Cmake*](https://cmake.org/download/) 3.22+
 - Build (variant 1) - using *Git* and *CMake* explicitly
-    - Clone project and init submodules
-    - Generate and build the project using *CMake*
-    - To build the binary with static MSVC runtime, add `-DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>"` parameter when deploying the project
+  - Clone project and init submodules
+  - Generate and build the project using *CMake*
+  - To build the binary with static MSVC runtime, add `-DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>"` parameter when deploying the project
 - Build (variant 2) - by running scripts:
-    - Run `1-Deploy`
-    - Run `2-Build`
+  - Run `1-Deploy`
+  - Run `2-Build`
 
 CMake options:
-- `NRD_SHADERS_PATH` - shader output path override
-- `NRD_STATIC_LIBRARY` - build static library (OFF by default)
-- `NRD_NORMAL_ENCODING` - *normal* encoding for the entire library
-- `NRD_ROUGHNESS_ENCODING` - *roughness* encoding for the entire library
-- `NRD_EMBEDS_DXBC_SHADERS` - *NRD* compiles and embeds DXBC shaders (ON by default on Windows)
-- `NRD_EMBEDS_DXIL_SHADERS` - *NRD* compiles and embeds DXIL shaders (ON by default on Windows)
-- `NRD_EMBEDS_SPIRV_SHADERS` - *NRD* compiles and embeds SPIRV shaders (ON by default)
+- Common:
+  - `NRD_NRI` - pull, build and include *NRI* into *NRD SDK* package (OFF by default)
+  - `NRD_SHADERS_PATH` - shader output path override
+  - `NRD_EMBEDS_DXBC_SHADERS` - *NRD* compiles and embeds DXBC shaders (ON by default on Windows)
+  - `NRD_EMBEDS_DXIL_SHADERS` - *NRD* compiles and embeds DXIL shaders (ON by default on Windows)
+  - `NRD_EMBEDS_SPIRV_SHADERS` - *NRD* compiles and embeds SPIRV shaders (ON by default)
+- Compile time switches (prefer to disable unused functionality to increase performance, these switches are also available as macro definitions in the parent project):
+  - `NRD_STATIC_LIBRARY` - build static library (OFF by default)
+  - `NRD_NORMAL_ENCODING` - *normal* encoding for the entire library
+  - `NRD_ROUGHNESS_ENCODING` - *roughness* encoding for the entire library
+  - `NRD_SUPPORTS_VIEWPORT_OFFSET` - enable `CommonSettings::rectOrigin` support (OFF by default)
+  - `NRD_SUPPORTS_CHECKERBOARD` - enable `checkerboardMode` support (ON by default)
+  - `NRD_SUPPORTS_HISTORY_CONFIDENCE` - enable `IN_DIFF_CONFIDENCE` and `IN_SPEC_CONFIDENCE` support (ON by default)
+  - `NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX` - enable `IN_DISOCCLUSION_THRESHOLD_MIX` support (ON by default)
+  - `NRD_SUPPORTS_BASECOLOR_METALNESS` - enable `IN_BASECOLOR_METALNESS` support (ON by default)
+  - `NRD_SUPPORTS_ANTIFIREFLY` - enable `enableAntiFirefly` support (ON by default)
+  - `REBLUR_PERFORMANCE_MODE` - better performance and worse image quality, can be useful for consoles (OFF by default)
 
 `NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING` can be defined only *once* during project deployment. These settings are dumped in `NRDEncoding.hlsli` file, which needs to be optionally included on the application side prior `NRD.hlsli` inclusion to deliver encoding settings matching *NRD* settings. `LibraryDesc` includes encoding settings too. It can be used to verify that the library meets the application expectations.
 

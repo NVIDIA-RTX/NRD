@@ -73,6 +73,10 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #define NRD_SUPPORTS_ANTIFIREFLY                            1
 #endif
 
+#ifndef REBLUR_PERFORMANCE_MODE
+    #define REBLUR_PERFORMANCE_MODE                             0
+#endif
+
 // Switches ( default 1 )
 #define NRD_USE_TILE_CHECK                                      1 // significantly improves performance by skipping computations in "empty" regions
 #define NRD_USE_HIGH_PARALLAX_CURVATURE                         1 // flattens surface on high motion
