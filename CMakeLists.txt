@@ -260,7 +260,7 @@ target_compile_options(NRD
         $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
             -Wextra
             -Wno-missing-field-initializers
-            $<$<NOT:IS_ARM64>:-mssse3>
+            $<$<NOT:$<BOOL:${IS_ARM64}>>:-mssse3>
         >
         # GCC/Clang, but not over MSVC
         $<$<AND:$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>,$<NOT:$<BOOL:${MSVC}>>>:
