@@ -7,6 +7,8 @@ mkdir "_Build"
 cd "_Build"
 
 cmake -DNRD_NRI=ON .. %*
-if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
+if %ERRORLEVEL% NEQ 0 goto END
 
+:END
 cd ..
+exit /B %ERRORLEVEL%

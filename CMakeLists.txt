@@ -3,6 +3,13 @@ cmake_minimum_required(VERSION 3.22...3.30)
 include(CMakeDependentOption)
 include(FetchContent)
 
+# Architecture
+if((CMAKE_GENERATOR_PLATFORM MATCHES "ARM64") OR (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64"))
+    set(IS_ARM64 TRUE)
+else()
+    set(IS_ARM64 FALSE)
+endif()
+
 # Options
 option(NRD_STATIC_LIBRARY "Build static library" OFF)
 option(NRD_NRI "Pull, build and include NRI into NRD SDK package" OFF)
@@ -22,8 +29,8 @@ set(NRD_SHADERS_PATH "" CACHE STRING "Shader output path override")
 set(NRD_NORMAL_ENCODING "2" CACHE STRING "Normal encoding variant (0-4, matches nrd::NormalEncoding)")
 set(NRD_ROUGHNESS_ENCODING "1" CACHE STRING "Roughness encoding variant (0-2, matches nrd::RoughnessEncoding)")
 
-# Cached
-if(PROJECT_IS_TOP_LEVEL)
+# Self-build?
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR}) # if not submodule
     get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
     if(IS_MULTI_CONFIG)
@@ -42,13 +49,8 @@ set(NRD_VERSION_MINOR ${CMAKE_MATCH_1})
 string(REGEX MATCH "NRD_VERSION_BUILD ([0-9]*)" _ ${ver_h})
 set(NRD_VERSION_BUILD ${CMAKE_MATCH_1})
 message("NRD: v${NRD_VERSION_MAJOR}.${NRD_VERSION_MINOR}.${NRD_VERSION_BUILD}")
-message(STATUS "NRD_NORMAL_ENCODING = ${NRD_NORMAL_ENCODING}")
-message(STATUS "NRD_ROUGHNESS_ENCODING = ${NRD_ROUGHNESS_ENCODING}")
 
 project(NRD VERSION ${NRD_VERSION_MAJOR}.${NRD_VERSION_MINOR}.${NRD_VERSION_BUILD} LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Enable grouping of source files into folders in IDEs
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -57,26 +59,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 file(WRITE Shaders/Include/NRDEncoding.hlsli
     "// This file is auto-generated during project deployment. Do not modify!\n"
     "#define NRD_NORMAL_ENCODING ${NRD_NORMAL_ENCODING}\n"
-    "#define NRD_ROUGHNESS_ENCODING ${NRD_ROUGHNESS_ENCODING}\n")
-
-# Compile options
-if(NOT ((CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64") OR (CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")))
-    set(SIMD -mssse3)
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(COMPILE_OPTIONS ${SIMD} -Wextra)
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    set(COMPILE_OPTIONS ${SIMD} -Wextra)
-elseif(MSVC)
-    set(COMPILE_OPTIONS
-        /W4 /WX
-        /wd4324 # padding was added at the end of a structure because you specified an alignment specifier
-        $<$<CONFIG:Release>:/Zi> # generate a PDB for Release build
-    )
-else()
-    message(WARNING "Unknown compiler!")
-endif()
+    "#define NRD_ROUGHNESS_ENCODING ${NRD_ROUGHNESS_ENCODING}\n"
+)
 
 # SPIRV offsets (must respect shader resources limits)
 set(SPIRV_SREG_OFFSET 0)
@@ -85,28 +69,27 @@ set(SPIRV_UREG_OFFSET 3)
 set(SPIRV_TREG_OFFSET 20)
 
 # Compile definitions (public)
-set(COMPILE_DEFINITIONS
-    NRD_NORMAL_ENCODING=${NRD_NORMAL_ENCODING}
-    NRD_ROUGHNESS_ENCODING=${NRD_ROUGHNESS_ENCODING}
+set(COMPILE_DEFINITIONS "")
+foreach(opt IN ITEMS
+    NRD_STATIC_LIBRARY
+    NRD_SUPPORTS_VIEWPORT_OFFSET
+    NRD_SUPPORTS_CHECKERBOARD
+    NRD_SUPPORTS_HISTORY_CONFIDENCE
+    NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX
+    NRD_SUPPORTS_BASECOLOR_METALNESS
+    NRD_SUPPORTS_ANTIFIREFLY
+    REBLUR_PERFORMANCE_MODE
 )
-
-function(add_compile_definition DEFINITION)
-    if(${DEFINITION})
-        message(STATUS "${DEFINITION}")
-        set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} ${DEFINITION}=1 PARENT_SCOPE)
+    if(${opt})
+        message(STATUS "${opt}")
+        list(APPEND COMPILE_DEFINITIONS "${opt}=1")
     else()
-        set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} ${DEFINITION}=0 PARENT_SCOPE)
+        list(APPEND COMPILE_DEFINITIONS "${opt}=0")
     endif()
-endfunction()
+endforeach()
 
-add_compile_definition(NRD_STATIC_LIBRARY)
-add_compile_definition(NRD_SUPPORTS_VIEWPORT_OFFSET)
-add_compile_definition(NRD_SUPPORTS_CHECKERBOARD)
-add_compile_definition(NRD_SUPPORTS_HISTORY_CONFIDENCE)
-add_compile_definition(NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX)
-add_compile_definition(NRD_SUPPORTS_BASECOLOR_METALNESS)
-add_compile_definition(NRD_SUPPORTS_ANTIFIREFLY)
-add_compile_definition(REBLUR_PERFORMANCE_MODE)
+message(STATUS "NRD_NORMAL_ENCODING = ${NRD_NORMAL_ENCODING}")
+message(STATUS "NRD_ROUGHNESS_ENCODING = ${NRD_ROUGHNESS_ENCODING}")
 
 # Download dependencies
 set(DEPS)
@@ -136,30 +119,19 @@ if(NOT TARGET MathLib)
 endif()
 
 if(NOT TARGET NRI AND NRD_NRI)
-    # Not needed...
+    # NRI
     option(NRI_ENABLE_NVAPI "" OFF)
     option(NRI_ENABLE_AMDAGS "" OFF)
     option(NRI_ENABLE_NVTX_SUPPORT "" OFF)
     option(NRI_ENABLE_NONE_SUPPORT "" OFF)
+    cmake_dependent_option(NRI_ENABLE_VK_SUPPORT "" ON "NRD_EMBEDS_SPIRV_SHADERS" OFF)
+    cmake_dependent_option(NRI_ENABLE_D3D12_SUPPORT "" ON "NRD_EMBEDS_DXIL_SHADERS" OFF)
+    cmake_dependent_option(NRI_ENABLE_D3D11_SUPPORT "" ON "NRD_EMBEDS_DXBC_SHADERS" OFF)
 
-    # Not needed if no shaders
-    if(NOT NRD_EMBEDS_SPIRV_SHADERS)
-        option(NRI_ENABLE_VK_SUPPORT "" OFF)
-    endif()
-
-    if(NOT NRD_EMBEDS_DXIL_SHADERS)
-        option(NRI_ENABLE_D3D12_SUPPORT "" OFF)
-    endif()
-
-    if(NOT NRD_EMBEDS_DXBC_SHADERS)
-        option(NRI_ENABLE_D3D11_SUPPORT "" OFF)
-    endif()
-
-    # NRI
     FetchContent_Declare(
         nri
         GIT_REPOSITORY https://github.com/NVIDIA-RTX/NRI.git
-        GIT_TAG 2ec29ecdd961381118e179a51296b4b231de82a4
+        GIT_TAG v174
         GIT_SHALLOW 1
     )
     list(APPEND DEPS nri)
@@ -173,16 +145,54 @@ if(DEPS)
 endif()
 
 # NRD
-file(GLOB GLOB_INCUDE "Include/*")
+set(GLOB_INCUDE
+    "Include/NRD.h"
+    "Include/NRDDescs.h"
+    "Include/NRDSettings.h"
+)
 source_group("Include" FILES ${GLOB_INCUDE})
 
-file(GLOB GLOB_SOURCE "Source/*.cpp" "Source/*.h" "Source/*.hpp")
+set(GLOB_SOURCE
+    "Source/InstanceImpl.cpp"
+    "Source/InstanceImpl.h"
+    "Source/Reblur.cpp"
+    "Source/Reference.cpp"
+    "Source/Relax.cpp"
+    "Source/Sigma.cpp"
+    "Source/StdAllocator.h"
+    "Source/Timer.cpp"
+    "Source/Timer.h"
+    "Source/Wrapper.cpp"
+)
 source_group("Source" FILES ${GLOB_SOURCE})
 
-file(GLOB GLOB_DENOISERS "Source/Denoisers/*.cpp" "Source/Denoisers/*.h" "Source/Denoisers/*.hpp")
+set(GLOB_DENOISERS
+    "Source/Denoisers/Reblur_Diffuse.hpp"
+    "Source/Denoisers/Reblur_DiffuseDirectionalOcclusion.hpp"
+    "Source/Denoisers/Reblur_DiffuseOcclusion.hpp"
+    "Source/Denoisers/Reblur_DiffuseSh.hpp"
+    "Source/Denoisers/Reblur_DiffuseSpecular.hpp"
+    "Source/Denoisers/Reblur_DiffuseSpecularOcclusion.hpp"
+    "Source/Denoisers/Reblur_DiffuseSpecularSh.hpp"
+    "Source/Denoisers/Reblur_Specular.hpp"
+    "Source/Denoisers/Reblur_SpecularOcclusion.hpp"
+    "Source/Denoisers/Reblur_SpecularSh.hpp"
+    "Source/Denoisers/Reference.hpp"
+    "Source/Denoisers/Relax_Diffuse.hpp"
+    "Source/Denoisers/Relax_DiffuseSh.hpp"
+    "Source/Denoisers/Relax_DiffuseSpecular.hpp"
+    "Source/Denoisers/Relax_DiffuseSpecularSh.hpp"
+    "Source/Denoisers/Relax_Specular.hpp"
+    "Source/Denoisers/Relax_SpecularSh.hpp"
+    "Source/Denoisers/Sigma_Shadow.hpp"
+    "Source/Denoisers/Sigma_ShadowTranslucency.hpp"
+)
 source_group("Denoisers" FILES ${GLOB_DENOISERS})
 
-file(GLOB GLOB_RESOURCES "Resources/*")
+set(GLOB_RESOURCES
+    "Resources/NRD.rc"
+    "Resources/Version.h"
+)
 source_group("Resources" FILES ${GLOB_RESOURCES})
 
 if(NRD_STATIC_LIBRARY)
@@ -221,7 +231,12 @@ else()
 endif()
 
 target_link_libraries(NRD PRIVATE MathLib)
-target_include_directories(NRD PUBLIC "Include")
+target_include_directories(NRD
+    PUBLIC
+        "Include"
+    PRIVATE
+        ${NRD_SHADERS_PATH}
+)
 target_compile_definitions(NRD
     PRIVATE
         WIN32_LEAN_AND_MEAN
@@ -235,9 +250,33 @@ target_compile_definitions(NRD
         SPIRV_UREG_OFFSET=${SPIRV_UREG_OFFSET}
         SPIRV_TREG_OFFSET=${SPIRV_TREG_OFFSET}
     PUBLIC
+        NRD_NORMAL_ENCODING=${NRD_NORMAL_ENCODING}
+        NRD_ROUGHNESS_ENCODING=${NRD_ROUGHNESS_ENCODING}
         ${COMPILE_DEFINITIONS}
 )
-target_compile_options(NRD PRIVATE ${COMPILE_OPTIONS})
+target_compile_options(NRD
+    PRIVATE
+        # GCC/Clang
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
+            -Wextra
+            -Wno-missing-field-initializers
+            $<$<NOT:IS_ARM64>:-mssse3>
+        >
+        # GCC/Clang, but not over MSVC
+        $<$<AND:$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>,$<NOT:$<BOOL:${MSVC}>>>:
+            -Werror
+            -fPIC
+            -fvisibility=hidden
+        >
+        # MSVC specific options
+        $<$<CXX_COMPILER_ID:MSVC>:
+            /W4
+            /WX
+            /wd4324
+            $<$<CONFIG:Release>:/Zi>
+        >
+)
+target_compile_features(NRD PUBLIC cxx_std_17)
 
 set_target_properties(NRD PROPERTIES
     FOLDER "NRD"
@@ -245,21 +284,18 @@ set_target_properties(NRD PROPERTIES
 )
 
 # NRD integration
-file(GLOB GLOB_INTEGRATION "Integration/*")
+set(GLOB_INTEGRATION
+    "Integration/NRDIntegration.h"
+    "Integration/NRDIntegration.hpp"
+)
 source_group("" FILES ${GLOB_INTEGRATION})
 
-if(WIN32)
-    add_library(NRDIntegration INTERFACE ${GLOB_INTEGRATION})
-    set_target_properties(NRDIntegration PROPERTIES FOLDER "NRD")
-else()
-    add_library(NRDIntegration INTERFACE) # TODO: fixme...
-endif()
-
+add_library(NRDIntegration INTERFACE)
+target_sources(NRDIntegration INTERFACE ${GLOB_INTEGRATION})
 target_include_directories(NRDIntegration INTERFACE "Integration")
+set_target_properties(NRDIntegration PROPERTIES FOLDER "NRD")
 
 # Shaders
-target_include_directories(NRD PRIVATE "${NRD_SHADERS_PATH}")
-
 file(GLOB_RECURSE SHADERS
     "Shaders/*.hlsl"
     "Shaders/*.hlsli"
@@ -303,7 +339,7 @@ set(SHADERMAKE_GENERAL_ARGS
 if(SHADERMAKE_PATH)
     set(SHADERMAKE_GENERAL_ARGS ${SHADERMAKE_GENERAL_ARGS} --project "NRD" --compactProgress)
 else()
-    # TODO: needed only to support integrations in products with old ShaderMake
+    # Needed only to support integrations in products with old ShaderMake
     set(SHADERMAKE_PATH "ShaderMake")
     set(SHADERMAKE_DXC_PATH ${DXC_PATH})
     set(SHADERMAKE_DXC_VK_PATH ${DXC_SPIRV_PATH})
@@ -311,29 +347,27 @@ else()
 endif()
 
 # ShaderMake commands for each shader code container
-set(SHADERMAKE_COMMANDS "")
-
+set(SHADERMAKE_COMMANDS)
 if(NRD_EMBEDS_DXIL_SHADERS)
-    set(SHADERMAKE_COMMANDS ${SHADERMAKE_COMMANDS} COMMAND ${SHADERMAKE_PATH} -p DXIL --compiler "${SHADERMAKE_DXC_PATH}" ${SHADERMAKE_GENERAL_ARGS})
+    list(APPEND SHADERMAKE_COMMANDS COMMAND ${SHADERMAKE_PATH} -p DXIL --compiler "${SHADERMAKE_DXC_PATH}" ${SHADERMAKE_GENERAL_ARGS})
     message(STATUS "NRD_EMBEDS_DXIL_SHADERS")
 endif()
-
 if(NRD_EMBEDS_SPIRV_SHADERS)
-    set(SHADERMAKE_COMMANDS ${SHADERMAKE_COMMANDS} COMMAND ${SHADERMAKE_PATH} -p SPIRV --compiler "${SHADERMAKE_DXC_VK_PATH}" ${SHADERMAKE_GENERAL_ARGS})
+    list(APPEND SHADERMAKE_COMMANDS COMMAND ${SHADERMAKE_PATH} -p SPIRV --compiler "${SHADERMAKE_DXC_VK_PATH}" ${SHADERMAKE_GENERAL_ARGS})
     message(STATUS "NRD_EMBEDS_SPIRV_SHADERS")
 endif()
-
 if(NRD_EMBEDS_DXBC_SHADERS)
-    set(SHADERMAKE_COMMANDS ${SHADERMAKE_COMMANDS} COMMAND ${SHADERMAKE_PATH} -p DXBC --compiler "${SHADERMAKE_FXC_PATH}" ${SHADERMAKE_GENERAL_ARGS})
+    list(APPEND SHADERMAKE_COMMANDS COMMAND ${SHADERMAKE_PATH} -p DXBC --compiler "${SHADERMAKE_FXC_PATH}" ${SHADERMAKE_GENERAL_ARGS})
     message(STATUS "NRD_EMBEDS_DXBC_SHADERS")
 endif()
+list(APPEND SHADERMAKE_COMMANDS "") # fix for "The system cannot find the batch label specified - VCEnd"
 
 # Add the target with the commands
 add_custom_target(NRDShaders ALL ${SHADERMAKE_COMMANDS}
     DEPENDS ShaderMake
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    VERBATIM
     SOURCES ${SHADERS}
+    VERBATIM
 )
 
 set_target_properties(NRDShaders PROPERTIES FOLDER "NRD")
