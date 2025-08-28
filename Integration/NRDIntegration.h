@@ -42,8 +42,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #endif
 
 // NRI-based NRD integration layer
-#define NRD_VERSION          18
-#define NRD_INTEGRATION_DATE "9 May 2025"
+#define NRD_INTEGRATION_VERSION 19
+#define NRD_INTEGRATION_DATE "28 August 2025"
 
 namespace nrd {
 
@@ -283,9 +283,7 @@ private:
     std::vector<Resource> m_TexturePool;
     std::vector<nri::Pipeline*> m_Pipelines;
     std::vector<nri::Memory*> m_MemoryAllocations;
-    std::vector<nri::Descriptor*> m_Samplers;
     std::vector<nri::DescriptorPool*> m_DescriptorPools = {};
-    std::vector<nri::DescriptorSet*> m_DescriptorSetSamplers = {};
     std::vector<std::vector<nri::Descriptor*>> m_DescriptorsInFlight;
     std::map<uint64_t, nri::Descriptor*> m_CachedDescriptors;
     IntegrationCreationDesc m_Desc = {};

@@ -306,6 +306,10 @@ A single NRD instance can now include any combination of denoisers, including re
 
 ## To v4.15
 - *API*:
-  - removed `ResourceRangeDesc::baseRegisterIndex`and added global `InstanceDesc::resourcesBaseRegisterIndex`
-  - spaces for constant buffer and resources merged into a single `InstanceDesc::constantBufferAndResourcesSpaceIndex`
+  - removed `DescriptorPoolDesc::totalConstantBuffersNum` and `DescriptorPoolDesc::totalSamplersNum`. Use root (immutable) samplers and root (push) descriptor for the constant buffer
+  - added `InstanceDesc::rootSpaceIndex` for samplers and the constant buffer
+  - added `InstanceDesc::resourcesSpaceIndex` for other resources (SRVs and UAVs)
+  - separated base registers in `InstanceDesc` into constant buffer, samplers and resources
   - reworked `DescriptorPoolDesc`
+- *NRD INTEGRATION*:
+  - expects unique register spaces

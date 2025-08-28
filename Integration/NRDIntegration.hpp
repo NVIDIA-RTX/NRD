@@ -17,7 +17,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #endif
 
 static_assert(NRD_VERSION_MAJOR >= 4 && NRD_VERSION_MINOR >= 15, "Unsupported NRD version!");
-static_assert(NRI_VERSION >= 174, "Unsupported NRI version!");
+static_assert(NRI_VERSION >= 175, "Unsupported NRI version!");
 
 #define NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(expr) \
     if ((expr) != nri::Result::SUCCESS) \
@@ -25,12 +25,8 @@ static_assert(NRI_VERSION >= 174, "Unsupported NRI version!");
 
 namespace nrd {
 
-constexpr uint32_t SET_ALL = 0;
-constexpr uint32_t SET_SAMPLERS = 1;
-
 constexpr uint32_t RANGE_TEXTURES = 0;
 constexpr uint32_t RANGE_STORAGES = 1;
-constexpr uint32_t RANGE_SAMPLERS = 2;
 
 constexpr std::array<nri::Format, (size_t)Format::MAX_NUM> g_NrdFormatToNri = {
     nri::Format::R8_UNORM,
@@ -326,21 +322,6 @@ bool Integration::_CreateResources() {
 #endif
     }
 
-    { // Samplers
-        for (uint32_t i = 0; i < instanceDesc.samplersNum; i++) {
-            Sampler nrdSampler = instanceDesc.samplers[i];
-
-            nri::SamplerDesc samplerDesc = {};
-            samplerDesc.addressModes = {nri::AddressMode::CLAMP_TO_EDGE, nri::AddressMode::CLAMP_TO_EDGE};
-            samplerDesc.filters.min = nrdSampler == Sampler::NEAREST_CLAMP ? nri::Filter::NEAREST : nri::Filter::LINEAR;
-            samplerDesc.filters.mag = nrdSampler == Sampler::NEAREST_CLAMP ? nri::Filter::NEAREST : nri::Filter::LINEAR;
-
-            nri::Descriptor* descriptor = nullptr;
-            NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(m_iCore.CreateSampler(*m_Device, samplerDesc, descriptor));
-            m_Samplers.push_back(descriptor);
-        }
-    }
-
     { // Constant buffer
         m_ConstantBufferViewSize = Align(instanceDesc.constantBufferMaxDataSize, deviceDesc.memoryAlignment.constantBufferOffset);
         m_ConstantBufferSize = uint64_t(m_ConstantBufferViewSize) * instanceDesc.descriptorPoolDesc.setsMaxNum * m_Desc.queuedFrameNum;
@@ -388,9 +369,8 @@ bool Integration::_CreateResources() {
     }
 
     // Pipeline layout
-    nri::DescriptorRangeDesc descriptorRanges[3] = {};
+    nri::DescriptorRangeDesc descriptorRanges[2] = {};
     {
-        // SPIRV binding offsets
         uint32_t constantBufferOffset = 0;
         uint32_t samplerOffset = 0;
         uint32_t textureOffset = 0;
@@ -404,7 +384,6 @@ bool Integration::_CreateResources() {
             storageTextureOffset = nrdLibraryDesc.spirvBindingOffsets.storageTextureAndBufferOffset;
         }
 
-        // Descriptor ranges
         descriptorRanges[RANGE_TEXTURES].baseRegisterIndex = textureOffset + instanceDesc.resourcesBaseRegisterIndex;
         descriptorRanges[RANGE_TEXTURES].descriptorNum = instanceDesc.descriptorPoolDesc.perSetTexturesMaxNum;
         descriptorRanges[RANGE_TEXTURES].descriptorType = nri::DescriptorType::TEXTURE;
@@ -417,34 +396,37 @@ bool Integration::_CreateResources() {
         descriptorRanges[RANGE_STORAGES].shaderStages = nri::StageBits::COMPUTE_SHADER;
         descriptorRanges[RANGE_STORAGES].flags = nri::DescriptorRangeBits::PARTIALLY_BOUND;
 
-        descriptorRanges[RANGE_SAMPLERS].baseRegisterIndex = samplerOffset + instanceDesc.samplersBaseRegisterIndex;
-        descriptorRanges[RANGE_SAMPLERS].descriptorNum = instanceDesc.samplersNum;
-        descriptorRanges[RANGE_SAMPLERS].descriptorType = nri::DescriptorType::SAMPLER;
-        descriptorRanges[RANGE_SAMPLERS].shaderStages = nri::StageBits::COMPUTE_SHADER;
+        std::vector<nri::RootSamplerDesc> rootSamplers;
+        for (uint32_t i = 0; i < instanceDesc.samplersNum; i++) {
+            Sampler nrdSampler = instanceDesc.samplers[i];
 
-        // Descriptor sets
-        const nri::DynamicConstantBufferDesc dynamicConstantBufferDesc = {constantBufferOffset + instanceDesc.constantBufferRegisterIndex, nri::StageBits::COMPUTE_SHADER};
-
-        nri::DescriptorSetDesc descriptorSetDescs[2] = {};
-
-        descriptorSetDescs[SET_ALL].registerSpace = instanceDesc.constantBufferAndResourcesSpaceIndex;
-        descriptorSetDescs[SET_ALL].dynamicConstantBuffers = &dynamicConstantBufferDesc;
-        descriptorSetDescs[SET_ALL].dynamicConstantBufferNum = 1;
-        descriptorSetDescs[SET_ALL].ranges = descriptorRanges;
-        descriptorSetDescs[SET_ALL].rangeNum = 3;
-
-        if (instanceDesc.samplersInSeparateSet) {
-            descriptorSetDescs[SET_ALL].rangeNum = 2;
-
-            descriptorSetDescs[SET_SAMPLERS].registerSpace = instanceDesc.samplersSpaceIndex;
-            descriptorSetDescs[SET_SAMPLERS].ranges = &descriptorRanges[RANGE_SAMPLERS];
-            descriptorSetDescs[SET_SAMPLERS].rangeNum = 1;
+            nri::RootSamplerDesc& rootSampler = rootSamplers.emplace_back();
+            rootSampler = {};
+            rootSampler.registerIndex = samplerOffset + instanceDesc.samplersBaseRegisterIndex + i;
+            rootSampler.shaderStages = nri::StageBits::COMPUTE_SHADER;
+            rootSampler.desc.addressModes = {nri::AddressMode::CLAMP_TO_EDGE, nri::AddressMode::CLAMP_TO_EDGE};
+            rootSampler.desc.filters.min = nrdSampler == Sampler::NEAREST_CLAMP ? nri::Filter::NEAREST : nri::Filter::LINEAR;
+            rootSampler.desc.filters.mag = nrdSampler == Sampler::NEAREST_CLAMP ? nri::Filter::NEAREST : nri::Filter::LINEAR;
         }
 
-        // Pipeline layout
+        nri::DescriptorSetDesc resources = {};
+        resources.registerSpace = instanceDesc.resourcesSpaceIndex;
+        resources.ranges = descriptorRanges;
+        resources.rangeNum = 2;
+
+        nri::RootDescriptorDesc constantBuffer = {};
+        constantBuffer.registerIndex = constantBufferOffset + instanceDesc.constantBufferRegisterIndex;
+        constantBuffer.descriptorType = nri::DescriptorType::CONSTANT_BUFFER;
+        constantBuffer.shaderStages = nri::StageBits::COMPUTE_SHADER;
+
         nri::PipelineLayoutDesc pipelineLayoutDesc = {};
-        pipelineLayoutDesc.descriptorSetNum = instanceDesc.samplersInSeparateSet ? 2 : 1;
-        pipelineLayoutDesc.descriptorSets = descriptorSetDescs;
+        pipelineLayoutDesc.rootRegisterSpace = instanceDesc.rootSpaceIndex;
+        pipelineLayoutDesc.rootDescriptors = &constantBuffer;
+        pipelineLayoutDesc.rootDescriptorNum = 1;
+        pipelineLayoutDesc.rootSamplers = rootSamplers.data();
+        pipelineLayoutDesc.rootSamplerNum = instanceDesc.samplersNum;
+        pipelineLayoutDesc.descriptorSets = &resources;
+        pipelineLayoutDesc.descriptorSetNum = 1;
         pipelineLayoutDesc.shaderStages = nri::StageBits::COMPUTE_SHADER;
         pipelineLayoutDesc.flags = nri::PipelineLayoutBits::IGNORE_GLOBAL_SPIRV_OFFSETS;
 
@@ -456,17 +438,14 @@ bool Integration::_CreateResources() {
 
         nri::DescriptorPoolDesc descriptorPoolDesc = {};
         descriptorPoolDesc.descriptorSetMaxNum = setMaxNum;
-        descriptorPoolDesc.dynamicConstantBufferMaxNum = setMaxNum;
         descriptorPoolDesc.textureMaxNum = setMaxNum * descriptorRanges[RANGE_TEXTURES].descriptorNum;
         descriptorPoolDesc.storageTextureMaxNum = setMaxNum * descriptorRanges[RANGE_STORAGES].descriptorNum;
-        descriptorPoolDesc.samplerMaxNum = (instanceDesc.samplersInSeparateSet ? 1 : setMaxNum) * descriptorRanges[RANGE_SAMPLERS].descriptorNum;
 
         for (uint32_t i = 0; i < m_Desc.queuedFrameNum; i++) {
             nri::DescriptorPool* descriptorPool = nullptr;
             NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(m_iCore.CreateDescriptorPool(*m_Device, descriptorPoolDesc, descriptorPool));
             m_DescriptorPools.push_back(descriptorPool);
 
-            m_DescriptorSetSamplers.push_back(nullptr);
             m_DescriptorsInFlight.push_back({});
         }
     }
@@ -498,8 +477,6 @@ void Integration::NewFrame() {
     // Reset descriptor pool and samplers (since they are allocated from it)
     nri::DescriptorPool* descriptorPool = m_DescriptorPools[m_DescriptorPoolIndex];
     m_iCore.ResetDescriptorPool(*descriptorPool);
-
-    m_DescriptorSetSamplers[m_DescriptorPoolIndex] = nullptr;
 
     // Referenced by the GPU descriptors can't be destroyed...
     if (!m_Desc.enableWholeLifetimeDescriptorCaching) {
@@ -757,8 +734,7 @@ void Integration::_Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPo
     nri::BarrierDesc transitionBarriers = {};
     transitionBarriers.textures = transitions;
 
-    std::array<nri::DescriptorRangeUpdateDesc, 3> descriptorRanges = {};
-    descriptorRanges[RANGE_SAMPLERS] = {m_Samplers.data(), instanceDesc.samplersNum, 0};
+    std::array<nri::DescriptorRangeUpdateDesc, 2> descriptorRanges = {};
 
     uint32_t createdDescriptorNum = 0;
 
@@ -841,26 +817,6 @@ void Integration::_Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPo
         }
     }
 
-    // Allocate descriptor sets
-    uint32_t descriptorSetNum = instanceDesc.samplersInSeparateSet ? 2 : 1;
-
-    std::array<nri::DescriptorSet*, 2> descriptorSets = {};
-    nri::Result result = m_iCore.AllocateDescriptorSets(descriptorPool, *m_PipelineLayout, SET_ALL, &descriptorSets[SET_ALL], 1, 0);
-    NRD_INTEGRATION_ASSERT(result == nri::Result::SUCCESS, "AllocateDescriptorSets() failed!");
-
-    // Update samplers
-    if (instanceDesc.samplersInSeparateSet) {
-        nri::DescriptorSet*& descriptorSetSamplers = m_DescriptorSetSamplers[m_DescriptorPoolIndex];
-        if (!descriptorSetSamplers) {
-            result = m_iCore.AllocateDescriptorSets(descriptorPool, *m_PipelineLayout, SET_SAMPLERS, &descriptorSetSamplers, 1, 0);
-            NRD_INTEGRATION_ASSERT(result == nri::Result::SUCCESS, "AllocateDescriptorSets() failed!");
-
-            m_iCore.UpdateDescriptorRanges(*descriptorSetSamplers, 0, 1, &descriptorRanges[RANGE_SAMPLERS]);
-        }
-
-        descriptorSets[SET_SAMPLERS] = descriptorSetSamplers;
-    }
-
     // Update constants
     uint32_t dynamicConstantBufferOffset = m_ConstantBufferOffsetPrev;
     {
@@ -883,29 +839,28 @@ void Integration::_Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPo
             // Save previous offset for potential CB data reuse
             m_ConstantBufferOffsetPrev = dynamicConstantBufferOffset;
         }
-
-        // Must be updated since it's declared in the shared pipeline layout
-        m_iCore.UpdateDynamicConstantBuffers(*descriptorSets[SET_ALL], 0, 1, &m_ConstantBufferView);
     }
+
+    // Allocate descriptor sets
+    nri::DescriptorSet* descriptorSet = nullptr;
+    nri::Result result = m_iCore.AllocateDescriptorSets(descriptorPool, *m_PipelineLayout, 0, &descriptorSet, 1, 0);
+    NRD_INTEGRATION_ASSERT(result == nri::Result::SUCCESS, "AllocateDescriptorSets() failed!");
 
     // Update descriptor ranges
     uint32_t baseRange = pipelineDesc.resourceRangesNum == 1 ? RANGE_STORAGES : RANGE_TEXTURES;
-    uint32_t rangeNum = pipelineDesc.resourceRangesNum + (instanceDesc.samplersInSeparateSet ? 0 : 1);
+    uint32_t rangeNum = pipelineDesc.resourceRangesNum;
 
-    m_iCore.UpdateDescriptorRanges(*descriptorSets[SET_ALL], baseRange, rangeNum, &descriptorRanges[baseRange]);
+    m_iCore.UpdateDescriptorRanges(*descriptorSet, baseRange, rangeNum, &descriptorRanges[baseRange]);
 
     // Rendering
     nri::Pipeline* pipeline = m_Pipelines[dispatchDesc.pipelineIndex];
     m_iCore.CmdSetPipeline(commandBuffer, *pipeline);
 
-    for (uint32_t i = 0; i < descriptorSetNum; i++) {
-        nri::SetDescriptorSetDesc setDesc = {};
-        setDesc.setIndex = i;
-        setDesc.descriptorSet = descriptorSets[i];
-        setDesc.dynamicConstantBufferOffsets = i == SET_ALL ? &dynamicConstantBufferOffset : nullptr;
+    nri::SetDescriptorSetDesc resources = {0, descriptorSet};
+    m_iCore.CmdSetDescriptorSet(commandBuffer, resources);
 
-        m_iCore.CmdSetDescriptorSet(commandBuffer, setDesc);
-    }
+    nri::SetRootDescriptorDesc constantBuffer = {0, m_ConstantBufferView, dynamicConstantBufferOffset};
+    m_iCore.CmdSetRootDescriptor(commandBuffer, constantBuffer);
 
     m_iCore.CmdBarrier(commandBuffer, transitionBarriers);
     m_iCore.CmdDispatch(commandBuffer, {dispatchDesc.gridWidth, dispatchDesc.gridHeight, 1});
@@ -980,9 +935,6 @@ void Integration::Destroy() {
         for (const Resource& resource : m_TexturePool)
             m_iCore.DestroyTexture(resource.nri.texture);
 
-        for (nri::Descriptor* descriptor : m_Samplers)
-            m_iCore.DestroyDescriptor(descriptor);
-
         for (nri::Pipeline* pipeline : m_Pipelines)
             m_iCore.DestroyPipeline(pipeline);
 
@@ -1003,9 +955,7 @@ void Integration::Destroy() {
     m_TexturePool.clear();
     m_Pipelines.clear();
     m_MemoryAllocations.clear();
-    m_Samplers.clear();
     m_DescriptorPools.clear();
-    m_DescriptorSetSamplers.clear();
     m_DescriptorsInFlight.clear();
     m_CachedDescriptors.clear();
     m_Desc = {};

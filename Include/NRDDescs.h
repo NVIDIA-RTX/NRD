@@ -453,9 +453,6 @@ namespace nrd
     {
         // Useful for tight (per pipeline) pipeline layouts (root signatures)
         // - summed up across all dispatches
-        // - samplers are summed only if "samplersInSeparateSet = false", otherwise "totalSamplersNum = Sampler::MAX_NUM"
-        uint32_t totalConstantBuffersNum;
-        uint32_t totalSamplersNum;                       // not needed if used as static/immutable samplers
         uint32_t totalTexturesNum;
         uint32_t totalStorageTexturesNum;
 
@@ -471,22 +468,25 @@ namespace nrd
 
     struct InstanceDesc
     {
-        // Constant buffer
-        uint32_t constantBufferMaxDataSize;
-        uint32_t constantBufferRegisterIndex;           // = "NRD_CONSTANT_BUFFER_REGISTER_INDEX"
-        uint32_t constantBufferAndResourcesSpaceIndex;  // = "NRD_CONSTANT_BUFFER_AND_RESOURCES_SPACE_INDEX"
+        // Register spaces
+        uint32_t rootSpaceIndex;                        // samplers and the constant buffer (= "NRD_ROOT_SPACE_INDEX")
+        uint32_t resourcesSpaceIndex;                   // SRVs and UAVs (= "NRD_RESOURCES_SPACE_INDEX")
 
-        // Samplers
+        // Base registers
+        uint32_t constantBufferRegisterIndex;           // = "NRD_CONSTANT_BUFFER_REGISTER_INDEX"
+        uint32_t samplersBaseRegisterIndex;
+        uint32_t resourcesBaseRegisterIndex;
+
+        // Constant buffer (use a root/push descriptor)
+        uint32_t constantBufferMaxDataSize;
+
+        // Samplers (use root/immutable samplers)
         const Sampler* samplers;
         uint32_t samplersNum;                           // = "Sampler::MAX_NUM"
-        uint32_t samplersSpaceIndex;                    // = "NRD_SAMPLERS_SPACE_INDEX"
-        uint32_t samplersBaseRegisterIndex;
-        bool samplersInSeparateSet;                     // "true" if "NRD_SAMPLERS_SPACE_INDEX" is unique and not shared with other spaces
 
         // Pipelines
         const PipelineDesc* pipelines;
         uint32_t pipelinesNum;
-        uint32_t resourcesBaseRegisterIndex;
 
         // Textures
         const TextureDesc* permanentPool;
