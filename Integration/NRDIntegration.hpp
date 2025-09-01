@@ -420,7 +420,7 @@ bool Integration::_CreateResources() {
         constantBuffer.shaderStages = nri::StageBits::COMPUTE_SHADER;
 
         nri::PipelineLayoutDesc pipelineLayoutDesc = {};
-        pipelineLayoutDesc.rootRegisterSpace = instanceDesc.rootSpaceIndex;
+        pipelineLayoutDesc.rootRegisterSpace = instanceDesc.constantBufferAndSamplersSpaceIndex;
         pipelineLayoutDesc.rootDescriptors = &constantBuffer;
         pipelineLayoutDesc.rootDescriptorNum = 1;
         pipelineLayoutDesc.rootSamplers = rootSamplers.data();
