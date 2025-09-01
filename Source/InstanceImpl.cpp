@@ -625,7 +625,7 @@ void nrd::InstanceImpl::AddComputeDispatchDesc(
 void nrd::InstanceImpl::PrepareDesc() {
     m_Desc = {};
 
-    m_Desc.rootSpaceIndex = NRD_ROOT_SPACE_INDEX;
+    m_Desc.constantBufferAndSamplersSpaceIndex = NRD_CONSTANT_BUFFER_AND_SAMPLERS_SPACE_INDEX;
     m_Desc.resourcesSpaceIndex = NRD_RESOURCES_SPACE_INDEX;
     m_Desc.constantBufferRegisterIndex = NRD_CONSTANT_BUFFER_REGISTER_INDEX;
 

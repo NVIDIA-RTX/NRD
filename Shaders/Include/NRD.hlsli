@@ -79,8 +79,8 @@ NOISY INPUTS:
 #define NRD_CONSTANT_BUFFER_REGISTER_INDEX                                              0
 
 // ( Optional ) Spaces (NRD integration expects unique values)
-#define NRD_RESOURCES_SPACE_INDEX                                                       0 // SRV and UAV
-#define NRD_ROOT_SPACE_INDEX                                                            1 // samplers and the constant buffer
+#define NRD_RESOURCES_SPACE_INDEX                                                       0 // SRVs and UAVs
+#define NRD_CONSTANT_BUFFER_AND_SAMPLERS_SPACE_INDEX                                    1 // constant buffer and samplers
 
 // ( Optional ) Entry point
 #ifndef NRD_CS_MAIN
@@ -122,7 +122,7 @@ NOISY INPUTS:
         #define NRD_FORMAT_UNKNOWN
     #endif
 
-    #define NRD_CONSTANTS_START( resourceName )                                         cbuffer resourceName : register( NRD_MERGE_TOKENS( b, NRD_CONSTANT_BUFFER_REGISTER_INDEX ), NRD_MERGE_TOKENS( space, NRD_ROOT_SPACE_INDEX ) ) {
+    #define NRD_CONSTANTS_START( resourceName )                                         cbuffer resourceName : register( NRD_MERGE_TOKENS( b, NRD_CONSTANT_BUFFER_REGISTER_INDEX ), NRD_MERGE_TOKENS( space, NRD_CONSTANT_BUFFER_AND_SAMPLERS_SPACE_INDEX ) ) {
     #define NRD_CONSTANT( constantType, constantName )                                  constantType constantName;
     #define NRD_CONSTANTS_END                                                           };
 
@@ -135,7 +135,7 @@ NOISY INPUTS:
     #define NRD_OUTPUTS_END
 
     #define NRD_SAMPLERS_START
-    #define NRD_SAMPLER( resourceType, resourceName, regName, bindingIndex )            resourceType resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ), NRD_MERGE_TOKENS( space, NRD_ROOT_SPACE_INDEX ) );
+    #define NRD_SAMPLER( resourceType, resourceName, regName, bindingIndex )            resourceType resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ), NRD_MERGE_TOKENS( space, NRD_CONSTANT_BUFFER_AND_SAMPLERS_SPACE_INDEX ) );
     #define NRD_SAMPLERS_END
 
     #define NRD_EXPORT

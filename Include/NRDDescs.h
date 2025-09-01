@@ -451,36 +451,40 @@ namespace nrd
 
     struct DescriptorPoolDesc
     {
-        // Useful for tight (per pipeline) pipeline layouts (root signatures)
-        // - summed up across all dispatches
-        uint32_t totalTexturesNum;
-        uint32_t totalStorageTexturesNum;
+        // (Recommended) use a root CBV (push descriptor) for constants
+        // (Recommended) use static (immutable) samplers
 
-        // Useful for a shared pipeline layout
-        //  - show max usage
+        // (Recommended) if a shared pipeline layout (root signature) is used:
+        //  - represents maximum number of resources in a pipeline
         //  - always 1 constant buffer
         //  - always "Sampler::MAX_NUM" samplers
         uint32_t perSetTexturesMaxNum;
         uint32_t perSetStorageTexturesMaxNum;
 
+        // If tight (per pipeline) pipeline layouts are used:
+        // - summed up across all dispatches
+        uint32_t totalTexturesNum;
+        uint32_t totalStorageTexturesNum;
+
+        // Maximum number of descriptor sets in a descriptor pool
         uint32_t setsMaxNum;
     };
 
     struct InstanceDesc
     {
         // Register spaces
-        uint32_t rootSpaceIndex;                        // samplers and the constant buffer (= "NRD_ROOT_SPACE_INDEX")
+        uint32_t constantBufferAndSamplersSpaceIndex;   // constant buffer and samplers (= "NRD_CONSTANT_BUFFER_AND_SAMPLERS_SPACE_INDEX")
         uint32_t resourcesSpaceIndex;                   // SRVs and UAVs (= "NRD_RESOURCES_SPACE_INDEX")
 
         // Base registers
         uint32_t constantBufferRegisterIndex;           // = "NRD_CONSTANT_BUFFER_REGISTER_INDEX"
-        uint32_t samplersBaseRegisterIndex;
-        uint32_t resourcesBaseRegisterIndex;
+        uint32_t samplersBaseRegisterIndex;             // = 0
+        uint32_t resourcesBaseRegisterIndex;            // = 0
 
-        // Constant buffer (use a root/push descriptor)
+        // Constant buffer (a root/push descriptor recommended)
         uint32_t constantBufferMaxDataSize;
 
-        // Samplers (use root/immutable samplers)
+        // Samplers (root/immutable samplers recommended)
         const Sampler* samplers;
         uint32_t samplersNum;                           // = "Sampler::MAX_NUM"
 
