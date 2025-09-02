@@ -726,25 +726,29 @@ void Integration::_Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPo
     const PipelineDesc& pipelineDesc = instanceDesc.pipelines[dispatchDesc.pipelineIndex];
 
     nri::Descriptor** descriptors = (nri::Descriptor**)alloca(sizeof(nri::Descriptor*) * dispatchDesc.resourcesNum);
-    memset(descriptors, 0, sizeof(nri::Descriptor*) * dispatchDesc.resourcesNum);
-
     nri::TextureBarrierDesc* transitions = (nri::TextureBarrierDesc*)alloca(sizeof(nri::TextureBarrierDesc) * dispatchDesc.resourcesNum);
-    memset(transitions, 0, sizeof(nri::TextureBarrierDesc) * dispatchDesc.resourcesNum);
 
     nri::BarrierDesc transitionBarriers = {};
     transitionBarriers.textures = transitions;
 
-    std::array<nri::DescriptorRangeUpdateDesc, 2> descriptorRanges = {};
-
     uint32_t createdDescriptorNum = 0;
 
-    { // Fill descriptors and ranges
+    // Allocate descriptor sets
+    nri::DescriptorSet* descriptorSet = nullptr;
+    nri::Result result = m_iCore.AllocateDescriptorSets(descriptorPool, *m_PipelineLayout, 0, &descriptorSet, 1, 0);
+    NRD_INTEGRATION_ASSERT(result == nri::Result::SUCCESS, "AllocateDescriptorSets() failed!");
+
+    // Fill descriptors and ranges
+    std::array<nri::UpdateDescriptorRangeDesc, 2> descriptorRanges = {};
+    {
         uint32_t n = 0;
         for (uint32_t i = 0; i < pipelineDesc.resourceRangesNum; i++) {
             const ResourceRangeDesc& resourceRange = pipelineDesc.resourceRanges[i];
             const bool isStorage = resourceRange.descriptorType == DescriptorType::STORAGE_TEXTURE;
 
             uint32_t rangeIndex = isStorage ? RANGE_STORAGES : RANGE_TEXTURES;
+            descriptorRanges[rangeIndex].descriptorSet = descriptorSet;
+            descriptorRanges[rangeIndex].rangeIndex = rangeIndex;
             descriptorRanges[rangeIndex].descriptors = descriptors + n;
             descriptorRanges[rangeIndex].descriptorNum = resourceRange.descriptorsNum;
 
@@ -801,7 +805,7 @@ void Integration::_Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPo
                         1,
                     };
 
-                    nri::Result result = m_iCore.CreateTexture2DView(desc, descriptor);
+                    result = m_iCore.CreateTexture2DView(desc, descriptor);
                     NRD_INTEGRATION_ASSERT(result == nri::Result::SUCCESS, "CreateTexture2DView() failed!");
 
                     m_CachedDescriptors.insert(std::make_pair(key, descriptor));
@@ -841,16 +845,11 @@ void Integration::_Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPo
         }
     }
 
-    // Allocate descriptor sets
-    nri::DescriptorSet* descriptorSet = nullptr;
-    nri::Result result = m_iCore.AllocateDescriptorSets(descriptorPool, *m_PipelineLayout, 0, &descriptorSet, 1, 0);
-    NRD_INTEGRATION_ASSERT(result == nri::Result::SUCCESS, "AllocateDescriptorSets() failed!");
-
     // Update descriptor ranges
     uint32_t baseRange = pipelineDesc.resourceRangesNum == 1 ? RANGE_STORAGES : RANGE_TEXTURES;
     uint32_t rangeNum = pipelineDesc.resourceRangesNum;
 
-    m_iCore.UpdateDescriptorRanges(*descriptorSet, baseRange, rangeNum, &descriptorRanges[baseRange]);
+    m_iCore.UpdateDescriptorRanges(&descriptorRanges[baseRange], rangeNum);
 
     // Rendering
     nri::Pipeline* pipeline = m_Pipelines[dispatchDesc.pipelineIndex];
