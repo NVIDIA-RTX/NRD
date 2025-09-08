@@ -93,33 +93,3 @@ float2 TextureCubic(Texture2D<float2> tex, float2 uv)
 
     return lerp( c00, c10, t.y );
 }
-
-void BicubicFilterNoCorners(
-    float2 samplePos, float2 invResourceSize, bool useBicubic,
-    Texture2D<float4> tex0, out float4 c0 )
-{
-    if( useBicubic )
-    {
-        float4 bilinearCustomWeights = 0;
-
-        _BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights_Init;
-        _BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights_Color( c0, tex0 );
-    }
-    else
-        c0 = tex0.SampleLevel( gLinearClamp, samplePos * invResourceSize, 0 );
-}
-
-void BicubicFilterNoCorners(
-    float2 samplePos, float2 invResourceSize, bool useBicubic,
-    Texture2D<float> tex0, out float c0 )
-{
-    if( useBicubic )
-    {
-        float4 bilinearCustomWeights = 0;
-
-        _BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights_Init;
-        _BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights_Color( c0, tex0 );
-    }
-    else
-        c0 = tex0.SampleLevel( gLinearClamp, samplePos * invResourceSize, 0 );
-}

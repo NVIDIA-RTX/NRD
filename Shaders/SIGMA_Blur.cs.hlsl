@@ -77,7 +77,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     if( ( tileValue == 0.0 && NRD_USE_TILE_CHECK ) || centerPenumbra == 0.0 )
     {
-        gOut_Penumbra[ pixelPos ] = centerPenumbra;
+    #ifndef SIGMA_FIRST_PASS
+        if( gStabilizationStrength != 0 )
+    #endif
+            gOut_Penumbra[ pixelPos ] = centerPenumbra;
+
         gOut_Shadow_Translucency[ pixelPos ] = PackShadow( s_Shadow_Translucency[ smemPos.y ][ smemPos.x ] );
 
         return;
@@ -268,10 +272,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     penumbra = sum.y == 0.0 ? centerPenumbra : penumbra / sum.y;
 
     // Output
-    #ifndef SIGMA_FIRST_PASS
-        if( gStabilizationStrength != 0 )
-    #endif
-            gOut_Penumbra[ pixelPos ] = penumbra;
+#ifndef SIGMA_FIRST_PASS
+    if( gStabilizationStrength != 0 )
+#endif
+        gOut_Penumbra[ pixelPos ] = penumbra;
 
     gOut_Shadow_Translucency[ pixelPos ] = PackShadow( result );
 }
