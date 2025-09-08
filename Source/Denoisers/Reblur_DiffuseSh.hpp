@@ -8,7 +8,6 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#define DENOISER_NAME REBLUR_DiffuseSh
 #define DIFF_TEMP1    AsUint(ResourceType::OUT_DIFF_SH0)
 #define DIFF_TEMP2    AsUint(Transient::DIFF_TMP2)
 #define DIFF_SH_TEMP1 AsUint(ResourceType::OUT_DIFF_SH1)
@@ -54,6 +53,11 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSh(DenoiserData& denoiserData) {
     AddTextureToTransientPool({REBLUR_FORMAT, 1});
     AddTextureToTransientPool({REBLUR_FORMAT_TILES, 16});
 
+    std::array<ShaderMake::ShaderConstant, 2> commonDefines = {{
+        {"NRD_SIGNAL", NRD_DIFFUSE},
+        {"NRD_MODE", NRD_SH},
+    }};
+
     PushPass("Classify tiles");
     {
         // Inputs
@@ -63,7 +67,8 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSh(DenoiserData& denoiserData) {
         PushOutput(AsUint(Transient::TILES));
 
         // Shaders
-        AddDispatch(REBLUR_ClassifyTiles, REBLUR_ClassifyTiles, 1);
+        std::array<ShaderMake::ShaderConstant, 0> defines = {};
+        AddDispatch(REBLUR_ClassifyTiles, defines);
     }
 
     for (int i = 0; i < REBLUR_HITDIST_RECONSTRUCTION_PERMUTATION_NUM; i++) {
@@ -82,10 +87,12 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSh(DenoiserData& denoiserData) {
             PushOutput(isPrepassEnabled ? DIFF_TEMP2 : DIFF_TEMP1);
 
             // Shaders
-            if (is5x5)
-                AddDispatch(REBLUR_Diffuse_HitDistReconstruction_5x5, REBLUR_HitDistReconstruction, 1);
-            else
-                AddDispatch(REBLUR_Diffuse_HitDistReconstruction, REBLUR_HitDistReconstruction, 1);
+            std::array<ShaderMake::ShaderConstant, 3> defines = {{
+                commonDefines[0],
+                {"NRD_MODE", NRD_RADIANCE},
+                {"MODE_5X5", is5x5 ? "1" : "0"},
+            }};
+            AddDispatch(REBLUR_HitDistReconstruction, defines);
         }
     }
 
@@ -106,7 +113,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSh(DenoiserData& denoiserData) {
             PushOutput(DIFF_SH_TEMP1);
 
             // Shaders
-            AddDispatch(REBLUR_DiffuseSh_PrePass, REBLUR_PrePass, 1);
+            AddDispatch(REBLUR_PrePass, commonDefines);
         }
     }
 
@@ -141,7 +148,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSh(DenoiserData& denoiserData) {
             PushOutput(DIFF_SH_TEMP2);
 
             // Shaders
-            AddDispatch(REBLUR_DiffuseSh_TemporalAccumulation, REBLUR_TemporalAccumulation, 1);
+            AddDispatch(REBLUR_TemporalAccumulation, commonDefines);
         }
     }
 
@@ -162,7 +169,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSh(DenoiserData& denoiserData) {
         PushOutput(DIFF_SH_TEMP1);
 
         // Shaders
-        AddDispatch(REBLUR_DiffuseSh_HistoryFix, REBLUR_HistoryFix, 1);
+        AddDispatch(REBLUR_HistoryFix, commonDefines);
     }
 
     PushPass("Blur");
@@ -181,7 +188,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSh(DenoiserData& denoiserData) {
         PushOutput(DIFF_SH_TEMP2);
 
         // Shaders
-        AddDispatch(REBLUR_DiffuseSh_Blur, REBLUR_Blur, 1);
+        AddDispatch(REBLUR_Blur, commonDefines);
     }
 
     for (int i = 0; i < REBLUR_POST_BLUR_PERMUTATION_NUM; i++) {
@@ -210,10 +217,12 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSh(DenoiserData& denoiserData) {
             PushOutput(AsUint(Permanent::DIFF_SH_HISTORY));
 
             // Shaders
-            if (isTemporalStabilization)
-                AddDispatch(REBLUR_DiffuseSh_PostBlur, REBLUR_PostBlur, 1);
-            else
-                AddDispatch(REBLUR_DiffuseSh_PostBlur_NoTemporalStabilization, REBLUR_PostBlur, 1);
+            std::array<ShaderMake::ShaderConstant, 3> defines = {{
+                commonDefines[0],
+                commonDefines[1],
+                {"TEMPORAL_STABILIZATION", isTemporalStabilization ? "1" : "0"},
+            }};
+            AddDispatch(REBLUR_PostBlur, defines);
         }
     }
 
@@ -238,7 +247,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSh(DenoiserData& denoiserData) {
             PushOutput(AsUint(ResourceType::OUT_DIFF_SH1));
 
             // Shaders
-            AddDispatch(REBLUR_DiffuseSh_TemporalStabilization, REBLUR_TemporalStabilization, 1);
+            AddDispatch(REBLUR_TemporalStabilization, commonDefines);
         }
     }
 
@@ -254,7 +263,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSh(DenoiserData& denoiserData) {
         PushOutput(AsUint(ResourceType::OUT_DIFF_SH1));
 
         // Shaders
-        AddDispatch(REBLUR_DiffuseSh_SplitScreen, REBLUR_SplitScreen, 1);
+        AddDispatch(REBLUR_SplitScreen, commonDefines);
     }
 
     REBLUR_ADD_VALIDATION_DISPATCH(Transient::DATA2, ResourceType::IN_DIFF_SH0, ResourceType::IN_DIFF_SH0);

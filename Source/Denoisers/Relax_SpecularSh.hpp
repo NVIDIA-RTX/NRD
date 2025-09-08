@@ -56,6 +56,11 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
     AddTextureToTransientPool({Format::R8_UNORM, 16});
     AddTextureToTransientPool({Format::R8_UNORM, 1});
 
+    std::array<ShaderMake::ShaderConstant, 2> commonDefines = {{
+        {"NRD_SIGNAL", NRD_SPECULAR},
+        {"NRD_MODE", NRD_SH},
+    }};
+
     PushPass("Classify tiles");
     {
         // Inputs
@@ -65,7 +70,8 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
         PushOutput(AsUint(Transient::TILES));
 
         // Shaders
-        AddDispatch(RELAX_ClassifyTiles, RELAX_ClassifyTiles, 1);
+        std::array<ShaderMake::ShaderConstant, 0> defines = {};
+        AddDispatch(RELAX_ClassifyTiles, defines);
     }
 
     for (int i = 0; i < RELAX_HITDIST_RECONSTRUCTION_PERMUTATION_NUM; i++) {
@@ -83,10 +89,12 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
             PushOutput(AsUint(Transient::SPEC_ILLUM_PING));
 
             // Shaders
-            if (is5x5)
-                AddDispatch(RELAX_Specular_HitDistReconstruction_5x5, RELAX_HitDistReconstruction, 1);
-            else
-                AddDispatch(RELAX_Specular_HitDistReconstruction, RELAX_HitDistReconstruction, 1);
+            std::array<ShaderMake::ShaderConstant, 3> defines = {{
+                commonDefines[0],
+                {"NRD_MODE", NRD_RADIANCE},
+                {"MODE_5X5", is5x5 ? "1" : "0"},
+            }};
+            AddDispatch(RELAX_HitDistReconstruction, defines);
         }
     }
 
@@ -107,7 +115,7 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
             PushOutput(AsUint(ResourceType::OUT_SPEC_SH1));
 
             // Shaders
-            AddDispatch(RELAX_SpecularSh_PrePass, RELAX_PrePass, 1);
+            AddDispatch(RELAX_PrePass, commonDefines);
         }
     }
 
@@ -146,7 +154,7 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
             PushOutput(AsUint(Transient::SPEC_ILLUM_PONG_SH1));
 
             // Shaders
-            AddDispatch(RELAX_SpecularSh_TemporalAccumulation, RELAX_TemporalAccumulation, 1);
+            AddDispatch(RELAX_TemporalAccumulation, commonDefines);
         }
     }
 
@@ -164,7 +172,7 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
         PushOutput(AsUint(Transient::SPEC_ILLUM_PONG)); // Responsive history
         PushOutput(AsUint(Transient::SPEC_ILLUM_PONG_SH1));
 
-        AddDispatch(RELAX_SpecularSh_HistoryFix, RELAX_HistoryFix, 1);
+        AddDispatch(RELAX_HistoryFix, commonDefines);
     }
 
     PushPass("History clamping");
@@ -186,7 +194,7 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
         PushOutput(AsUint(Permanent::SPEC_ILLUM_PREV_SH1));
         PushOutput(AsUint(Permanent::SPEC_ILLUM_RESPONSIVE_PREV_SH1));
 
-        AddDispatch(RELAX_SpecularSh_HistoryClamping, RELAX_HistoryClamping, 1);
+        AddDispatch(RELAX_HistoryClamping, commonDefines);
     }
 
     PushPass("Copy");
@@ -198,7 +206,7 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
         PushOutput(AsUint(ResourceType::OUT_SPEC_SH0));
 
         // Shaders
-        AddDispatch(RELAX_SpecularSh_Copy, RELAX_Copy, 1);
+        AddDispatch(RELAX_Copy, commonDefines);
     }
 
     PushPass("Anti-firefly");
@@ -213,7 +221,7 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
         PushOutput(AsUint(Permanent::SPEC_ILLUM_PREV));
 
         // Shaders
-        AddDispatch(RELAX_SpecularSh_AntiFirefly, RELAX_AntiFirefly, 1);
+        AddDispatch(RELAX_AntiFirefly, commonDefines);
     }
 
     for (int i = 0; i < RELAX_ATROUS_PERMUTATION_NUM; i++) {
@@ -269,9 +277,9 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
                 // Shaders
                 constexpr uint32_t maxRepeatNum = (RELAX_MAX_ATROUS_PASS_NUM - 2 + 1) / 2;
                 if (isSmem)
-                    AddDispatch(RELAX_SpecularSh_AtrousSmem, RELAX_AtrousSmem, 1);
+                    AddDispatch(RELAX_AtrousSmem, commonDefines);
                 else
-                    AddDispatchRepeated(RELAX_SpecularSh_Atrous, RELAX_Atrous, 1, maxRepeatNum);
+                    AddDispatchWithArgs(RELAX_Atrous, commonDefines, 1, maxRepeatNum);
             }
         }
     }
@@ -288,7 +296,7 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
         PushOutput(AsUint(ResourceType::OUT_SPEC_SH1));
 
         // Shaders
-        AddDispatch(RELAX_SpecularSh_SplitScreen, RELAX_SplitScreen, 1);
+        AddDispatch(RELAX_SplitScreen, commonDefines);
     }
 
     RELAX_ADD_VALIDATION_DISPATCH;

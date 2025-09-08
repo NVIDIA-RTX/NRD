@@ -10,6 +10,32 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #define REBLUR
 
+// Knobs remapping
+#ifdef NRD_SIGNAL
+    #if( ( NRD_SIGNAL & 0x1 ) != 0 )
+        #define REBLUR_DIFFUSE
+    #endif
+    #if( ( NRD_SIGNAL & 0x2 ) != 0 )
+        #define REBLUR_SPECULAR
+    #endif
+#endif
+
+#ifdef NRD_MODE
+    #if( NRD_MODE == 1 )
+        #define REBLUR_SH
+    #elif( NRD_MODE == 2 )
+        #define REBLUR_OCCLUSION
+    #elif( NRD_MODE == 3 )
+        #define REBLUR_DIRECTIONAL_OCCLUSION
+    #endif
+#endif
+
+#ifdef TEMPORAL_STABILIZATION
+    #if( TEMPORAL_STABILIZATION == 0 )
+        #define REBLUR_NO_TEMPORAL_STABILIZATION
+    #endif
+#endif
+
 // Switches ( default 1 )
 #define REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA              1
 #define REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TA              1
@@ -28,7 +54,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #if( defined REBLUR_OCCLUSION || defined REBLUR_DIRECTIONAL_OCCLUSION )
     #undef NRD_SUPPORTS_ANTIFIREFLY
-    #define NRD_SUPPORTS_ANTIFIREFLY                                 0 // not needed in occlusion mode
+    #define NRD_SUPPORTS_ANTIFIREFLY                            0 // not needed in occlusion mode
 #endif
 
 // Switches ( default 2 )

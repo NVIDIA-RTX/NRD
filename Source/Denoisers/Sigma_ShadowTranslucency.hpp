@@ -40,6 +40,10 @@ void nrd::InstanceImpl::Add_SigmaShadowTranslucency(nrd::DenoiserData& denoiserD
     AddTextureToTransientPool({Format::RGBA8_UNORM, 16});
     AddTextureToTransientPool({Format::RG8_UNORM, 16});
 
+    std::array<ShaderMake::ShaderConstant, 1> commonDefines = {{
+        {"TRANSLUCENCY", "1"},
+    }};
+
     PushPass("Classify tiles");
     {
         // Inputs
@@ -51,7 +55,7 @@ void nrd::InstanceImpl::Add_SigmaShadowTranslucency(nrd::DenoiserData& denoiserD
         PushOutput(AsUint(Transient::TILES));
 
         // Shaders
-        AddDispatch(SIGMA_ShadowTranslucency_ClassifyTiles, SIGMA_ClassifyTiles, 1);
+        AddDispatch(SIGMA_ClassifyTiles, commonDefines);
     }
 
     PushPass("Smooth tiles");
@@ -63,7 +67,8 @@ void nrd::InstanceImpl::Add_SigmaShadowTranslucency(nrd::DenoiserData& denoiserD
         PushOutput(AsUint(Transient::SMOOTHED_TILES));
 
         // Shaders
-        AddDispatch(SIGMA_SmoothTiles, SIGMA_SmoothTiles, 16);
+        std::array<ShaderMake::ShaderConstant, 0> defines = {};
+        AddDispatchWithArgs(SIGMA_SmoothTiles, defines, 16, 1);
     }
 
     PushPass("Copy");
@@ -78,7 +83,8 @@ void nrd::InstanceImpl::Add_SigmaShadowTranslucency(nrd::DenoiserData& denoiserD
         PushOutput(AsUint(Transient::HISTORY_LENGTH));
 
         // Shaders
-        AddDispatch(SIGMA_Copy, SIGMA_Copy, USE_MAX_DIMS);
+        std::array<ShaderMake::ShaderConstant, 0> defines = {};
+        AddDispatchWithArgs(SIGMA_Copy, defines, USE_PREV_DIMS, 1);
     }
 
     PushPass("Blur");
@@ -95,7 +101,11 @@ void nrd::InstanceImpl::Add_SigmaShadowTranslucency(nrd::DenoiserData& denoiserD
         PushOutput(AsUint(Transient::TEMP_1));
 
         // Shaders
-        AddDispatch(SIGMA_ShadowTranslucency_Blur, SIGMA_Blur, 1);
+        std::array<ShaderMake::ShaderConstant, 2> defines = {{
+            commonDefines[0],
+            {"FIRST_PASS", "1"},
+        }};
+        AddDispatch(SIGMA_Blur, defines);
     }
 
     for (int i = 0; i < SIGMA_POST_BLUR_PERMUTATION_NUM; i++) {
@@ -115,7 +125,11 @@ void nrd::InstanceImpl::Add_SigmaShadowTranslucency(nrd::DenoiserData& denoiserD
             PushOutput(isStabilizationEnabled ? AsUint(Transient::TEMP_2) : AsUint(ResourceType::OUT_SHADOW_TRANSLUCENCY));
 
             // Shaders
-            AddDispatch(SIGMA_ShadowTranslucency_PostBlur, SIGMA_Blur, 1);
+            std::array<ShaderMake::ShaderConstant, 2> defines = {{
+                commonDefines[0],
+                {"FIRST_PASS", "0"},
+            }};
+            AddDispatch(SIGMA_Blur, defines);
         }
     }
 
@@ -135,7 +149,7 @@ void nrd::InstanceImpl::Add_SigmaShadowTranslucency(nrd::DenoiserData& denoiserD
         PushOutput(AsUint(Permanent::HISTORY_LENGTH));
 
         // Shaders
-        AddDispatch(SIGMA_ShadowTranslucency_TemporalStabilization, SIGMA_TemporalStabilization, 1);
+        AddDispatch(SIGMA_TemporalStabilization, commonDefines);
     }
 
     PushPass("Split screen");
@@ -149,7 +163,7 @@ void nrd::InstanceImpl::Add_SigmaShadowTranslucency(nrd::DenoiserData& denoiserD
         PushOutput(AsUint(ResourceType::OUT_SHADOW_TRANSLUCENCY));
 
         // Shaders
-        AddDispatch(SIGMA_ShadowTranslucency_SplitScreen, SIGMA_SplitScreen, 1);
+        AddDispatch(SIGMA_SplitScreen, commonDefines);
     }
 }
 

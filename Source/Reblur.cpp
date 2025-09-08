@@ -10,19 +10,17 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "InstanceImpl.h"
 
-#include <array>
-
 #include "../Shaders/Include/REBLUR_Config.hlsli"
-#include "../Shaders/Resources/REBLUR_Blur.resources.hlsli"
-#include "../Shaders/Resources/REBLUR_ClassifyTiles.resources.hlsli"
-#include "../Shaders/Resources/REBLUR_HistoryFix.resources.hlsli"
-#include "../Shaders/Resources/REBLUR_HitDistReconstruction.resources.hlsli"
-#include "../Shaders/Resources/REBLUR_PostBlur.resources.hlsli"
-#include "../Shaders/Resources/REBLUR_PrePass.resources.hlsli"
-#include "../Shaders/Resources/REBLUR_SplitScreen.resources.hlsli"
-#include "../Shaders/Resources/REBLUR_TemporalAccumulation.resources.hlsli"
-#include "../Shaders/Resources/REBLUR_TemporalStabilization.resources.hlsli"
-#include "../Shaders/Resources/REBLUR_Validation.resources.hlsli"
+#include "../Shaders/REBLUR_Blur.resources.hlsli"
+#include "../Shaders/REBLUR_ClassifyTiles.resources.hlsli"
+#include "../Shaders/REBLUR_HistoryFix.resources.hlsli"
+#include "../Shaders/REBLUR_HitDistReconstruction.resources.hlsli"
+#include "../Shaders/REBLUR_PostBlur.resources.hlsli"
+#include "../Shaders/REBLUR_PrePass.resources.hlsli"
+#include "../Shaders/REBLUR_SplitScreen.resources.hlsli"
+#include "../Shaders/REBLUR_TemporalAccumulation.resources.hlsli"
+#include "../Shaders/REBLUR_TemporalStabilization.resources.hlsli"
+#include "../Shaders/REBLUR_Validation.resources.hlsli"
 
 // Permutations
 #define REBLUR_HITDIST_RECONSTRUCTION_PERMUTATION_NUM           4
@@ -74,7 +72,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         PushInput(AsUint(diff)); \
         PushInput(AsUint(spec)); \
         PushOutput(AsUint(ResourceType::OUT_VALIDATION)); \
-        AddDispatch(REBLUR_Validation, REBLUR_Validation, IGNORE_RS); \
+        std::array<ShaderMake::ShaderConstant, 0> defines = {}; \
+        AddDispatchWithArgs(REBLUR_Validation, defines, IGNORE_RS, 1); \
     }
 
 struct ReblurProps {
@@ -387,375 +386,54 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gResetHistory = isHistoryReset ? 1 : 0;
 }
 
-// REBLUR_SHARED
+// Shaders
 #if NRD_EMBEDS_DXBC_SHADERS
 #    include "REBLUR_ClassifyTiles.cs.dxbc.h"
+#    include "REBLUR_HitDistReconstruction.cs.dxbc.h"
+#    include "REBLUR_PrePass.cs.dxbc.h"
+#    include "REBLUR_TemporalAccumulation.cs.dxbc.h"
+#    include "REBLUR_HistoryFix.cs.dxbc.h"
+#    include "REBLUR_Blur.cs.dxbc.h"
+#    include "REBLUR_PostBlur.cs.dxbc.h"
+#    include "REBLUR_TemporalStabilization.cs.dxbc.h"
+#    include "REBLUR_SplitScreen.cs.dxbc.h"
 #    include "REBLUR_Validation.cs.dxbc.h"
 #endif
 
 #if NRD_EMBEDS_DXIL_SHADERS
 #    include "REBLUR_ClassifyTiles.cs.dxil.h"
+#    include "REBLUR_HitDistReconstruction.cs.dxil.h"
+#    include "REBLUR_PrePass.cs.dxil.h"
+#    include "REBLUR_TemporalAccumulation.cs.dxil.h"
+#    include "REBLUR_HistoryFix.cs.dxil.h"
+#    include "REBLUR_Blur.cs.dxil.h"
+#    include "REBLUR_PostBlur.cs.dxil.h"
+#    include "REBLUR_TemporalStabilization.cs.dxil.h"
+#    include "REBLUR_SplitScreen.cs.dxil.h"
 #    include "REBLUR_Validation.cs.dxil.h"
 #endif
 
 #if NRD_EMBEDS_SPIRV_SHADERS
 #    include "REBLUR_ClassifyTiles.cs.spirv.h"
+#    include "REBLUR_HitDistReconstruction.cs.spirv.h"
+#    include "REBLUR_PrePass.cs.spirv.h"
+#    include "REBLUR_TemporalAccumulation.cs.spirv.h"
+#    include "REBLUR_HistoryFix.cs.spirv.h"
+#    include "REBLUR_Blur.cs.spirv.h"
+#    include "REBLUR_PostBlur.cs.spirv.h"
+#    include "REBLUR_TemporalStabilization.cs.spirv.h"
+#    include "REBLUR_SplitScreen.cs.spirv.h"
 #    include "REBLUR_Validation.cs.spirv.h"
 #endif
 
-// REBLUR_DIFFUSE
-#if NRD_EMBEDS_DXBC_SHADERS
-#    include "REBLUR_Diffuse_Blur.cs.dxbc.h"
-#    include "REBLUR_Diffuse_HistoryFix.cs.dxbc.h"
-#    include "REBLUR_Diffuse_HitDistReconstruction.cs.dxbc.h"
-#    include "REBLUR_Diffuse_HitDistReconstruction_5x5.cs.dxbc.h"
-#    include "REBLUR_Diffuse_PostBlur.cs.dxbc.h"
-#    include "REBLUR_Diffuse_PostBlur_NoTemporalStabilization.cs.dxbc.h"
-#    include "REBLUR_Diffuse_PrePass.cs.dxbc.h"
-#    include "REBLUR_Diffuse_SplitScreen.cs.dxbc.h"
-#    include "REBLUR_Diffuse_TemporalAccumulation.cs.dxbc.h"
-#    include "REBLUR_Diffuse_TemporalStabilization.cs.dxbc.h"
-#endif
-
-#if NRD_EMBEDS_DXIL_SHADERS
-#    include "REBLUR_Diffuse_Blur.cs.dxil.h"
-#    include "REBLUR_Diffuse_HistoryFix.cs.dxil.h"
-#    include "REBLUR_Diffuse_HitDistReconstruction.cs.dxil.h"
-#    include "REBLUR_Diffuse_HitDistReconstruction_5x5.cs.dxil.h"
-#    include "REBLUR_Diffuse_PostBlur.cs.dxil.h"
-#    include "REBLUR_Diffuse_PostBlur_NoTemporalStabilization.cs.dxil.h"
-#    include "REBLUR_Diffuse_PrePass.cs.dxil.h"
-#    include "REBLUR_Diffuse_SplitScreen.cs.dxil.h"
-#    include "REBLUR_Diffuse_TemporalAccumulation.cs.dxil.h"
-#    include "REBLUR_Diffuse_TemporalStabilization.cs.dxil.h"
-#endif
-
-#if NRD_EMBEDS_SPIRV_SHADERS
-#    include "REBLUR_Diffuse_Blur.cs.spirv.h"
-#    include "REBLUR_Diffuse_HistoryFix.cs.spirv.h"
-#    include "REBLUR_Diffuse_HitDistReconstruction.cs.spirv.h"
-#    include "REBLUR_Diffuse_HitDistReconstruction_5x5.cs.spirv.h"
-#    include "REBLUR_Diffuse_PostBlur.cs.spirv.h"
-#    include "REBLUR_Diffuse_PostBlur_NoTemporalStabilization.cs.spirv.h"
-#    include "REBLUR_Diffuse_PrePass.cs.spirv.h"
-#    include "REBLUR_Diffuse_SplitScreen.cs.spirv.h"
-#    include "REBLUR_Diffuse_TemporalAccumulation.cs.spirv.h"
-#    include "REBLUR_Diffuse_TemporalStabilization.cs.spirv.h"
-#endif
-
+// Denoisers
 #include "Denoisers/Reblur_Diffuse.hpp"
-
-// REBLUR_DIFFUSE_OCCLUSION
-#if NRD_EMBEDS_DXBC_SHADERS
-#    include "REBLUR_DiffuseOcclusion_Blur.cs.dxbc.h"
-#    include "REBLUR_DiffuseOcclusion_HistoryFix.cs.dxbc.h"
-#    include "REBLUR_DiffuseOcclusion_HitDistReconstruction.cs.dxbc.h"
-#    include "REBLUR_DiffuseOcclusion_HitDistReconstruction_5x5.cs.dxbc.h"
-#    include "REBLUR_DiffuseOcclusion_PostBlur_NoTemporalStabilization.cs.dxbc.h"
-#    include "REBLUR_DiffuseOcclusion_TemporalAccumulation.cs.dxbc.h"
-#endif
-
-#if NRD_EMBEDS_DXIL_SHADERS
-#    include "REBLUR_DiffuseOcclusion_Blur.cs.dxil.h"
-#    include "REBLUR_DiffuseOcclusion_HistoryFix.cs.dxil.h"
-#    include "REBLUR_DiffuseOcclusion_HitDistReconstruction.cs.dxil.h"
-#    include "REBLUR_DiffuseOcclusion_HitDistReconstruction_5x5.cs.dxil.h"
-#    include "REBLUR_DiffuseOcclusion_PostBlur_NoTemporalStabilization.cs.dxil.h"
-#    include "REBLUR_DiffuseOcclusion_TemporalAccumulation.cs.dxil.h"
-#endif
-
-#if NRD_EMBEDS_SPIRV_SHADERS
-#    include "REBLUR_DiffuseOcclusion_Blur.cs.spirv.h"
-#    include "REBLUR_DiffuseOcclusion_HistoryFix.cs.spirv.h"
-#    include "REBLUR_DiffuseOcclusion_HitDistReconstruction.cs.spirv.h"
-#    include "REBLUR_DiffuseOcclusion_HitDistReconstruction_5x5.cs.spirv.h"
-#    include "REBLUR_DiffuseOcclusion_PostBlur_NoTemporalStabilization.cs.spirv.h"
-#    include "REBLUR_DiffuseOcclusion_TemporalAccumulation.cs.spirv.h"
-#endif
-
 #include "Denoisers/Reblur_DiffuseOcclusion.hpp"
-
-// REBLUR_DIFFUSE_SH
-#if NRD_EMBEDS_DXBC_SHADERS
-#    include "REBLUR_DiffuseSh_Blur.cs.dxbc.h"
-#    include "REBLUR_DiffuseSh_HistoryFix.cs.dxbc.h"
-#    include "REBLUR_DiffuseSh_PostBlur.cs.dxbc.h"
-#    include "REBLUR_DiffuseSh_PostBlur_NoTemporalStabilization.cs.dxbc.h"
-#    include "REBLUR_DiffuseSh_PrePass.cs.dxbc.h"
-#    include "REBLUR_DiffuseSh_SplitScreen.cs.dxbc.h"
-#    include "REBLUR_DiffuseSh_TemporalAccumulation.cs.dxbc.h"
-#    include "REBLUR_DiffuseSh_TemporalStabilization.cs.dxbc.h"
-#endif
-
-#if NRD_EMBEDS_DXIL_SHADERS
-#    include "REBLUR_DiffuseSh_Blur.cs.dxil.h"
-#    include "REBLUR_DiffuseSh_HistoryFix.cs.dxil.h"
-#    include "REBLUR_DiffuseSh_PostBlur.cs.dxil.h"
-#    include "REBLUR_DiffuseSh_PostBlur_NoTemporalStabilization.cs.dxil.h"
-#    include "REBLUR_DiffuseSh_PrePass.cs.dxil.h"
-#    include "REBLUR_DiffuseSh_SplitScreen.cs.dxil.h"
-#    include "REBLUR_DiffuseSh_TemporalAccumulation.cs.dxil.h"
-#    include "REBLUR_DiffuseSh_TemporalStabilization.cs.dxil.h"
-#endif
-
-#if NRD_EMBEDS_SPIRV_SHADERS
-#    include "REBLUR_DiffuseSh_Blur.cs.spirv.h"
-#    include "REBLUR_DiffuseSh_HistoryFix.cs.spirv.h"
-#    include "REBLUR_DiffuseSh_PostBlur.cs.spirv.h"
-#    include "REBLUR_DiffuseSh_PostBlur_NoTemporalStabilization.cs.spirv.h"
-#    include "REBLUR_DiffuseSh_PrePass.cs.spirv.h"
-#    include "REBLUR_DiffuseSh_SplitScreen.cs.spirv.h"
-#    include "REBLUR_DiffuseSh_TemporalAccumulation.cs.spirv.h"
-#    include "REBLUR_DiffuseSh_TemporalStabilization.cs.spirv.h"
-#endif
-
 #include "Denoisers/Reblur_DiffuseSh.hpp"
-
-// REBLUR_SPECULAR
-#if NRD_EMBEDS_DXBC_SHADERS
-#    include "REBLUR_Specular_Blur.cs.dxbc.h"
-#    include "REBLUR_Specular_HistoryFix.cs.dxbc.h"
-#    include "REBLUR_Specular_HitDistReconstruction.cs.dxbc.h"
-#    include "REBLUR_Specular_HitDistReconstruction_5x5.cs.dxbc.h"
-#    include "REBLUR_Specular_PostBlur.cs.dxbc.h"
-#    include "REBLUR_Specular_PostBlur_NoTemporalStabilization.cs.dxbc.h"
-#    include "REBLUR_Specular_PrePass.cs.dxbc.h"
-#    include "REBLUR_Specular_SplitScreen.cs.dxbc.h"
-#    include "REBLUR_Specular_TemporalAccumulation.cs.dxbc.h"
-#    include "REBLUR_Specular_TemporalStabilization.cs.dxbc.h"
-#endif
-
-#if NRD_EMBEDS_DXIL_SHADERS
-#    include "REBLUR_Specular_Blur.cs.dxil.h"
-#    include "REBLUR_Specular_HistoryFix.cs.dxil.h"
-#    include "REBLUR_Specular_HitDistReconstruction.cs.dxil.h"
-#    include "REBLUR_Specular_HitDistReconstruction_5x5.cs.dxil.h"
-#    include "REBLUR_Specular_PostBlur.cs.dxil.h"
-#    include "REBLUR_Specular_PostBlur_NoTemporalStabilization.cs.dxil.h"
-#    include "REBLUR_Specular_PrePass.cs.dxil.h"
-#    include "REBLUR_Specular_SplitScreen.cs.dxil.h"
-#    include "REBLUR_Specular_TemporalAccumulation.cs.dxil.h"
-#    include "REBLUR_Specular_TemporalStabilization.cs.dxil.h"
-#endif
-
-#if NRD_EMBEDS_SPIRV_SHADERS
-#    include "REBLUR_Specular_Blur.cs.spirv.h"
-#    include "REBLUR_Specular_HistoryFix.cs.spirv.h"
-#    include "REBLUR_Specular_HitDistReconstruction.cs.spirv.h"
-#    include "REBLUR_Specular_HitDistReconstruction_5x5.cs.spirv.h"
-#    include "REBLUR_Specular_PostBlur.cs.spirv.h"
-#    include "REBLUR_Specular_PostBlur_NoTemporalStabilization.cs.spirv.h"
-#    include "REBLUR_Specular_PrePass.cs.spirv.h"
-#    include "REBLUR_Specular_SplitScreen.cs.spirv.h"
-#    include "REBLUR_Specular_TemporalAccumulation.cs.spirv.h"
-#    include "REBLUR_Specular_TemporalStabilization.cs.spirv.h"
-#endif
-
 #include "Denoisers/Reblur_Specular.hpp"
-
-// REBLUR_SPECULAR_OCCLUSION
-#if NRD_EMBEDS_DXBC_SHADERS
-#    include "REBLUR_SpecularOcclusion_Blur.cs.dxbc.h"
-#    include "REBLUR_SpecularOcclusion_HistoryFix.cs.dxbc.h"
-#    include "REBLUR_SpecularOcclusion_HitDistReconstruction.cs.dxbc.h"
-#    include "REBLUR_SpecularOcclusion_HitDistReconstruction_5x5.cs.dxbc.h"
-#    include "REBLUR_SpecularOcclusion_PostBlur_NoTemporalStabilization.cs.dxbc.h"
-#    include "REBLUR_SpecularOcclusion_TemporalAccumulation.cs.dxbc.h"
-#endif
-
-#if NRD_EMBEDS_DXIL_SHADERS
-#    include "REBLUR_SpecularOcclusion_Blur.cs.dxil.h"
-#    include "REBLUR_SpecularOcclusion_HistoryFix.cs.dxil.h"
-#    include "REBLUR_SpecularOcclusion_HitDistReconstruction.cs.dxil.h"
-#    include "REBLUR_SpecularOcclusion_HitDistReconstruction_5x5.cs.dxil.h"
-#    include "REBLUR_SpecularOcclusion_PostBlur_NoTemporalStabilization.cs.dxil.h"
-#    include "REBLUR_SpecularOcclusion_TemporalAccumulation.cs.dxil.h"
-#endif
-
-#if NRD_EMBEDS_SPIRV_SHADERS
-#    include "REBLUR_SpecularOcclusion_Blur.cs.spirv.h"
-#    include "REBLUR_SpecularOcclusion_HistoryFix.cs.spirv.h"
-#    include "REBLUR_SpecularOcclusion_HitDistReconstruction.cs.spirv.h"
-#    include "REBLUR_SpecularOcclusion_HitDistReconstruction_5x5.cs.spirv.h"
-#    include "REBLUR_SpecularOcclusion_PostBlur_NoTemporalStabilization.cs.spirv.h"
-#    include "REBLUR_SpecularOcclusion_TemporalAccumulation.cs.spirv.h"
-#endif
-
 #include "Denoisers/Reblur_SpecularOcclusion.hpp"
-
-// REBLUR_SPECULAR_SH
-#if NRD_EMBEDS_DXBC_SHADERS
-#    include "REBLUR_SpecularSh_Blur.cs.dxbc.h"
-#    include "REBLUR_SpecularSh_HistoryFix.cs.dxbc.h"
-#    include "REBLUR_SpecularSh_PostBlur.cs.dxbc.h"
-#    include "REBLUR_SpecularSh_PostBlur_NoTemporalStabilization.cs.dxbc.h"
-#    include "REBLUR_SpecularSh_PrePass.cs.dxbc.h"
-#    include "REBLUR_SpecularSh_SplitScreen.cs.dxbc.h"
-#    include "REBLUR_SpecularSh_TemporalAccumulation.cs.dxbc.h"
-#    include "REBLUR_SpecularSh_TemporalStabilization.cs.dxbc.h"
-#endif
-
-#if NRD_EMBEDS_DXIL_SHADERS
-#    include "REBLUR_SpecularSh_Blur.cs.dxil.h"
-#    include "REBLUR_SpecularSh_HistoryFix.cs.dxil.h"
-#    include "REBLUR_SpecularSh_PostBlur.cs.dxil.h"
-#    include "REBLUR_SpecularSh_PostBlur_NoTemporalStabilization.cs.dxil.h"
-#    include "REBLUR_SpecularSh_PrePass.cs.dxil.h"
-#    include "REBLUR_SpecularSh_SplitScreen.cs.dxil.h"
-#    include "REBLUR_SpecularSh_TemporalAccumulation.cs.dxil.h"
-#    include "REBLUR_SpecularSh_TemporalStabilization.cs.dxil.h"
-#endif
-
-#if NRD_EMBEDS_SPIRV_SHADERS
-#    include "REBLUR_SpecularSh_Blur.cs.spirv.h"
-#    include "REBLUR_SpecularSh_HistoryFix.cs.spirv.h"
-#    include "REBLUR_SpecularSh_PostBlur.cs.spirv.h"
-#    include "REBLUR_SpecularSh_PostBlur_NoTemporalStabilization.cs.spirv.h"
-#    include "REBLUR_SpecularSh_PrePass.cs.spirv.h"
-#    include "REBLUR_SpecularSh_SplitScreen.cs.spirv.h"
-#    include "REBLUR_SpecularSh_TemporalAccumulation.cs.spirv.h"
-#    include "REBLUR_SpecularSh_TemporalStabilization.cs.spirv.h"
-#endif
-
 #include "Denoisers/Reblur_SpecularSh.hpp"
-
-// REBLUR_DIFFUSE_SPECULAR
-#if NRD_EMBEDS_DXBC_SHADERS
-#    include "REBLUR_DiffuseSpecular_Blur.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecular_HistoryFix.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecular_HitDistReconstruction.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecular_HitDistReconstruction_5x5.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecular_PostBlur.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecular_PostBlur_NoTemporalStabilization.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecular_PrePass.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecular_SplitScreen.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecular_TemporalAccumulation.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecular_TemporalStabilization.cs.dxbc.h"
-#endif
-
-#if NRD_EMBEDS_DXIL_SHADERS
-#    include "REBLUR_DiffuseSpecular_Blur.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecular_HistoryFix.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecular_HitDistReconstruction.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecular_HitDistReconstruction_5x5.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecular_PostBlur.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecular_PostBlur_NoTemporalStabilization.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecular_PrePass.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecular_SplitScreen.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecular_TemporalAccumulation.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecular_TemporalStabilization.cs.dxil.h"
-#endif
-
-#if NRD_EMBEDS_SPIRV_SHADERS
-#    include "REBLUR_DiffuseSpecular_Blur.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecular_HistoryFix.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecular_HitDistReconstruction.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecular_HitDistReconstruction_5x5.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecular_PostBlur.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecular_PostBlur_NoTemporalStabilization.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecular_PrePass.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecular_SplitScreen.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecular_TemporalAccumulation.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecular_TemporalStabilization.cs.spirv.h"
-#endif
-
 #include "Denoisers/Reblur_DiffuseSpecular.hpp"
-
-// REBLUR_DIFFUSE_SPECULAR_OCCLUSION
-#if NRD_EMBEDS_DXBC_SHADERS
-#    include "REBLUR_DiffuseSpecularOcclusion_Blur.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_HistoryFix.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_HitDistReconstruction.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_HitDistReconstruction_5x5.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_PostBlur_NoTemporalStabilization.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_TemporalAccumulation.cs.dxbc.h"
-#endif
-
-#if NRD_EMBEDS_DXIL_SHADERS
-#    include "REBLUR_DiffuseSpecularOcclusion_Blur.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_HistoryFix.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_HitDistReconstruction.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_HitDistReconstruction_5x5.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_PostBlur_NoTemporalStabilization.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_TemporalAccumulation.cs.dxil.h"
-#endif
-
-#if NRD_EMBEDS_SPIRV_SHADERS
-#    include "REBLUR_DiffuseSpecularOcclusion_Blur.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_HistoryFix.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_HitDistReconstruction.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_HitDistReconstruction_5x5.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_PostBlur_NoTemporalStabilization.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecularOcclusion_TemporalAccumulation.cs.spirv.h"
-#endif
-
 #include "Denoisers/Reblur_DiffuseSpecularOcclusion.hpp"
-
-// REBLUR_DIFFUSE_SPECULAR_SH
-#if NRD_EMBEDS_DXBC_SHADERS
-#    include "REBLUR_DiffuseSpecularSh_Blur.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecularSh_HistoryFix.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecularSh_PostBlur.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecularSh_PostBlur_NoTemporalStabilization.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecularSh_PrePass.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecularSh_SplitScreen.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecularSh_TemporalAccumulation.cs.dxbc.h"
-#    include "REBLUR_DiffuseSpecularSh_TemporalStabilization.cs.dxbc.h"
-#endif
-
-#if NRD_EMBEDS_DXIL_SHADERS
-#    include "REBLUR_DiffuseSpecularSh_Blur.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecularSh_HistoryFix.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecularSh_PostBlur.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecularSh_PostBlur_NoTemporalStabilization.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecularSh_PrePass.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecularSh_SplitScreen.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecularSh_TemporalAccumulation.cs.dxil.h"
-#    include "REBLUR_DiffuseSpecularSh_TemporalStabilization.cs.dxil.h"
-#endif
-
-#if NRD_EMBEDS_SPIRV_SHADERS
-#    include "REBLUR_DiffuseSpecularSh_Blur.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecularSh_HistoryFix.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecularSh_PostBlur.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecularSh_PostBlur_NoTemporalStabilization.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecularSh_PrePass.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecularSh_SplitScreen.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecularSh_TemporalAccumulation.cs.spirv.h"
-#    include "REBLUR_DiffuseSpecularSh_TemporalStabilization.cs.spirv.h"
-#endif
-
 #include "Denoisers/Reblur_DiffuseSpecularSh.hpp"
-
-// REBLUR_DIFFUSE_DIRECTIONAL_OCCLUSION
-#if NRD_EMBEDS_DXBC_SHADERS
-#    include "REBLUR_DiffuseDirectionalOcclusion_Blur.cs.dxbc.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_HistoryFix.cs.dxbc.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_PostBlur.cs.dxbc.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_PostBlur_NoTemporalStabilization.cs.dxbc.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_PrePass.cs.dxbc.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_TemporalAccumulation.cs.dxbc.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_TemporalStabilization.cs.dxbc.h"
-#endif
-
-#if NRD_EMBEDS_DXIL_SHADERS
-#    include "REBLUR_DiffuseDirectionalOcclusion_Blur.cs.dxil.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_HistoryFix.cs.dxil.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_PostBlur.cs.dxil.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_PostBlur_NoTemporalStabilization.cs.dxil.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_PrePass.cs.dxil.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_TemporalAccumulation.cs.dxil.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_TemporalStabilization.cs.dxil.h"
-#endif
-
-#if NRD_EMBEDS_SPIRV_SHADERS
-#    include "REBLUR_DiffuseDirectionalOcclusion_Blur.cs.spirv.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_HistoryFix.cs.spirv.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_PostBlur.cs.spirv.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_PostBlur_NoTemporalStabilization.cs.spirv.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_PrePass.cs.spirv.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_TemporalAccumulation.cs.spirv.h"
-#    include "REBLUR_DiffuseDirectionalOcclusion_TemporalStabilization.cs.spirv.h"
-#endif
-
 #include "Denoisers/Reblur_DiffuseDirectionalOcclusion.hpp"

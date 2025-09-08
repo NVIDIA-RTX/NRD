@@ -56,6 +56,11 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
     AddTextureToTransientPool({REBLUR_FORMAT_OCCLUSION_FAST_HISTORY, 1});
     AddTextureToTransientPool({REBLUR_FORMAT_TILES, 16});
 
+    std::array<ShaderMake::ShaderConstant, 2> commonDefines = {{
+        {"NRD_SIGNAL", NRD_DIFFUSE_SPECULAR},
+        {"NRD_MODE", NRD_OCCLUSION},
+    }};
+
     PushPass("Classify tiles");
     {
         // Inputs
@@ -65,7 +70,8 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
         PushOutput(AsUint(Transient::TILES));
 
         // Shaders
-        AddDispatch(REBLUR_ClassifyTiles, REBLUR_ClassifyTiles, 1);
+        std::array<ShaderMake::ShaderConstant, 0> defines = {};
+        AddDispatch(REBLUR_ClassifyTiles, defines);
     }
 
     for (int i = 0; i < REBLUR_OCCLUSION_HITDIST_RECONSTRUCTION_PERMUTATION_NUM; i++) {
@@ -85,10 +91,12 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
             PushOutput(SPEC_TEMP1);
 
             // Shaders
-            if (is5x5)
-                AddDispatch(REBLUR_DiffuseSpecularOcclusion_HitDistReconstruction_5x5, REBLUR_HitDistReconstruction, 1);
-            else
-                AddDispatch(REBLUR_DiffuseSpecularOcclusion_HitDistReconstruction, REBLUR_HitDistReconstruction, 1);
+            std::array<ShaderMake::ShaderConstant, 3> defines = {{
+                commonDefines[0],
+                commonDefines[1],
+                {"MODE_5X5", is5x5 ? "1" : "0"},
+            }};
+            AddDispatch(REBLUR_HitDistReconstruction, defines);
         }
     }
 
@@ -127,7 +135,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
             PushOutput(AsUint(Transient::DATA1));
 
             // Shaders
-            AddDispatch(REBLUR_DiffuseSpecularOcclusion_TemporalAccumulation, REBLUR_TemporalAccumulation, 1);
+            AddDispatch(REBLUR_TemporalAccumulation, commonDefines);
         }
     }
 
@@ -150,7 +158,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
         PushOutput(AsUint(Permanent::SPEC_FAST_HISTORY));
 
         // Shaders
-        AddDispatch(REBLUR_DiffuseSpecularOcclusion_HistoryFix, REBLUR_HistoryFix, 1);
+        AddDispatch(REBLUR_HistoryFix, commonDefines);
     }
 
     PushPass("Blur");
@@ -169,7 +177,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
         PushOutput(AsUint(Permanent::PREV_VIEWZ));
 
         // Shaders
-        AddDispatch(REBLUR_DiffuseSpecularOcclusion_Blur, REBLUR_Blur, 1);
+        AddDispatch(REBLUR_Blur, commonDefines);
     }
 
     PushPass("Post-blur");
@@ -191,7 +199,12 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
         PushOutput(AsUint(ResourceType::OUT_SPEC_HITDIST));
 
         // Shaders
-        AddDispatch(REBLUR_DiffuseSpecularOcclusion_PostBlur_NoTemporalStabilization, REBLUR_PostBlur, 1);
+        std::array<ShaderMake::ShaderConstant, 3> defines = {{
+            commonDefines[0],
+            commonDefines[1],
+            {"TEMPORAL_STABILIZATION", "0"},
+        }};
+        AddDispatch(REBLUR_PostBlur, defines);
     }
 
     PushPass("Split screen");
@@ -206,7 +219,11 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularOcclusion(DenoiserData& denoise
         PushOutput(AsUint(ResourceType::OUT_SPEC_HITDIST));
 
         // Shaders
-        AddDispatch(REBLUR_DiffuseSpecular_SplitScreen, REBLUR_SplitScreen, 1);
+        std::array<ShaderMake::ShaderConstant, 2> defines = {{
+            commonDefines[0],
+            {"NRD_MODE", NRD_RADIANCE},
+        }};
+        AddDispatch(REBLUR_SplitScreen, defines);
     }
 
     REBLUR_ADD_VALIDATION_DISPATCH(Transient::DATA1, ResourceType::IN_DIFF_HITDIST, ResourceType::IN_SPEC_HITDIST);

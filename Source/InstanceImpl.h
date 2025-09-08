@@ -10,58 +10,84 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
-#include <cstring> // memset
-
 #include "NRD.h"
 
 typedef nrd::AllocationCallbacks AllocationCallbacks;
 #include "StdAllocator.h"
 
+#include "ShaderMake/ShaderBlob.h"
 #include "Timer.h"
 #include "ml.h"
 #include "ml.hlsli"
+
+#include <array>
+#include <cstring> // memset
+
+// see "Shaders.cfg"
+#define NRD_DIFFUSE               "1"
+#define NRD_SPECULAR              "2"
+#define NRD_DIFFUSE_SPECULAR      "3"
+#define NRD_RADIANCE              "0"
+#define NRD_SH                    "1"
+#define NRD_OCCLUSION             "2"
+#define NRD_DIRECTIONAL_OCCLUSION "3"
 
 #define _NRD_STRINGIFY(s) #s
 #define NRD_STRINGIFY(s)  _NRD_STRINGIFY(s)
 
 #if NRD_EMBEDS_DXBC_SHADERS
-#    define GET_DXBC_SHADER_DESC(shaderName) {g_##shaderName##_cs_dxbc, GetCountOf(g_##shaderName##_cs_dxbc)}
+#    define FillDXBC(blobName, defines, computeShader) ShaderMake::FindPermutationInBlob(g_##blobName##_cs_dxbc, GetCountOf(g_##blobName##_cs_dxbc), defines.data(), (uint32_t)defines.size(), &computeShader.bytecode, &computeShader.size)
 #else
-#    define GET_DXBC_SHADER_DESC(shaderName) \
-        { \
-        }
+#    define FillDXBC(blobName, defines, computeShader)
 #endif
 
 #if NRD_EMBEDS_DXIL_SHADERS
-#    define GET_DXIL_SHADER_DESC(shaderName) {g_##shaderName##_cs_dxil, GetCountOf(g_##shaderName##_cs_dxil)}
+#    define FillDXIL(blobName, defines, computeShader) ShaderMake::FindPermutationInBlob(g_##blobName##_cs_dxil, GetCountOf(g_##blobName##_cs_dxil), defines.data(), (uint32_t)defines.size(), &computeShader.bytecode, &computeShader.size)
 #else
-#    define GET_DXIL_SHADER_DESC(shaderName) \
-        { \
-        }
+#    define FillDXIL(blobName, defines, computeShader)
 #endif
 
 #if NRD_EMBEDS_SPIRV_SHADERS
-#    define GET_SPIRV_SHADER_DESC(shaderName) {g_##shaderName##_cs_spirv, GetCountOf(g_##shaderName##_cs_spirv)}
+#    define FillSPIRV(blobName, defines, computeShader) ShaderMake::FindPermutationInBlob(g_##blobName##_cs_spirv, GetCountOf(g_##blobName##_cs_spirv), defines.data(), (uint32_t)defines.size(), &computeShader.bytecode, &computeShader.size)
 #else
-#    define GET_SPIRV_SHADER_DESC(shaderName) \
-        { \
-        }
+#    define FillSPIRV(blobName, defines, computeShader)
 #endif
 
-#define AddDispatch(shaderName, passName, downsampleFactor) \
-    AddComputeDispatchDesc(NumThreads(passName##GroupX, passName##GroupY), \
-        downsampleFactor, sizeof(passName##Constants), 1, #shaderName ".cs", \
-        GET_DXBC_SHADER_DESC(shaderName), GET_DXIL_SHADER_DESC(shaderName), GET_SPIRV_SHADER_DESC(shaderName))
+#define AddDispatchWithArgs(blobName, defines, downsampleFactor, repeatNum) \
+    do { \
+        PipelineDesc pipelineDesc = {}; \
+        FillDXBC(blobName, defines, pipelineDesc.computeShaderDXBC); \
+        FillDXIL(blobName, defines, pipelineDesc.computeShaderDXIL); \
+        FillSPIRV(blobName, defines, pipelineDesc.computeShaderSPIRV); \
+        AddInternalDispatch( \
+            pipelineDesc, \
+            NumThreads(blobName##GroupX, blobName##GroupY), \
+            downsampleFactor, sizeof(blobName##Constants), repeatNum); \
+    } while(0)
 
-#define AddDispatchNoConstants(shaderName, passName, downsampleFactor) \
-    AddComputeDispatchDesc(NumThreads(passName##GroupX, passName##GroupY), \
-        downsampleFactor, 0, 1, #shaderName ".cs", \
-        GET_DXBC_SHADER_DESC(shaderName), GET_DXIL_SHADER_DESC(shaderName), GET_SPIRV_SHADER_DESC(shaderName))
+#define AddDispatch(blobName, defines) \
+    do { \
+        PipelineDesc pipelineDesc = {}; \
+        FillDXBC(blobName, defines, pipelineDesc.computeShaderDXBC); \
+        FillDXIL(blobName, defines, pipelineDesc.computeShaderDXIL); \
+        FillSPIRV(blobName, defines, pipelineDesc.computeShaderSPIRV); \
+        AddInternalDispatch( \
+            pipelineDesc, \
+            NumThreads(blobName##GroupX, blobName##GroupY), \
+            1, sizeof(blobName##Constants), 1); \
+    } while(0)
 
-#define AddDispatchRepeated(shaderName, passName, downsampleFactor, repeatNum) \
-    AddComputeDispatchDesc(NumThreads(passName##GroupX, passName##GroupY), \
-        downsampleFactor, sizeof(passName##Constants), repeatNum, #shaderName ".cs", \
-        GET_DXBC_SHADER_DESC(shaderName), GET_DXIL_SHADER_DESC(shaderName), GET_SPIRV_SHADER_DESC(shaderName))
+#define AddDispatchNoConstants(blobName, defines) \
+    do { \
+        PipelineDesc pipelineDesc = {}; \
+        FillDXBC(blobName, defines, pipelineDesc.computeShaderDXBC); \
+        FillDXIL(blobName, defines, pipelineDesc.computeShaderDXIL); \
+        FillSPIRV(blobName, defines, pipelineDesc.computeShaderSPIRV); \
+        AddInternalDispatch( \
+            pipelineDesc, \
+            NumThreads(blobName##GroupX, blobName##GroupY), \
+            1, 0, 1); \
+    } while(0)
 
 #define PushPass(passName) \
     _PushPass(NRD_STRINGIFY(DENOISER_NAME) " - " passName)
@@ -107,7 +133,7 @@ constexpr uint16_t PERMANENT_POOL_START = 1000;
 constexpr uint16_t TRANSIENT_POOL_START = 2000;
 constexpr size_t CONSTANT_DATA_SIZE = 128 * 1024; // TODO: improve
 
-constexpr uint16_t USE_MAX_DIMS = 0xFFFF;
+constexpr uint16_t USE_PREV_DIMS = 0xFFFF;
 constexpr uint16_t IGNORE_RS = 0xFFFE;
 
 inline uint16_t DivideUp(uint32_t x, uint16_t y) {
@@ -263,16 +289,7 @@ public:
     Result GetComputeDispatches(const Identifier* identifiers, uint32_t identifiersNum, const DispatchDesc*& dispatchDescs, uint32_t& dispatchDescsNum);
 
 private:
-    void AddComputeDispatchDesc(
-        NumThreads numThreads,
-        uint16_t downsampleFactor,
-        uint32_t constantBufferDataSize,
-        uint32_t maxRepeatNum,
-        const char* shaderFileName,
-        const ComputeShaderDesc& dxbc,
-        const ComputeShaderDesc& dxil,
-        const ComputeShaderDesc& spirv);
-
+    void AddInternalDispatch(PipelineDesc& pipelineDesc, NumThreads numThreads, uint16_t downsampleFactor, uint32_t constantBufferDataSize, uint32_t maxRepeatNum);
     void PrepareDesc();
     void UpdatePingPong(const DenoiserData& denoiserData);
     void PushTexture(DescriptorType descriptorType, uint16_t localIndex, uint16_t indexToSwapWith = uint16_t(-1));

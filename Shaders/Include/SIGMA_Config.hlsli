@@ -10,6 +10,19 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #define SIGMA
 
+// Knobs remapping
+#ifdef TRANSLUCENCY
+    #if( TRANSLUCENCY == 1 )
+        #define SIGMA_TRANSLUCENCY
+    #endif
+#endif
+
+#ifdef FIRST_PASS
+    #if( FIRST_PASS == 1 )
+        #define SIGMA_FIRST_PASS
+    #endif
+#endif
+
 // Switches ( default 1 )
 #define SIGMA_USE_EARLY_OUT_IN_TS                       1 // improves performance in regions with hard shadow
 #define SIGMA_USE_CATROM                                1 // sharper reprojection
@@ -36,7 +49,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define SIGMA_MAX_ACCUM_FRAME_NUM                       7
 
 // Data type
-#ifdef SIGMA_TRANSLUCENT
+#ifdef SIGMA_TRANSLUCENCY
     #define SIGMA_TYPE                                  float4
 #else
     #define SIGMA_TYPE                                  float

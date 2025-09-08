@@ -11,12 +11,12 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "InstanceImpl.h"
 
 #include "../Shaders/Include/SIGMA_Config.hlsli"
-#include "../Shaders/Resources/SIGMA_Blur.resources.hlsli"
-#include "../Shaders/Resources/SIGMA_ClassifyTiles.resources.hlsli"
-#include "../Shaders/Resources/SIGMA_Copy.resources.hlsli"
-#include "../Shaders/Resources/SIGMA_SmoothTiles.resources.hlsli"
-#include "../Shaders/Resources/SIGMA_SplitScreen.resources.hlsli"
-#include "../Shaders/Resources/SIGMA_TemporalStabilization.resources.hlsli"
+#include "../Shaders/SIGMA_Blur.resources.hlsli"
+#include "../Shaders/SIGMA_ClassifyTiles.resources.hlsli"
+#include "../Shaders/SIGMA_Copy.resources.hlsli"
+#include "../Shaders/SIGMA_SmoothTiles.resources.hlsli"
+#include "../Shaders/SIGMA_SplitScreen.resources.hlsli"
+#include "../Shaders/SIGMA_TemporalStabilization.resources.hlsli"
 
 // Permutations
 #define SIGMA_POST_BLUR_PERMUTATION_NUM 2
@@ -136,72 +136,33 @@ void nrd::InstanceImpl::AddSharedConstants_Sigma(const SigmaSettings& settings, 
     consts->gIsRectChanged = isRectChanged ? 1 : 0;
 }
 
-// SIGMA_SHARED
+// Shaders
 #if NRD_EMBEDS_DXBC_SHADERS
-#    include "SIGMA_Copy.cs.dxbc.h"
+#    include "SIGMA_ClassifyTiles.cs.dxbc.h"
 #    include "SIGMA_SmoothTiles.cs.dxbc.h"
+#    include "SIGMA_Copy.cs.dxbc.h"
+#    include "SIGMA_Blur.cs.dxbc.h"
+#    include "SIGMA_TemporalStabilization.cs.dxbc.h"
+#    include "SIGMA_SplitScreen.cs.dxbc.h"
 #endif
 
 #if NRD_EMBEDS_DXIL_SHADERS
-#    include "SIGMA_Copy.cs.dxil.h"
+#    include "SIGMA_ClassifyTiles.cs.dxil.h"
 #    include "SIGMA_SmoothTiles.cs.dxil.h"
+#    include "SIGMA_Copy.cs.dxil.h"
+#    include "SIGMA_Blur.cs.dxil.h"
+#    include "SIGMA_TemporalStabilization.cs.dxil.h"
+#    include "SIGMA_SplitScreen.cs.dxil.h"
 #endif
 
 #if NRD_EMBEDS_SPIRV_SHADERS
-#    include "SIGMA_Copy.cs.spirv.h"
+#    include "SIGMA_ClassifyTiles.cs.spirv.h"
 #    include "SIGMA_SmoothTiles.cs.spirv.h"
-#endif
-
-// SIGMA_SHADOW
-#if NRD_EMBEDS_DXBC_SHADERS
-#    include "SIGMA_Shadow_Blur.cs.dxbc.h"
-#    include "SIGMA_Shadow_ClassifyTiles.cs.dxbc.h"
-#    include "SIGMA_Shadow_PostBlur.cs.dxbc.h"
-#    include "SIGMA_Shadow_SplitScreen.cs.dxbc.h"
-#    include "SIGMA_Shadow_TemporalStabilization.cs.dxbc.h"
-#endif
-
-#if NRD_EMBEDS_DXIL_SHADERS
-#    include "SIGMA_Shadow_Blur.cs.dxil.h"
-#    include "SIGMA_Shadow_ClassifyTiles.cs.dxil.h"
-#    include "SIGMA_Shadow_PostBlur.cs.dxil.h"
-#    include "SIGMA_Shadow_SplitScreen.cs.dxil.h"
-#    include "SIGMA_Shadow_TemporalStabilization.cs.dxil.h"
-#endif
-
-#if NRD_EMBEDS_SPIRV_SHADERS
-#    include "SIGMA_Shadow_Blur.cs.spirv.h"
-#    include "SIGMA_Shadow_ClassifyTiles.cs.spirv.h"
-#    include "SIGMA_Shadow_PostBlur.cs.spirv.h"
-#    include "SIGMA_Shadow_SplitScreen.cs.spirv.h"
-#    include "SIGMA_Shadow_TemporalStabilization.cs.spirv.h"
+#    include "SIGMA_Copy.cs.spirv.h"
+#    include "SIGMA_Blur.cs.spirv.h"
+#    include "SIGMA_TemporalStabilization.cs.spirv.h"
+#    include "SIGMA_SplitScreen.cs.spirv.h"
 #endif
 
 #include "Denoisers/Sigma_Shadow.hpp"
-
-// SIGMA_SHADOW_TRANSLUCENCY
-#if NRD_EMBEDS_DXBC_SHADERS
-#    include "SIGMA_ShadowTranslucency_Blur.cs.dxbc.h"
-#    include "SIGMA_ShadowTranslucency_ClassifyTiles.cs.dxbc.h"
-#    include "SIGMA_ShadowTranslucency_PostBlur.cs.dxbc.h"
-#    include "SIGMA_ShadowTranslucency_SplitScreen.cs.dxbc.h"
-#    include "SIGMA_ShadowTranslucency_TemporalStabilization.cs.dxbc.h"
-#endif
-
-#if NRD_EMBEDS_DXIL_SHADERS
-#    include "SIGMA_ShadowTranslucency_Blur.cs.dxil.h"
-#    include "SIGMA_ShadowTranslucency_ClassifyTiles.cs.dxil.h"
-#    include "SIGMA_ShadowTranslucency_PostBlur.cs.dxil.h"
-#    include "SIGMA_ShadowTranslucency_SplitScreen.cs.dxil.h"
-#    include "SIGMA_ShadowTranslucency_TemporalStabilization.cs.dxil.h"
-#endif
-
-#if NRD_EMBEDS_SPIRV_SHADERS
-#    include "SIGMA_ShadowTranslucency_Blur.cs.spirv.h"
-#    include "SIGMA_ShadowTranslucency_ClassifyTiles.cs.spirv.h"
-#    include "SIGMA_ShadowTranslucency_PostBlur.cs.spirv.h"
-#    include "SIGMA_ShadowTranslucency_SplitScreen.cs.spirv.h"
-#    include "SIGMA_ShadowTranslucency_TemporalStabilization.cs.spirv.h"
-#endif
-
 #include "Denoisers/Sigma_ShadowTranslucency.hpp"

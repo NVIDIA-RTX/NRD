@@ -199,10 +199,6 @@ Result Integration::RecreateVK(const IntegrationCreationDesc& nrdIntegrationDesc
 bool Integration::RecreatePipelines() {
     _WaitForIdle();
 
-#ifdef PROJECT_NAME
-    utils::ShaderCodeStorage shaderCodeStorage;
-#endif
-
     // Destroy old
     for (nri::Pipeline* pipeline : m_Pipelines)
         m_iCore.DestroyPipeline(pipeline);
@@ -217,17 +213,10 @@ bool Integration::RecreatePipelines() {
         const ComputeShaderDesc& nrdComputeShader = (&nrdPipelineDesc.computeShaderDXBC)[std::max((int32_t)deviceDesc.graphicsAPI - 1, 0)];
 
         nri::ShaderDesc computeShader = {};
-#ifdef PROJECT_NAME
-        if (nrdComputeShader.bytecode && !m_ReloadShaders) {
-#endif
-            computeShader.bytecode = nrdComputeShader.bytecode;
-            computeShader.size = nrdComputeShader.size;
-            computeShader.entryPointName = nrdPipelineDesc.shaderEntryPointName;
-            computeShader.stage = nri::StageBits::COMPUTE_SHADER;
-#ifdef PROJECT_NAME
-        } else
-            computeShader = utils::LoadShader(deviceDesc.graphicsAPI, nrdPipelineDesc.shaderFileName, shaderCodeStorage, nrdPipelineDesc.shaderEntryPointName);
-#endif
+        computeShader.bytecode = nrdComputeShader.bytecode;
+        computeShader.size = nrdComputeShader.size;
+        computeShader.entryPointName = nrdPipelineDesc.shaderEntryPointName;
+        computeShader.stage = nri::StageBits::COMPUTE_SHADER;
 
         nri::ComputePipelineDesc pipelineDesc = {};
         pipelineDesc.pipelineLayout = m_PipelineLayout;
@@ -237,8 +226,6 @@ bool Integration::RecreatePipelines() {
         NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(m_iCore.CreateComputePipeline(*m_Device, pipelineDesc, pipeline));
         m_Pipelines.push_back(pipeline);
     }
-
-    m_ReloadShaders = true;
 
     return true;
 }
@@ -972,7 +959,6 @@ void Integration::Destroy() {
     m_PrevFrameIndexFromSettings = 0;
     m_Wrapped = nri::GraphicsAPI::NONE;
     m_SkipDestroy = false;
-    m_ReloadShaders = false;
 
 #ifdef NRD_INTEGRATION_DEBUG_LOGGING
     if (m_Log)

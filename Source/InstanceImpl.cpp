@@ -67,22 +67,18 @@ constexpr std::array<bool, (size_t)nrd::Format::MAX_NUM> g_IsIntegerFormat = {
     false, // R9_G9_B9_E5_UFLOAT
 };
 
-#include "../Shaders/Resources/Clear_Float.resources.hlsli"
-#include "../Shaders/Resources/Clear_Uint.resources.hlsli"
+#include "../Shaders/Clear.resources.hlsli"
 
 #if NRD_EMBEDS_DXBC_SHADERS
-#    include "Clear_Float.cs.dxbc.h"
-#    include "Clear_Uint.cs.dxbc.h"
+#    include "Clear.cs.dxbc.h"
 #endif
 
 #if NRD_EMBEDS_DXIL_SHADERS
-#    include "Clear_Float.cs.dxil.h"
-#    include "Clear_Uint.cs.dxil.h"
+#    include "Clear.cs.dxil.h"
 #endif
 
 #if NRD_EMBEDS_SPIRV_SHADERS
-#    include "Clear_Float.cs.spirv.h"
-#    include "Clear_Uint.cs.spirv.h"
+#    include "Clear.cs.spirv.h"
 #endif
 
 inline bool IsInList(nrd::Identifier identifier, const nrd::Identifier* identifiers, uint32_t identifiersNum) {
@@ -232,14 +228,22 @@ nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreati
     _PushPass("Clear (f)");
     {
         PushOutput(0);
-        AddDispatchNoConstants(Clear_Float, Clear_Float, 1);
+
+        std::array<ShaderMake::ShaderConstant, 1> defines = {
+            {"FLOAT", "1"},
+        };
+        AddDispatchNoConstants(Clear, defines);
     }
 
     m_DispatchClearIndex[1] = m_Dispatches.size();
     _PushPass("Clear (ui)");
     {
         PushOutput(0);
-        AddDispatchNoConstants(Clear_Uint, Clear_Uint, 1);
+
+        std::array<ShaderMake::ShaderConstant, 1> defines = {
+            {"FLOAT", "0"},
+        };
+        AddDispatchNoConstants(Clear, defines);
     }
 
     PrepareDesc();
@@ -465,8 +469,7 @@ nrd::Result nrd::InstanceImpl::SetDenoiserSettings(Identifier identifier, const 
                 const ReblurSettings& settings = *(ReblurSettings*)denoiserSettings;
                 enableAntiFirefly = settings.enableAntiFirefly;
                 checkerboardMode = settings.checkerboardMode;
-            }
-            else if ((uint32_t)denoiserData.desc.denoiser <= (uint32_t)Denoiser::RELAX_DIFFUSE_SPECULAR_SH) {
+            } else if ((uint32_t)denoiserData.desc.denoiser <= (uint32_t)Denoiser::RELAX_DIFFUSE_SPECULAR_SH) {
                 const RelaxSettings& settings = *(RelaxSettings*)denoiserSettings;
                 enableAntiFirefly = settings.enableAntiFirefly;
                 checkerboardMode = settings.checkerboardMode;
@@ -561,31 +564,38 @@ nrd::Result nrd::InstanceImpl::GetComputeDispatches(const Identifier* identifier
     return dispatchDescsNum ? Result::SUCCESS : Result::INVALID_ARGUMENT;
 }
 
-void nrd::InstanceImpl::AddComputeDispatchDesc(
-    NumThreads numThreads,
-    uint16_t downsampleFactor,
-    uint32_t constantBufferDataSize,
-    uint32_t maxRepeatNum,
-    const char* shaderFileName,
-    const ComputeShaderDesc& dxbc,
-    const ComputeShaderDesc& dxil,
-    const ComputeShaderDesc& spirv) {
-    // Pipeline (unique only)
+void nrd::InstanceImpl::AddInternalDispatch(PipelineDesc& pipelineDesc, NumThreads numThreads, uint16_t downsampleFactor, uint32_t constantBufferDataSize, uint32_t maxRepeatNum) {
+#if NRD_EMBEDS_DXBC_SHADERS
+    assert(pipelineDesc.computeShaderDXBC.bytecode);
+#endif
+
+#if NRD_EMBEDS_DXIL_SHADERS
+    assert(pipelineDesc.computeShaderDXIL.bytecode);
+#endif
+
+#if NRD_EMBEDS_SPIRV_SHADERS
+    assert(pipelineDesc.computeShaderSPIRV.bytecode);
+#endif
+
+    // Add pipeline (unique only)
     size_t pipelineIndex = 0;
     for (; pipelineIndex < m_Pipelines.size(); pipelineIndex++) {
         const PipelineDesc& pipeline = m_Pipelines[pipelineIndex];
 
-        if (!strcmp(pipeline.shaderFileName, shaderFileName))
+#if NRD_EMBEDS_DXBC_SHADERS
+        if (pipeline.computeShaderDXBC.bytecode == pipelineDesc.computeShaderDXBC.bytecode)
             break;
+#elif NRD_EMBEDS_DXIL_SHADERS
+        if (pipeline.computeShaderDXIL.bytecode == pipelineDesc.computeShaderDXIL.bytecode)
+            break;
+#elif NRD_EMBEDS_SPIRV_SHADERS
+        if (pipeline.computeShaderSPIRV.bytecode == pipelineDesc.computeShaderSPIRV.bytecode)
+            break;
+#endif
     }
 
     if (pipelineIndex == m_Pipelines.size()) {
-        PipelineDesc pipelineDesc = {};
-        pipelineDesc.shaderFileName = shaderFileName;
         pipelineDesc.shaderEntryPointName = NRD_STRINGIFY(NRD_CS_MAIN);
-        pipelineDesc.computeShaderDXBC = dxbc;
-        pipelineDesc.computeShaderDXIL = dxil;
-        pipelineDesc.computeShaderSPIRV = spirv;
         pipelineDesc.resourceRanges = (ResourceRangeDesc*)m_ResourceRanges.size();
         pipelineDesc.hasConstantData = constantBufferDataSize != 0;
 
@@ -608,7 +618,7 @@ void nrd::InstanceImpl::AddComputeDispatchDesc(
         m_Pipelines.push_back(pipelineDesc);
     }
 
-    // Dispatch
+    // Add dispatch
     InternalDispatchDesc dispatchDesc = {};
     dispatchDesc.name = m_PassName;
     dispatchDesc.pipelineIndex = (uint16_t)pipelineIndex;
@@ -794,9 +804,9 @@ void* nrd::InstanceImpl::PushDispatch(const DenoiserData& denoiserData, uint32_t
     uint16_t h = m_CommonSettings.rectSize[1];
     uint16_t d = internalDispatchDesc.downsampleFactor;
 
-    if (d == USE_MAX_DIMS) {
-        w = max(w, m_CommonSettings.rectSizePrev[0]);
-        h = max(h, m_CommonSettings.rectSizePrev[1]);
+    if (d == USE_PREV_DIMS) {
+        w = m_CommonSettings.rectSizePrev[0];
+        h = m_CommonSettings.rectSizePrev[1];
         d = 1;
     } else if (d == IGNORE_RS) {
         w = m_CommonSettings.resourceSize[0];

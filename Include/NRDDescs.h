@@ -440,8 +440,7 @@ namespace nrd
         ComputeShaderDesc computeShaderDXBC;
         ComputeShaderDesc computeShaderDXIL;
         ComputeShaderDesc computeShaderSPIRV;
-        const char* shaderFileName;
-        const char* shaderEntryPointName;
+        const char* shaderEntryPointName; // = "NRD_CS_MAIN"
         const ResourceRangeDesc* resourceRanges;
         uint32_t resourceRangesNum; // up to 2 ranges: "TEXTURE" inputs (optional) and "TEXTURE_STORAGE" outputs
 

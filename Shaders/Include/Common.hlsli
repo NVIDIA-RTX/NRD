@@ -116,7 +116,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 // CTA swizzling
 #define NRD_CS_MAIN_ARGS                                        int2 threadPos : SV_GroupThreadId, uint2 groupPos : SV_GroupId, int2 _pixelPos : SV_DispatchThreadId, uint threadIndex : SV_GroupIndex
 
-// IMPORTANT: incompatible with "USE_MAX_DIMS", "IGNORE_RS" and dispatches with "downsampleFactor > 1"
+// IMPORTANT: incompatible with "USE_PREV_DIMS", "IGNORE_RS" and dispatches with "downsampleFactor > 1"
 #if 1
     // Helps to reuse data already stored in caches
     #define NRD_CTA_ORDER_REVERSED \

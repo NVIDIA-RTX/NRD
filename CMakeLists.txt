@@ -56,7 +56,7 @@ project(NRD VERSION ${NRD_VERSION_MAJOR}.${NRD_VERSION_MINOR}.${NRD_VERSION_BUIL
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Generate "NRDEncoding.hlsli"
-file(WRITE Shaders/Include/NRDEncoding.hlsli
+file(WRITE "Shaders/Include/NRDEncoding.hlsli"
     "// This file is auto-generated during project deployment. Do not modify!\n"
     "#define NRD_NORMAL_ENCODING ${NRD_NORMAL_ENCODING}\n"
     "#define NRD_ROUGHNESS_ENCODING ${NRD_ROUGHNESS_ENCODING}\n"
@@ -71,7 +71,6 @@ set(SPIRV_TREG_OFFSET 20)
 # Compile definitions (public)
 set(COMPILE_DEFINITIONS "")
 foreach(opt IN ITEMS
-    NRD_STATIC_LIBRARY
     NRD_SUPPORTS_VIEWPORT_OFFSET
     NRD_SUPPORTS_CHECKERBOARD
     NRD_SUPPORTS_HISTORY_CONFIDENCE
@@ -131,7 +130,7 @@ if(NOT TARGET NRI AND NRD_NRI)
     FetchContent_Declare(
         nri
         GIT_REPOSITORY https://github.com/NVIDIA-RTX/NRI.git
-        GIT_TAG v174-plus
+        GIT_TAG v175
         GIT_SHALLOW 1
     )
     list(APPEND DEPS nri)
@@ -226,11 +225,13 @@ endif()
 
 if("${NRD_SHADERS_PATH}" STREQUAL "")
     set(NRD_SHADERS_PATH "${CMAKE_CURRENT_SOURCE_DIR}/_Shaders")
-else()
-    set(NRD_SHADER_BINARIES "--binary")
 endif()
 
-target_link_libraries(NRD PRIVATE MathLib)
+target_link_libraries(NRD
+    PRIVATE
+        MathLib
+        ShaderMakeBlob
+)
 target_include_directories(NRD
     PUBLIC
         "Include"
@@ -249,10 +250,11 @@ target_compile_definitions(NRD
         SPIRV_BREG_OFFSET=${SPIRV_BREG_OFFSET}
         SPIRV_UREG_OFFSET=${SPIRV_UREG_OFFSET}
         SPIRV_TREG_OFFSET=${SPIRV_TREG_OFFSET}
+        ${COMPILE_DEFINITIONS}
     PUBLIC
         NRD_NORMAL_ENCODING=${NRD_NORMAL_ENCODING}
         NRD_ROUGHNESS_ENCODING=${NRD_ROUGHNESS_ENCODING}
-        ${COMPILE_DEFINITIONS}
+        NRD_STATIC_LIBRARY=$<BOOL:${NRD_STATIC_LIBRARY}>
 )
 target_compile_options(NRD
     PRIVATE
@@ -314,16 +316,15 @@ set(SHADERMAKE_GENERAL_ARGS
     --bRegShift ${SPIRV_BREG_OFFSET}
     --uRegShift ${SPIRV_UREG_OFFSET}
     --tRegShift ${SPIRV_TREG_OFFSET}
-    --header ${NRD_SHADER_BINARIES}
+    --headerBlob
     --allResourcesBound
     --vulkanVersion 1.2
-    --sourceDir "Shaders/Source"
+    --sourceDir "Shaders"
     --ignoreConfigDir
     -c "Shaders/Shaders.cfg"
     -o "${NRD_SHADERS_PATH}"
     -I "${ML_SOURCE_DIR}"
     -I "Shaders/Include"
-    -I "Shaders/Resources"
     -D NRD_NORMAL_ENCODING=${NRD_NORMAL_ENCODING}
     -D NRD_ROUGHNESS_ENCODING=${NRD_ROUGHNESS_ENCODING}
     -D NRD_SUPPORTS_VIEWPORT_OFFSET=$<BOOL:${NRD_SUPPORTS_VIEWPORT_OFFSET}>

@@ -10,7 +10,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "InstanceImpl.h"
 
-// REFERENCE
+// Shaders
 #if NRD_EMBEDS_DXBC_SHADERS
 #    include "REFERENCE_Copy.cs.dxbc.h"
 #    include "REFERENCE_TemporalAccumulation.cs.dxbc.h"
@@ -26,4 +26,5 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #    include "REFERENCE_TemporalAccumulation.cs.spirv.h"
 #endif
 
+// Denoisers
 #include "Denoisers/Reference.hpp"

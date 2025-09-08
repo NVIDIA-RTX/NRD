@@ -8,8 +8,8 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../Shaders/Resources/REFERENCE_Copy.resources.hlsli"
-#include "../Shaders/Resources/REFERENCE_TemporalAccumulation.resources.hlsli"
+#include "../Shaders/REFERENCE_Copy.resources.hlsli"
+#include "../Shaders/REFERENCE_TemporalAccumulation.resources.hlsli"
 
 #define DENOISER_NAME Reference
 
@@ -23,6 +23,8 @@ void nrd::InstanceImpl::Add_Reference(DenoiserData& denoiserData) {
 
     AddTextureToPermanentPool({Format::RGBA32_SFLOAT, 1});
 
+    std::array<ShaderMake::ShaderConstant, 0> commonDefines = {};
+
     PushPass("Temporal accumulation");
     {
         // Inputs
@@ -32,7 +34,7 @@ void nrd::InstanceImpl::Add_Reference(DenoiserData& denoiserData) {
         PushOutput(AsUint(Permanent::HISTORY));
 
         // Shaders
-        AddDispatch(REFERENCE_TemporalAccumulation, REFERENCE_TemporalAccumulation, 1);
+        AddDispatch(REFERENCE_TemporalAccumulation, commonDefines);
     }
 
     PushPass("Copy");
@@ -44,7 +46,7 @@ void nrd::InstanceImpl::Add_Reference(DenoiserData& denoiserData) {
         PushOutput(AsUint(ResourceType::OUT_SIGNAL));
 
         // Shaders
-        AddDispatch(REFERENCE_Copy, REFERENCE_Copy, 1);
+        AddDispatch(REFERENCE_TemporalAccumulation, commonDefines);
     }
 }
 

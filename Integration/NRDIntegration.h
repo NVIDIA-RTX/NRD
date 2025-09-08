@@ -316,7 +316,6 @@ private:
     uint32_t m_PrevFrameIndexFromSettings = 0;
     nri::GraphicsAPI m_Wrapped = nri::GraphicsAPI::NONE;
     bool m_SkipDestroy = false;
-    bool m_ReloadShaders = false;
 };
 
 } // namespace nrd
