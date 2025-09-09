@@ -148,8 +148,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float4 prevHistoryLength = float4( prevData & 7 );
 
     float frustumSize = GetFrustumSize( gMinRectDimMulUnproject, gOrthoMode, viewZ );
-    float disocclusionThreshold = GetDisocclusionThreshold( NRD_DISOCCLUSION_THRESHOLD, frustumSize, 1.0 ); // TODO: slope scale?
-    disocclusionThreshold *= IsInScreenNearest( smbPixelUv );
+    float4 disocclusionThreshold = GetDisocclusionThreshold( NRD_DISOCCLUSION_THRESHOLD, frustumSize, 1.0 ); // TODO: slope scale?
+    disocclusionThreshold *= IsInScreenBilinear( smbBilinearFilter.origin, gRectSizePrev );
     disocclusionThreshold -= NRD_EPS;
 
     float3 Xvprev = Geometry::AffineTransform( gWorldToViewPrev, Xprev );
