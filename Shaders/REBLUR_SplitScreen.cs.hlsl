@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "REBLUR_SplitScreen.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "REBLUR_Common.hlsli"
 
 [numthreads( GROUP_X, GROUP_Y, 1 )]
@@ -29,25 +30,25 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pixelPos ) ] );
     uint2 checkerboardPos = pixelPos;
 
-    #ifdef REBLUR_DIFFUSE
+    #if( NRD_DIFF )
         checkerboardPos.x = pixelPos.x >> ( gDiffCheckerboard != 2 ? 1 : 0 );
 
         float4 diff = gIn_Diff[ checkerboardPos ];
         gOut_Diff[ pixelPos ] = diff * float( viewZ < gDenoisingRange );
 
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             float4 diffSh = gIn_DiffSh[ checkerboardPos ];
             gOut_DiffSh[ pixelPos ] = diffSh * float( viewZ < gDenoisingRange );
         #endif
     #endif
 
-    #ifdef REBLUR_SPECULAR
+    #if( NRD_SPEC )
         checkerboardPos.x = pixelPos.x >> ( gSpecCheckerboard != 2 ? 1 : 0 );
 
         float4 spec = gIn_Spec[ checkerboardPos ];
         gOut_Spec[ pixelPos ] = spec * float( viewZ < gDenoisingRange );
 
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             float4 specSh = gIn_SpecSh[ checkerboardPos ];
             gOut_SpecSh[ pixelPos ] = specSh * float( viewZ < gDenoisingRange );
         #endif

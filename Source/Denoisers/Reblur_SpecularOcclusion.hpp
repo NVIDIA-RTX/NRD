@@ -111,10 +111,10 @@ void nrd::InstanceImpl::Add_ReblurSpecularOcclusion(DenoiserData& denoiserData) 
             PushInput(AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PING), AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PONG));
 
             // Outputs
+            PushOutput(AsUint(Transient::DATA1));
             PushOutput(SPEC_TEMP2);
             PushOutput(AsUint(Transient::SPEC_FAST_HISTORY));
             PushOutput(AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PONG), AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PING));
-            PushOutput(AsUint(Transient::DATA1));
 
             // Shaders
             AddDispatch(REBLUR_TemporalAccumulation, commonDefines);
@@ -144,13 +144,13 @@ void nrd::InstanceImpl::Add_ReblurSpecularOcclusion(DenoiserData& denoiserData) 
         // Inputs
         PushInput(AsUint(Transient::TILES));
         PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
+        PushInput(AsUint(ResourceType::IN_VIEWZ));
         PushInput(AsUint(Transient::DATA1));
         PushInput(SPEC_TEMP1);
-        PushInput(AsUint(ResourceType::IN_VIEWZ));
 
         // Outputs
-        PushOutput(SPEC_TEMP2);
         PushOutput(AsUint(Permanent::PREV_VIEWZ));
+        PushOutput(SPEC_TEMP2);
 
         // Shaders
         AddDispatch(REBLUR_Blur, commonDefines);
@@ -162,8 +162,8 @@ void nrd::InstanceImpl::Add_ReblurSpecularOcclusion(DenoiserData& denoiserData) 
         PushInput(AsUint(Transient::TILES));
         PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
         PushInput(AsUint(Transient::DATA1));
-        PushInput(SPEC_TEMP2);
         PushInput(AsUint(Permanent::PREV_VIEWZ));
+        PushInput(SPEC_TEMP2);
 
         // Outputs
         PushOutput(AsUint(Permanent::PREV_NORMAL_ROUGHNESS));

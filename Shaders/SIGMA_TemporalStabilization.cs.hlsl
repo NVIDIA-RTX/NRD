@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "SIGMA_TemporalStabilization.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "SIGMA_Common.hlsli"
 
 groupshared float s_Penumbra[ BUFFER_Y ][ BUFFER_X ];
@@ -207,7 +208,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         tileValue = gIn_Tiles[ pixelPos >> 4 ].y;
         tileValue = float( tileValue != 0.0 ); // optional, just to show fully discarded tiles
 
-        #ifdef SIGMA_TRANSLUCENCY
+        #if( TRANSLUCENCY == 1 )
             result = lerp( float4( 0, 0, 1, 0 ), result, tileValue );
         #else
             result = tileValue;
@@ -215,11 +216,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         result *= all( ( pixelPos & 15 ) != 0 );
     #elif( SIGMA_SHOW == SIGMA_SHOW_HISTORY_WEIGHT )
-        #ifdef SIGMA_TRANSLUCENCY
+        #if( TRANSLUCENCY == 1 )
             result.yzw = historyWeight * float( !isHardShadow );
         #endif
     #elif( SIGMA_SHOW == SIGMA_SHOW_HISTORY_LENGTH )
-        #ifdef SIGMA_TRANSLUCENCY
+        #if( TRANSLUCENCY == 1 )
             result.yzw = historyLength / SIGMA_MAX_ACCUM_FRAME_NUM;
         #endif
     #elif( SIGMA_SHOW == SIGMA_SHOW_PENUMBRA_SIZE )

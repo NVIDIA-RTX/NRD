@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "SIGMA_SplitScreen.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "SIGMA_Common.hlsli"
 
 [numthreads( GROUP_X, GROUP_Y, 1)]
@@ -30,7 +31,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pixelPos ) ] );
 
     SIGMA_TYPE s;
-    #ifdef SIGMA_TRANSLUCENCY
+    #if( TRANSLUCENCY == 1 )
         s = gIn_Shadow_Translucency[ pixelPos ];
     #else
         s = IsLit( data.x );

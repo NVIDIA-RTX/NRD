@@ -96,7 +96,7 @@ void nrd::InstanceImpl::Add_ReblurSpecularSh(DenoiserData& denoiserData) {
             // Shaders
             std::array<ShaderMake::ShaderConstant, 3> defines = {{
                 commonDefines[0],
-                commonDefines[1],
+                {"NRD_MODE", NRD_RADIANCE},
                 {"MODE_5X5", is5x5 ? "1" : "0"},
             }};
             AddDispatch(REBLUR_HitDistReconstruction, defines);
@@ -151,10 +151,10 @@ void nrd::InstanceImpl::Add_ReblurSpecularSh(DenoiserData& denoiserData) {
             PushInput(AsUint(Permanent::SPEC_SH_HISTORY));
 
             // Outputs
+            PushOutput(AsUint(Transient::DATA1));
             PushOutput(SPEC_TEMP2);
             PushOutput(AsUint(Transient::SPEC_FAST_HISTORY));
             PushOutput(AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PONG), AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PING));
-            PushOutput(AsUint(Transient::DATA1));
             PushOutput(AsUint(Transient::DATA2));
             PushOutput(SPEC_SH_TEMP2);
 
@@ -187,14 +187,14 @@ void nrd::InstanceImpl::Add_ReblurSpecularSh(DenoiserData& denoiserData) {
         // Inputs
         PushInput(AsUint(Transient::TILES));
         PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
+        PushInput(AsUint(ResourceType::IN_VIEWZ));
         PushInput(AsUint(Transient::DATA1));
         PushInput(SPEC_TEMP1);
-        PushInput(AsUint(ResourceType::IN_VIEWZ));
         PushInput(SPEC_SH_TEMP1);
 
         // Outputs
-        PushOutput(SPEC_TEMP2);
         PushOutput(AsUint(Permanent::PREV_VIEWZ));
+        PushOutput(SPEC_TEMP2);
         PushOutput(SPEC_SH_TEMP2);
 
         // Shaders
@@ -210,8 +210,8 @@ void nrd::InstanceImpl::Add_ReblurSpecularSh(DenoiserData& denoiserData) {
             PushInput(AsUint(Transient::TILES));
             PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
             PushInput(AsUint(Transient::DATA1));
-            PushInput(SPEC_TEMP2);
             PushInput(AsUint(Permanent::PREV_VIEWZ));
+            PushInput(SPEC_TEMP2);
             PushInput(SPEC_SH_TEMP2);
 
             // Outputs
@@ -244,13 +244,13 @@ void nrd::InstanceImpl::Add_ReblurSpecularSh(DenoiserData& denoiserData) {
             // Inputs
             PushInput(AsUint(Transient::TILES));
             PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
-            PushInput(hasRf0AndMetalness ? AsUint(ResourceType::IN_BASECOLOR_METALNESS) : REBLUR_DUMMY);
             PushInput(AsUint(Permanent::PREV_VIEWZ));
             PushInput(AsUint(Transient::DATA1));
             PushInput(AsUint(Transient::DATA2));
+            PushInput(hasRf0AndMetalness ? AsUint(ResourceType::IN_BASECOLOR_METALNESS) : REBLUR_DUMMY);
+            PushInput(AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PONG), AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PING));
             PushInput(AsUint(Permanent::SPEC_HISTORY));
             PushInput(AsUint(Permanent::SPEC_HISTORY_STABILIZED_PING), AsUint(Permanent::SPEC_HISTORY_STABILIZED_PONG));
-            PushInput(AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PONG), AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PING));
             PushInput(AsUint(Permanent::SPEC_SH_HISTORY));
 
             // Outputs

@@ -17,71 +17,51 @@ NRD_SAMPLERS_START
     NRD_SAMPLER( SamplerState, gLinearClamp, s, 1 )
 NRD_SAMPLERS_END
 
-#if( defined RELAX_DIFFUSE && defined RELAX_SPECULAR )
-
-    NRD_INPUTS_START
-        NRD_INPUT( Texture2D<float>, gIn_Tiles, t, 0 )
-        NRD_INPUT( Texture2D<float4>, gIn_Spec, t, 1 )
-        NRD_INPUT( Texture2D<float4>, gIn_Diff, t, 2 )
-        NRD_INPUT( Texture2D<float>,  gIn_HistoryLength, t, 3 )
-        NRD_INPUT( Texture2D<float4>, gIn_Normal_Roughness, t, 4 )
-        NRD_INPUT( Texture2D<float>,  gIn_ViewZ, t, 5 )
-        #ifdef RELAX_SH
+NRD_INPUTS_START
+    NRD_INPUT( Texture2D<float>, gIn_Tiles, t, 0 )
+    NRD_INPUT( Texture2D<float>,  gIn_HistoryLength, t, 1 )
+    NRD_INPUT( Texture2D<float4>, gIn_Normal_Roughness, t, 2 )
+    NRD_INPUT( Texture2D<float>,  gIn_ViewZ, t, 3 )
+    #if( NRD_DIFF && NRD_SPEC )
+        NRD_INPUT( Texture2D<float4>, gIn_Spec, t, 4 )
+        NRD_INPUT( Texture2D<float4>, gIn_Diff, t, 5 )
+        #if( NRD_MODE == SH )
             NRD_INPUT( Texture2D<float4>, gIn_SpecSh, t, 6 )
             NRD_INPUT( Texture2D<float4>, gIn_DiffSh, t, 7 )
         #endif
-    NRD_INPUTS_END
+    #elif( NRD_DIFF )
+        NRD_INPUT( Texture2D<float4>, gIn_Diff, t, 4 )
+        #if( NRD_MODE == SH )
+            NRD_INPUT( Texture2D<float4>, gIn_DiffSh, t, 5 )
+        #endif
+    #else
+        NRD_INPUT( Texture2D<float4>, gIn_Spec, t, 4 )
+        #if( NRD_MODE == SH )
+            NRD_INPUT( Texture2D<float4>, gIn_SpecSh, t, 5 )
+        #endif
+    #endif
+NRD_INPUTS_END
 
-    NRD_OUTPUTS_START
+NRD_OUTPUTS_START
+    #if( NRD_DIFF && NRD_SPEC )
         NRD_OUTPUT( RWTexture2D<float4>, gOut_Spec, u, 0 )
         NRD_OUTPUT( RWTexture2D<float4>, gOut_Diff, u, 1 )
-        #ifdef RELAX_SH
+        #if( NRD_MODE == SH )
             NRD_OUTPUT( RWTexture2D<float4>, gOut_SpecSh, u, 2 )
             NRD_OUTPUT( RWTexture2D<float4>, gOut_DiffSh, u, 3 )
         #endif
-    NRD_OUTPUTS_END
-
-#elif( defined RELAX_DIFFUSE )
-
-    NRD_INPUTS_START
-        NRD_INPUT( Texture2D<float>, gIn_Tiles, t, 0 )
-        NRD_INPUT( Texture2D<float4>, gIn_Diff, t, 1 )
-        NRD_INPUT( Texture2D<float>, gIn_HistoryLength, t, 2 )
-        NRD_INPUT( Texture2D<float4>, gIn_Normal_Roughness, t, 3 )
-        NRD_INPUT( Texture2D<float>, gIn_ViewZ, t, 4 )
-        #ifdef RELAX_SH
-            NRD_INPUT( Texture2D<float4>, gIn_DiffSh, t, 5 )
-        #endif
-    NRD_INPUTS_END
-
-    NRD_OUTPUTS_START
+    #elif( NRD_DIFF )
         NRD_OUTPUT( RWTexture2D<float4>, gOut_Diff, u, 0 )
-        #ifdef RELAX_SH
+        #if( NRD_MODE == SH )
             NRD_OUTPUT( RWTexture2D<float4>, gOut_DiffSh, u, 1 )
         #endif
-    NRD_OUTPUTS_END
-
-#elif( defined RELAX_SPECULAR )
-
-    NRD_INPUTS_START
-        NRD_INPUT( Texture2D<float>, gIn_Tiles, t, 0 )
-        NRD_INPUT( Texture2D<float4>, gIn_Spec, t, 1 )
-        NRD_INPUT( Texture2D<float>, gIn_HistoryLength, t, 2 )
-        NRD_INPUT( Texture2D<float4>, gIn_Normal_Roughness, t, 3 )
-        NRD_INPUT( Texture2D<float>, gIn_ViewZ, t, 4 )
-        #ifdef RELAX_SH
-            NRD_INPUT( Texture2D<float4>, gIn_SpecSh, t, 5 )
-        #endif
-    NRD_INPUTS_END
-
-    NRD_OUTPUTS_START
+    #else
         NRD_OUTPUT( RWTexture2D<float4>, gOut_Spec, u, 0 )
-        #ifdef RELAX_SH
+        #if( NRD_MODE == SH )
             NRD_OUTPUT( RWTexture2D<float4>, gOut_SpecSh, u, 1 )
         #endif
-    NRD_OUTPUTS_END
-
-#endif
+    #endif
+NRD_OUTPUTS_END
 
 // Macro magic
 #define RELAX_HistoryFixGroupX 8

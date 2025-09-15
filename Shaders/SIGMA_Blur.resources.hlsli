@@ -22,7 +22,7 @@ NRD_INPUTS_START
     NRD_INPUT( Texture2D<float4>, gIn_Normal_Roughness, t, 1 )
     NRD_INPUT( Texture2D<float>, gIn_Penumbra, t, 2 )
     NRD_INPUT( Texture2D<float2>, gIn_Tiles, t, 3 )
-    #if( defined SIGMA_TRANSLUCENCY || !defined SIGMA_FIRST_PASS )
+    #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
         NRD_INPUT( Texture2D<SIGMA_TYPE>, gIn_Shadow_Translucency, t, 4 )
     #endif
 NRD_INPUTS_END

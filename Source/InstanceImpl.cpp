@@ -566,15 +566,15 @@ nrd::Result nrd::InstanceImpl::GetComputeDispatches(const Identifier* identifier
 
 void nrd::InstanceImpl::AddInternalDispatch(PipelineDesc& pipelineDesc, NumThreads numThreads, uint16_t downsampleFactor, uint32_t constantBufferDataSize, uint32_t maxRepeatNum) {
 #if NRD_EMBEDS_DXBC_SHADERS
-    assert(pipelineDesc.computeShaderDXBC.bytecode);
+    assert("DXBC: shader permutation is not found!" && pipelineDesc.computeShaderDXBC.bytecode);
 #endif
 
 #if NRD_EMBEDS_DXIL_SHADERS
-    assert(pipelineDesc.computeShaderDXIL.bytecode);
+    assert("DXIL: shader permutation is not found!" && pipelineDesc.computeShaderDXIL.bytecode);
 #endif
 
 #if NRD_EMBEDS_SPIRV_SHADERS
-    assert(pipelineDesc.computeShaderSPIRV.bytecode);
+    assert("SPIRV: shader permutation is not found!" && pipelineDesc.computeShaderSPIRV.bytecode);
 #endif
 
     // Add pipeline (unique only)

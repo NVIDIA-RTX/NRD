@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "RELAX_Copy.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "RELAX_Common.hlsli"
 
 [numthreads( GROUP_X, GROUP_Y, 1 )]
@@ -23,11 +24,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     NRD_CTA_ORDER_REVERSED;
 
     // TODO: introduce "CopyResource" in NRD API?
-#ifdef RELAX_SPECULAR
+#if( NRD_SPEC )
     gOut_Spec[pixelPos.xy] = gIn_Spec[pixelPos.xy];
 #endif
 
-#ifdef RELAX_DIFFUSE
+#if( NRD_DIFF )
     gOut_Diff[pixelPos.xy] = gIn_Diff[pixelPos.xy];
 #endif
 }

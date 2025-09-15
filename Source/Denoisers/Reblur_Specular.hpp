@@ -141,10 +141,10 @@ void nrd::InstanceImpl::Add_ReblurSpecular(DenoiserData& denoiserData) {
             PushInput(AsUint(Transient::SPEC_HITDIST_FOR_TRACKING));
 
             // Outputs
+            PushOutput(AsUint(Transient::DATA1));
             PushOutput(SPEC_TEMP2);
             PushOutput(AsUint(Transient::SPEC_FAST_HISTORY));
             PushOutput(AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PONG), AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PING));
-            PushOutput(AsUint(Transient::DATA1));
             PushOutput(AsUint(Transient::DATA2));
 
             // Shaders
@@ -175,13 +175,13 @@ void nrd::InstanceImpl::Add_ReblurSpecular(DenoiserData& denoiserData) {
         // Inputs
         PushInput(AsUint(Transient::TILES));
         PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
+        PushInput(AsUint(ResourceType::IN_VIEWZ));
         PushInput(AsUint(Transient::DATA1));
         PushInput(SPEC_TEMP1);
-        PushInput(AsUint(ResourceType::IN_VIEWZ));
 
         // Outputs
-        PushOutput(SPEC_TEMP2);
         PushOutput(AsUint(Permanent::PREV_VIEWZ));
+        PushOutput(SPEC_TEMP2);
 
         // Shaders
         AddDispatch(REBLUR_Blur, commonDefines);
@@ -196,8 +196,8 @@ void nrd::InstanceImpl::Add_ReblurSpecular(DenoiserData& denoiserData) {
             PushInput(AsUint(Transient::TILES));
             PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
             PushInput(AsUint(Transient::DATA1));
-            PushInput(SPEC_TEMP2);
             PushInput(AsUint(Permanent::PREV_VIEWZ));
+            PushInput(SPEC_TEMP2);
 
             // Outputs
             PushOutput(AsUint(Permanent::PREV_NORMAL_ROUGHNESS));
@@ -226,13 +226,13 @@ void nrd::InstanceImpl::Add_ReblurSpecular(DenoiserData& denoiserData) {
             // Inputs
             PushInput(AsUint(Transient::TILES));
             PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
-            PushInput(hasRf0AndMetalness ? AsUint(ResourceType::IN_BASECOLOR_METALNESS) : REBLUR_DUMMY);
             PushInput(AsUint(Permanent::PREV_VIEWZ));
             PushInput(AsUint(Transient::DATA1));
             PushInput(AsUint(Transient::DATA2));
+            PushInput(hasRf0AndMetalness ? AsUint(ResourceType::IN_BASECOLOR_METALNESS) : REBLUR_DUMMY);
+            PushInput(AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PONG), AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PING));
             PushInput(AsUint(Permanent::SPEC_HISTORY));
             PushInput(AsUint(Permanent::SPEC_HISTORY_STABILIZED_PING), AsUint(Permanent::SPEC_HISTORY_STABILIZED_PONG));
-            PushInput(AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PONG), AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PING));
 
             // Outputs
             PushOutput(AsUint(ResourceType::IN_MV));

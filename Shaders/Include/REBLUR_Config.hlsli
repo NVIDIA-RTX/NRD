@@ -8,32 +8,9 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#define REBLUR
-
-// Knobs remapping
-#ifdef NRD_SIGNAL
-    #if( ( NRD_SIGNAL & 0x1 ) != 0 )
-        #define REBLUR_DIFFUSE
-    #endif
-    #if( ( NRD_SIGNAL & 0x2 ) != 0 )
-        #define REBLUR_SPECULAR
-    #endif
-#endif
-
-#ifdef NRD_MODE
-    #if( NRD_MODE == 1 )
-        #define REBLUR_SH
-    #elif( NRD_MODE == 2 )
-        #define REBLUR_OCCLUSION
-    #elif( NRD_MODE == 3 )
-        #define REBLUR_DIRECTIONAL_OCCLUSION
-    #endif
-#endif
-
-#ifdef TEMPORAL_STABILIZATION
-    #if( TEMPORAL_STABILIZATION == 0 )
-        #define REBLUR_NO_TEMPORAL_STABILIZATION
-    #endif
+// CMake options
+#ifndef REBLUR_PERFORMANCE_MODE
+    #define REBLUR_PERFORMANCE_MODE                             0
 #endif
 
 // Switches ( default 1 )
@@ -52,7 +29,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION      0 // compression helps to preserve "lobe important" values
 #define REBLUR_USE_OLD_SMB_FALLBACK_LOGIC                       0 // TODO: here to avoid regressions
 
-#if( defined REBLUR_OCCLUSION || defined REBLUR_DIRECTIONAL_OCCLUSION )
+#if( NRD_MODE == OCCLUSION || NRD_MODE == DO )
     #undef NRD_SUPPORTS_ANTIFIREFLY
     #define NRD_SUPPORTS_ANTIFIREFLY                            0 // not needed in occlusion mode
 #endif
@@ -115,14 +92,14 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_SAMPLES_PER_FRAME                                1.0 // TODO: expose in settings, it will become useful with very clean signals, when max number of accumulated frames is low
 #define REBLUR_MAX_PERCENT_OF_LOBE_VOLUME_FOR_PRE_PASS          0.3 // specially tuned for "hitDistForTracking"
 
-#if( defined REBLUR_OCCLUSION || defined REBLUR_DIRECTIONAL_OCCLUSION )
+#if( NRD_MODE == OCCLUSION || NRD_MODE == DO )
     #define REBLUR_COLOR_CLAMPING_SIGMA_SCALE                   1.0 // much more predictable signal quality
 #else
     #define REBLUR_COLOR_CLAMPING_SIGMA_SCALE                   2.0 // using smaller values leads to bias under motion
 #endif
 
 // Data types
-#ifdef REBLUR_OCCLUSION
+#if( NRD_MODE == OCCLUSION )
     #define REBLUR_TYPE                                         float
 #else
     #define REBLUR_TYPE                                         float4
@@ -211,7 +188,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 // ( Optional ) This can provide a minor performance boost by sacrificing IQ a bit.
 // The negative effect is minimal if SH resolve is in use
 /*
-#if( defined( REBLUR_DIRECTIONAL_OCCLUSION ) || defined( REBLUR_SH ) )
+#if( NRD_MODE == DO || NRD_MODE == SH )
     #undef REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA
     #define REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA          0
 

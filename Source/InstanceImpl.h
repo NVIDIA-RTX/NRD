@@ -23,14 +23,14 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
 #include <array>
 #include <cstring> // memset
 
-// see "Shaders.cfg"
-#define NRD_DIFFUSE               "1"
-#define NRD_SPECULAR              "2"
-#define NRD_DIFFUSE_SPECULAR      "3"
-#define NRD_RADIANCE              "0"
-#define NRD_SH                    "1"
-#define NRD_OCCLUSION             "2"
-#define NRD_DIRECTIONAL_OCCLUSION "3"
+// See "Shaders.cfg" and "NRD.hlsli"
+#define NRD_DIFFUSE          "DIFF"
+#define NRD_SPECULAR         "SPEC"
+#define NRD_DIFFUSE_SPECULAR "BOTH"
+#define NRD_RADIANCE         "RADIANCE"
+#define NRD_SH               "SH"
+#define NRD_OCCLUSION        "OCCLUSION"
+#define NRD_DO               "DO"
 
 #define _NRD_STRINGIFY(s) #s
 #define NRD_STRINGIFY(s)  _NRD_STRINGIFY(s)
@@ -63,7 +63,7 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
             pipelineDesc, \
             NumThreads(blobName##GroupX, blobName##GroupY), \
             downsampleFactor, sizeof(blobName##Constants), repeatNum); \
-    } while(0)
+    } while (0)
 
 #define AddDispatch(blobName, defines) \
     do { \
@@ -75,7 +75,7 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
             pipelineDesc, \
             NumThreads(blobName##GroupX, blobName##GroupY), \
             1, sizeof(blobName##Constants), 1); \
-    } while(0)
+    } while (0)
 
 #define AddDispatchNoConstants(blobName, defines) \
     do { \
@@ -87,7 +87,7 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
             pipelineDesc, \
             NumThreads(blobName##GroupX, blobName##GroupY), \
             1, 0, 1); \
-    } while(0)
+    } while (0)
 
 #define PushPass(passName) \
     _PushPass(NRD_STRINGIFY(DENOISER_NAME) " - " passName)

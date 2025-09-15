@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "REBLUR_HistoryFix.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "REBLUR_Common.hlsli"
 
 groupshared float s_DiffLuma[ BUFFER_Y ][ BUFFER_X ];
@@ -25,11 +26,11 @@ void Preload( uint2 sharedPos, int2 globalPos )
 {
     globalPos = clamp( globalPos, 0, gRectSizeMinusOne );
 
-    #ifdef REBLUR_DIFFUSE
+    #if( NRD_DIFF )
         s_DiffLuma[ sharedPos.y ][ sharedPos.x ] = gIn_DiffFast[ globalPos ];
     #endif
 
-    #ifdef REBLUR_SPECULAR
+    #if( NRD_SPEC )
         s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = gIn_SpecFast[ globalPos ];
     #endif
 
@@ -104,10 +105,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     }
 
     // Diffuse
-    #ifdef REBLUR_DIFFUSE
+    #if( NRD_DIFF )
     {
         REBLUR_TYPE diff = gIn_Diff[ pixelPos ];
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             float4 diffSh = gIn_DiffSh[ pixelPos ];
         #endif
 
@@ -138,7 +139,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float2 hitDistanceWeightParams = GetHitDistanceWeightParams( hitDistFactor, diffNonLinearAccumSpeed, 1.0 );
 
             diff *= sumd;
-            #ifdef REBLUR_SH
+            #if( NRD_MODE == SH )
                 diffSh *= sumd;
             #endif
 
@@ -193,7 +194,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     sumd += w;
 
                     diff += s * w;
-                    #ifdef REBLUR_SH
+                    #if( NRD_MODE == SH )
                         float4 sh = gIn_DiffSh[ pos ];
                         sh = Denanify( w, sh );
                         diffSh += sh * w;
@@ -203,7 +204,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             sumd = Math::PositiveRcp( sumd );
             diff *= sumd;
-            #ifdef REBLUR_SH
+            #if( NRD_MODE == SH )
                 diffSh *= sumd;
             #endif
         }
@@ -286,23 +287,23 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         diff = ChangeLuma( diff, diffLuma );
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             diffSh.xyz *= GetLumaScale( length( diffSh.xyz ), diffLuma );
         #endif
 
         // Output
         gOut_Diff[ pixelPos ] = diff;
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             gOut_DiffSh[ pixelPos ] = diffSh;
         #endif
     }
     #endif
 
     // Specular
-    #ifdef REBLUR_SPECULAR
+    #if( NRD_SPEC )
     {
         REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             float4 specSh = gIn_SpecSh[ pixelPos ];
         #endif
 
@@ -336,7 +337,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             #endif
 
             spec *= sums;
-            #ifdef REBLUR_SH
+            #if( NRD_MODE == SH )
                 specSh.xyz *= sums;
             #endif
 
@@ -397,7 +398,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     sums += w;
 
                     spec += s * w;
-                    #ifdef REBLUR_SH
+                    #if( NRD_MODE == SH )
                         float4 sh = gIn_SpecSh[ pos ];
                         sh = Denanify( w, sh );
                         specSh.xyz += sh.xyz * w;
@@ -407,7 +408,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             sums = Math::PositiveRcp( sums );
             spec *= sums;
-            #ifdef REBLUR_SH
+            #if( NRD_MODE == SH )
                 specSh.xyz *= sums;
             #endif
         }
@@ -491,13 +492,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         spec = ChangeLuma( spec, specLuma );
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             specSh.xyz *= GetLumaScale( length( specSh.xyz ), specLuma );
         #endif
 
         // Output
         gOut_Spec[ pixelPos ] = spec;
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             gOut_SpecSh[ pixelPos ] = specSh;
         #endif
     }

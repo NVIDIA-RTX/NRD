@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "REBLUR_Blur.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "REBLUR_Common.hlsli"
 
 [numthreads( GROUP_X, GROUP_Y, 1 )]
@@ -54,11 +55,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Spatial filtering
     #define REBLUR_SPATIAL_MODE REBLUR_BLUR
 
-    #ifdef REBLUR_DIFFUSE
+    #if( NRD_DIFF )
     {
         float sum = 1.0;
         REBLUR_TYPE diff = gIn_Diff[ pixelPos ];
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             float4 diffSh = gIn_DiffSh[ pixelPos ];
         #endif
 
@@ -66,11 +67,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     }
     #endif
 
-    #ifdef REBLUR_SPECULAR
+    #if( NRD_SPEC )
     {
         float sum = 1.0;
         REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             float4 specSh = gIn_SpecSh[ pixelPos ];
         #endif
 

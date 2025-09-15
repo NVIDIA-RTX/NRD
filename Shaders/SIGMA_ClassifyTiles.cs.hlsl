@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "SIGMA_ClassifyTiles.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "SIGMA_Common.hlsli"
 
 groupshared uint s_Mask;
@@ -51,7 +52,7 @@ NRD_EXPORT void NRD_CS_MAIN( uint2 threadPos : SV_GroupThreadId, uint2 tilePos :
             bool isLit = IsLit( h );
 
             bool isOpaque = true;
-            #ifdef SIGMA_TRANSLUCENCY
+            #if( TRANSLUCENCY == 1 )
                 float3 translucency = gIn_Shadow_Translucency[ pos ].yzw;
                 isOpaque = Color::Luminance( translucency ) < 0.003; // TODO: replace with a uniformity test?
             #endif

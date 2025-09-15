@@ -292,6 +292,19 @@ NOISY INPUTS:
 #ifdef NRD_INTERNAL
     // Explicitly set matrix layout for shader compilation outside of NRD environment
     #pragma pack_matrix( column_major )
+
+    // Permutations
+    #define RADIANCE                                                                    0 // normal mode
+    #define SH                                                                          1 // spherical harmonics ( gaussian )
+    #define OCCLUSION                                                                   2
+    #define DO                                                                          3 // directional occlusion
+
+    #define DIFF                                                                        0x1 // diffuse
+    #define SPEC                                                                        0x2 // specular
+    #define BOTH                                                                        ( DIFF | SPEC )
+
+    #define NRD_DIFF                                                                    ( ( NRD_SIGNAL & DIFF ) != 0 )
+    #define NRD_SPEC                                                                    ( ( NRD_SIGNAL & SPEC ) != 0 )
 #endif
 
 #if( !defined( NRD_NORMAL_ENCODING ) || !defined( NRD_ROUGHNESS_ENCODING ) )

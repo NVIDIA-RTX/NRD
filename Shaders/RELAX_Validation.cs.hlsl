@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "RELAX_Validation.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "RELAX_Common.hlsli"
 
 #define VIEWPORT_SIZE   0.25

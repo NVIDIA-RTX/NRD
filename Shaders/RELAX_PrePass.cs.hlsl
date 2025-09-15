@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "RELAX_PrePass.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "RELAX_Common.hlsli"
 
 #define POISSON_SAMPLE_NUM      8
@@ -46,11 +47,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float materialID0 = 0;
     float materialID1 = 0;
     float2 checkerboardResolveWeights = 1.0;
-#if( defined RELAX_DIFFUSE && defined RELAX_SPECULAR )
+#if( NRD_DIFF && NRD_SPEC )
     if ((gSpecCheckerboard != 2) || (gDiffCheckerboard != 2))
-#elif( defined RELAX_DIFFUSE )
+#elif( NRD_DIFF )
     if (gDiffCheckerboard != 2)
-#elif( defined RELAX_SPECULAR )
+#else
     if (gSpecCheckerboard != 2)
 #endif
     {
@@ -80,7 +81,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     float2 pixelUv = float2(pixelPos + 0.5) * gRectSizeInv;
 
-#ifdef RELAX_DIFFUSE
+#if( NRD_DIFF )
     bool diffHasData = true;
     int2 diffPos = pixelPos;
 #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
@@ -93,7 +94,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Reading diffuse & resolving diffuse checkerboard
     float4 diffuseIllumination = gIn_Diff[diffPos];
-    #ifdef RELAX_SH
+    #if( NRD_MODE == SH )
         float4 diffuseSH = gIn_DiffSh[diffPos];
     #endif
 
@@ -113,7 +114,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         d1 = Denanify( wc.y, d1 );
         diffuseIllumination = d0 * wc.x + d1 * wc.y;
 
-        #ifdef RELAX_SH
+        #if( NRD_MODE == SH )
             float4 d0SH = gIn_DiffSh[checkerboardPos.xz];
             float4 d1SH = gIn_DiffSh[checkerboardPos.yz];
             d0SH = Denanify( wc.x, d0SH );
@@ -135,7 +136,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         if (diffuseIllumination.w == 0.0)
             blurRadius = max(blurRadius, 1.0);
 
-        float worldBlurRadius = PixelRadiusToWorld(gUnproject, gOrthoMode, blurRadius, centerViewZ) * min(gResolutionScale.x, gResolutionScale.y);
         float normalWeightParam = GetNormalWeightParam2(1.0, 0.25 * gLobeAngleFraction);
         float2 hitDistanceWeightParams = GetHitDistanceWeightParams(diffuseIllumination.w, 1.0 / 9.0);
 
@@ -151,10 +151,17 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             // Sample coordinates
             float2 uv = pixelUv * gRectSize + Geometry::RotateVector(rotator, offset.xy) * blurRadius;
+
+            // Snap to the pixel center!
             uv = floor(uv) + 0.5;
+
+            // Apply checkerboard shift
         #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
-            uv = ApplyCheckerboardShift(uv, gDiffCheckerboard, i, gFrameIndex) * gRectSizeInv;
+            uv = ApplyCheckerboardShift(uv, gDiffCheckerboard, i, gFrameIndex);
         #endif
+
+            // Texture coordinates
+            uv *= gRectSizeInv;
 
             float2 uvScaled = ClampUvToViewport( uv );
             float2 checkerboardUvScaled = float2( uvScaled.x * ( gDiffCheckerboard != 2 ? 0.5 : 1.0 ), uvScaled.y );
@@ -190,7 +197,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             weightSum += sampleWeight;
 
             diffuseIllumination += sampleDiffuseIllumination * sampleWeight;
-            #ifdef RELAX_SH
+            #if( NRD_MODE == SH )
                 float4 sampleDiffuseSH = gIn_DiffSh.SampleLevel(gNearestClamp, checkerboardUvScaled, 0);
                 sampleDiffuseSH = Denanify( sampleWeight, sampleDiffuseSH );
                 diffuseSH += sampleDiffuseSH * sampleWeight;
@@ -198,18 +205,18 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         diffuseIllumination /= weightSum;
-        #ifdef RELAX_SH
+        #if( NRD_MODE == SH )
             diffuseSH /= weightSum;
         #endif
     }
 
     gOut_Diff[pixelPos] = clamp(diffuseIllumination, 0, NRD_FP16_MAX);
-    #ifdef RELAX_SH
+    #if( NRD_MODE == SH )
         gOut_DiffSh[pixelPos] = clamp(diffuseSH, -NRD_FP16_MAX, NRD_FP16_MAX);
     #endif
 #endif
 
-#ifdef RELAX_SPECULAR
+#if( NRD_SPEC )
     Rng::Hash::Initialize( pixelPos, gFrameIndex );
 
     bool specHasData = true;
@@ -224,7 +231,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Reading specular & resolving specular checkerboard
     float4 specularIllumination = gIn_Spec[specPos];
-    #ifdef RELAX_SH
+    #if( NRD_MODE == SH )
         float4 specularSH = gIn_SpecSh[specPos];
     #endif
 
@@ -244,7 +251,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         s1 = Denanify( wc.y, s1 );
         specularIllumination = s0 * wc.x + s1 * wc.y;
 
-        #ifdef RELAX_SH
+        #if( NRD_MODE == SH )
             float4 s0SH = gIn_SpecSh[checkerboardPos.xz];
             float4 s1SH = gIn_SpecSh[checkerboardPos.yz];
             s0SH = Denanify( wc.x, s0SH );
@@ -300,14 +307,20 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             // Sample coordinates
             float2 uv = pixelUv * gRectSize + Geometry::RotateVector(rotator, offset.xy) * blurRadius;
+
+            // Snap to the pixel center!
             uv = floor(uv) + 0.5;
+
+            // Apply checkerboard shift
         #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
-            uv = ApplyCheckerboardShift(uv, gSpecCheckerboard, i, gFrameIndex) * gRectSizeInv;
+            uv = ApplyCheckerboardShift(uv, gSpecCheckerboard, i, gFrameIndex);
         #endif
+
+            // Texture coordinates
+            uv *= gRectSizeInv;
 
             float2 uvScaled = ClampUvToViewport( uv );
             float2 checkerboardUvScaled = float2( uvScaled.x * ( gSpecCheckerboard != 2 ? 0.5 : 1.0 ), uvScaled.y );
-
 
             // Fetch data
             float sampleMaterialID;
@@ -352,7 +365,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             weightSum += sampleWeight;
 
             specularIllumination.rgb += sampleSpecularIllumination.rgb * sampleWeight;
-            #ifdef RELAX_SH
+            #if( NRD_MODE == SH )
                 float4 sampleSpecularSH = gIn_SpecSh.SampleLevel(gNearestClamp, checkerboardUvScaled, 0);
                 sampleSpecularSH = Denanify( sampleWeight, sampleSpecularSH );
                 specularSH += sampleSpecularSH * sampleWeight;
@@ -360,13 +373,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
         specularIllumination.rgb /= weightSum;
         specularIllumination.a = minHitT == NRD_INF ? 0.0 : minHitT;
-        #ifdef RELAX_SH
+        #if( NRD_MODE == SH )
             specularSH /= weightSum;
         #endif
     }
 
     gOut_Spec[pixelPos] = clamp(specularIllumination, 0, NRD_FP16_MAX);
-    #ifdef RELAX_SH
+    #if( NRD_MODE == SH )
         gOut_SpecSh[pixelPos] = clamp(specularSH, -NRD_FP16_MAX, NRD_FP16_MAX);
     #endif
 #endif

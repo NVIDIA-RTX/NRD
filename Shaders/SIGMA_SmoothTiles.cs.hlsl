@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "SIGMA_SmoothTiles.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "SIGMA_Common.hlsli"
 
 groupshared float s_Tile[ BUFFER_Y ][ BUFFER_X ];

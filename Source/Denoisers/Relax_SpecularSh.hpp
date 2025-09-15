@@ -81,9 +81,9 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
         {
             // Inputs
             PushInput(AsUint(Transient::TILES));
-            PushInput(AsUint(ResourceType::IN_SPEC_SH0));
             PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
             PushInput(AsUint(ResourceType::IN_VIEWZ));
+            PushInput(AsUint(ResourceType::IN_SPEC_SH0));
 
             // Outputs
             PushOutput(AsUint(Transient::SPEC_ILLUM_PING));
@@ -105,9 +105,9 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
         {
             // Inputs
             PushInput(AsUint(Transient::TILES));
-            PushInput(isAfterReconstruction ? AsUint(Transient::SPEC_ILLUM_PING) : AsUint(ResourceType::IN_SPEC_SH0));
             PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
             PushInput(AsUint(ResourceType::IN_VIEWZ));
+            PushInput(isAfterReconstruction ? AsUint(Transient::SPEC_ILLUM_PING) : AsUint(ResourceType::IN_SPEC_SH0));
             PushInput(AsUint(ResourceType::IN_SPEC_SH1));
 
             // Outputs
@@ -127,28 +127,28 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
         {
             // Inputs
             PushInput(AsUint(Transient::TILES));
-            PushInput(AsUint(ResourceType::OUT_SPEC_SH0));
             PushInput(AsUint(ResourceType::IN_MV));
             PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
             PushInput(AsUint(ResourceType::IN_VIEWZ));
-            PushInput(AsUint(Permanent::SPEC_ILLUM_RESPONSIVE_PREV));
-            PushInput(AsUint(Permanent::SPEC_ILLUM_PREV));
+            PushInput(hasDisocclusionThresholdMix ? AsUint(ResourceType::IN_DISOCCLUSION_THRESHOLD_MIX) : RELAX_DUMMY);
             PushInput(AsUint(Permanent::NORMAL_ROUGHNESS_PREV));
             PushInput(AsUint(Permanent::VIEWZ_PREV));
-            PushInput(AsUint(Permanent::REFLECTION_HIT_T_PREV), AsUint(Permanent::REFLECTION_HIT_T_CURR));
             PushInput(AsUint(Permanent::HISTORY_LENGTH_PREV));
             PushInput(AsUint(Permanent::MATERIAL_ID_PREV));
+            PushInput(AsUint(ResourceType::OUT_SPEC_SH0));
+            PushInput(AsUint(Permanent::SPEC_ILLUM_RESPONSIVE_PREV));
+            PushInput(AsUint(Permanent::SPEC_ILLUM_PREV));
+            PushInput(AsUint(Permanent::REFLECTION_HIT_T_PREV), AsUint(Permanent::REFLECTION_HIT_T_CURR));
             PushInput(hasConfidenceInputs ? AsUint(ResourceType::IN_SPEC_CONFIDENCE) : RELAX_DUMMY);
-            PushInput(hasDisocclusionThresholdMix ? AsUint(ResourceType::IN_DISOCCLUSION_THRESHOLD_MIX) : RELAX_DUMMY);
             PushInput(AsUint(ResourceType::OUT_SPEC_SH1));
             PushInput(AsUint(Permanent::SPEC_ILLUM_RESPONSIVE_PREV_SH1));
             PushInput(AsUint(Permanent::SPEC_ILLUM_PREV_SH1));
 
             // Outputs
+            PushOutput(AsUint(Transient::HISTORY_LENGTH));
             PushOutput(AsUint(Transient::SPEC_ILLUM_PING));
             PushOutput(AsUint(Transient::SPEC_ILLUM_PONG));
             PushOutput(AsUint(Permanent::REFLECTION_HIT_T_CURR), AsUint(Permanent::REFLECTION_HIT_T_PREV));
-            PushOutput(AsUint(Transient::HISTORY_LENGTH));
             PushOutput(AsUint(Transient::SPEC_REPROJECTION_CONFIDENCE));
             PushOutput(AsUint(Transient::SPEC_ILLUM_PING_SH1));
             PushOutput(AsUint(Transient::SPEC_ILLUM_PONG_SH1));
@@ -162,10 +162,10 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
     {
         // Inputs
         PushInput(AsUint(Transient::TILES));
-        PushInput(AsUint(Transient::SPEC_ILLUM_PING)); // Normal history
         PushInput(AsUint(Transient::HISTORY_LENGTH));
         PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
         PushInput(AsUint(ResourceType::IN_VIEWZ));
+        PushInput(AsUint(Transient::SPEC_ILLUM_PING)); // Normal history
         PushInput(AsUint(Transient::SPEC_ILLUM_PING_SH1));
 
         // Outputs
@@ -180,17 +180,17 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
         // Inputs
         PushInput(AsUint(Transient::TILES));
         PushInput(AsUint(ResourceType::IN_VIEWZ));
+        PushInput(AsUint(Transient::HISTORY_LENGTH));
         PushInput(AsUint(ResourceType::OUT_SPEC_SH0)); // Noisy input with preblur applied
         PushInput(AsUint(Transient::SPEC_ILLUM_PING)); // Normal history
         PushInput(AsUint(Transient::SPEC_ILLUM_PONG)); // Responsive history
-        PushInput(AsUint(Transient::HISTORY_LENGTH));
         PushInput(AsUint(Transient::SPEC_ILLUM_PING_SH1));
         PushInput(AsUint(Transient::SPEC_ILLUM_PONG_SH1));
 
         // Outputs
+        PushOutput(AsUint(Permanent::HISTORY_LENGTH_PREV));
         PushOutput(AsUint(Permanent::SPEC_ILLUM_PREV));
         PushOutput(AsUint(Permanent::SPEC_ILLUM_RESPONSIVE_PREV));
-        PushOutput(AsUint(Permanent::HISTORY_LENGTH_PREV));
         PushOutput(AsUint(Permanent::SPEC_ILLUM_PREV_SH1));
         PushOutput(AsUint(Permanent::SPEC_ILLUM_RESPONSIVE_PREV_SH1));
 
@@ -213,9 +213,9 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
     {
         // Inputs
         PushInput(AsUint(Transient::TILES));
-        PushInput(AsUint(ResourceType::OUT_SPEC_SH0));
         PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
         PushInput(AsUint(ResourceType::IN_VIEWZ));
+        PushInput(AsUint(ResourceType::OUT_SPEC_SH0));
 
         // Outputs
         PushOutput(AsUint(Permanent::SPEC_ILLUM_PREV));
@@ -240,16 +240,16 @@ void nrd::InstanceImpl::Add_RelaxSpecularSh(DenoiserData& denoiserData) {
             {
                 // Inputs
                 PushInput(AsUint(Transient::TILES));
+                PushInput(AsUint(Transient::HISTORY_LENGTH));
+                PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
+                PushInput(AsUint(ResourceType::IN_VIEWZ));
 
                 if (isSmem)
                     PushInput(AsUint(Permanent::SPEC_ILLUM_PREV));
                 else
                     PushInput(isEven ? AsUint(Transient::SPEC_ILLUM_PONG) : AsUint(Transient::SPEC_ILLUM_PING));
 
-                PushInput(AsUint(Transient::HISTORY_LENGTH));
                 PushInput(AsUint(Transient::SPEC_REPROJECTION_CONFIDENCE));
-                PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
-                PushInput(AsUint(ResourceType::IN_VIEWZ));
                 PushInput(hasConfidenceInputs ? AsUint(ResourceType::IN_SPEC_CONFIDENCE) : RELAX_DUMMY);
 
                 if (isSmem)

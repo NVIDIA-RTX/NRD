@@ -17,39 +17,27 @@ NRD_SAMPLERS_START
     NRD_SAMPLER( SamplerState, gLinearClamp, s, 1 )
 NRD_SAMPLERS_END
 
-#if( defined RELAX_DIFFUSE && defined RELAX_SPECULAR )
-
-    NRD_INPUTS_START
+NRD_INPUTS_START
+    #if( NRD_DIFF && NRD_SPEC )
         NRD_INPUT( Texture2D<float4>, gIn_Spec, t, 0 )
         NRD_INPUT( Texture2D<float4>, gIn_Diff, t, 1 )
-    NRD_INPUTS_END
+    #elif( NRD_DIFF )
+        NRD_INPUT( Texture2D<float4>, gIn_Diff, t, 0 )
+    #else
+        NRD_INPUT( Texture2D<float4>, gIn_Spec, t, 0 )
+    #endif
+NRD_INPUTS_END
 
-    NRD_OUTPUTS_START
+NRD_OUTPUTS_START
+    #if( NRD_DIFF && NRD_SPEC )
         NRD_OUTPUT( RWTexture2D<float4>, gOut_Spec, u, 0 )
         NRD_OUTPUT( RWTexture2D<float4>, gOut_Diff, u, 1 )
-    NRD_OUTPUTS_END
-
-#elif( defined RELAX_DIFFUSE )
-
-    NRD_INPUTS_START
-        NRD_INPUT( Texture2D<float4>, gIn_Diff, t, 0 )
-    NRD_INPUTS_END
-
-    NRD_OUTPUTS_START
+    #elif( NRD_DIFF )
         NRD_OUTPUT( RWTexture2D<float4>, gOut_Diff, u, 0 )
-    NRD_OUTPUTS_END
-
-#elif( defined RELAX_SPECULAR )
-
-    NRD_INPUTS_START
-        NRD_INPUT( Texture2D<float4>, gIn_Spec, t, 0 )
-    NRD_INPUTS_END
-
-    NRD_OUTPUTS_START
+    #else
         NRD_OUTPUT( RWTexture2D<float4>, gOut_Spec, u, 0 )
-    NRD_OUTPUTS_END
-
-#endif
+    #endif
+NRD_OUTPUTS_END
 
 // Macro magic
 #define RELAX_CopyGroupX 8

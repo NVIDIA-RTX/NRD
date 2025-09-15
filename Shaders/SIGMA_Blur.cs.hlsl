@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "SIGMA_Blur.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "SIGMA_Common.hlsli"
 
 groupshared float2 s_Penumbra_ViewZ[ BUFFER_Y ][ BUFFER_X ];
@@ -31,13 +32,13 @@ void Preload( uint2 sharedPos, int2 globalPos )
     s_Penumbra_ViewZ[ sharedPos.y ][ sharedPos.x ] = data;
 
     SIGMA_TYPE s;
-    #if( !defined SIGMA_FIRST_PASS || defined SIGMA_TRANSLUCENCY )
+    #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
         s = gIn_Shadow_Translucency[ globalPos ];
     #else
         s = IsLit( data.x );
     #endif
 
-    #ifndef SIGMA_FIRST_PASS
+    #if( FIRST_PASS == 0 )
         s = SIGMA_BackEnd_UnpackShadow( s );
     #endif
 
@@ -47,7 +48,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
 [numthreads( GROUP_X, GROUP_Y, 1 )]
 NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 {
-#ifdef SIGMA_FIRST_PASS
+#if( FIRST_PASS == 1 )
     NRD_CTA_ORDER_DEFAULT;
 #else
     NRD_CTA_ORDER_REVERSED;
@@ -77,7 +78,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     if( ( tileValue == 0.0 && NRD_USE_TILE_CHECK ) || centerPenumbra == 0.0 )
     {
-    #ifndef SIGMA_FIRST_PASS
+    #if( FIRST_PASS == 0 )
         if( gStabilizationStrength != 0 )
     #endif
             gOut_Penumbra[ pixelPos ] = centerPenumbra;
@@ -172,7 +173,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float blurRadius = GetKernelRadiusInPixels( penumbra, pixelSize, tileValue );
 
     // Tangent basis with anisotropy
-    #ifdef SIGMA_FIRST_PASS
+    #if( FIRST_PASS == 1 )
         float4 rotator = GetBlurKernelRotation( SIGMA_ROTATOR_MODE, pixelPos, gRotator, gFrameIndex );
     #else
         float4 rotator = GetBlurKernelRotation( SIGMA_ROTATOR_MODE, pixelPos, gRotatorPost, gFrameIndex );
@@ -235,13 +236,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float zs = UnpackViewZ( gIn_ViewZ.SampleLevel( gNearestClamp, WithRectOffset( uvScaled ), 0 ) );
 
         SIGMA_TYPE s;
-        #if( !defined SIGMA_FIRST_PASS || defined SIGMA_TRANSLUCENCY )
+        #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
             s = gIn_Shadow_Translucency.SampleLevel( gNearestClamp, uvScaled, 0 );
         #else
             s = IsLit( penum );
         #endif
 
-        #ifndef SIGMA_FIRST_PASS
+        #if( FIRST_PASS == 0 )
             s = SIGMA_BackEnd_UnpackShadow( s );
         #endif
 
@@ -272,7 +273,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     penumbra = sum.y == 0.0 ? centerPenumbra : penumbra / sum.y;
 
     // Output
-#ifndef SIGMA_FIRST_PASS
+#if( FIRST_PASS == 0 )
     if( gStabilizationStrength != 0 )
 #endif
         gOut_Penumbra[ pixelPos ] = penumbra;

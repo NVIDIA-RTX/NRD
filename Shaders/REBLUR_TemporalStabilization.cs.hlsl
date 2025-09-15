@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "REBLUR_TemporalStabilization.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "REBLUR_Common.hlsli"
 
 groupshared float s_DiffLuma[ BUFFER_Y ][ BUFFER_X ];
@@ -24,11 +25,11 @@ void Preload( uint2 sharedPos, int2 globalPos )
 {
     globalPos = clamp( globalPos, 0, gRectSizeMinusOne );
 
-    #ifdef REBLUR_DIFFUSE
+    #if( NRD_DIFF )
         s_DiffLuma[ sharedPos.y ][ sharedPos.x ] = GetLuma( gIn_Diff[ globalPos ] );
     #endif
 
-    #ifdef REBLUR_SPECULAR
+    #if( NRD_SPEC )
         s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = GetLuma( gIn_Spec[ globalPos ] );
     #endif
 }
@@ -101,7 +102,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     int2 smemPos = threadPos + BORDER;
 
     // Diffuse
-    #ifdef REBLUR_DIFFUSE
+    #if( NRD_DIFF )
         float diffLuma = s_DiffLuma[ smemPos.y ][ smemPos.x ];
         float diffLumaM1 = diffLuma;
         float diffLumaM2 = diffLuma * diffLuma;
@@ -173,7 +174,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         REBLUR_TYPE diff = gIn_Diff[ pixelPos ];
         diff = ChangeLuma( diff, diffLumaStabilized );
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             REBLUR_SH_TYPE diffSh = gIn_DiffSh[ pixelPos ];
             diffSh.xyz *= GetLumaScale( length( diffSh.xyz ), diffLumaStabilized );
         #endif
@@ -181,7 +182,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Output
         gOut_Diff[ pixelPos ] = diff;
         gOut_DiffLumaStabilized[ pixelPos ] = diffLumaStabilized;
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             gOut_DiffSh[ pixelPos ] = diffSh;
         #endif
 
@@ -194,7 +195,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #endif
 
     // Specular
-    #ifdef REBLUR_SPECULAR
+    #if( NRD_SPEC )
         float specLuma = s_SpecLuma[ smemPos.y ][ smemPos.x ];
         float specLumaM1 = specLuma;
         float specLumaM2 = specLuma * specLuma;
@@ -354,7 +355,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float specLumaStabilized = lerp( specLuma, specLumaHistory, min( specHistoryWeight, gStabilizationStrength ) );
 
         spec = ChangeLuma( spec, specLumaStabilized );
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             REBLUR_SH_TYPE specSh = gIn_SpecSh[ pixelPos ];
             specSh.xyz *= GetLumaScale( length( specSh.xyz ), specLumaStabilized );
         #endif
@@ -362,7 +363,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Output
         gOut_Spec[ pixelPos ] = spec;
         gOut_SpecLumaStabilized[ pixelPos ] = specLumaStabilized;
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             gOut_SpecSh[ pixelPos ] = specSh;
         #endif
 

@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "REBLUR_PrePass.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "REBLUR_Common.hlsli"
 
 [numthreads( GROUP_X, GROUP_Y, 1 )]
@@ -69,14 +70,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Spatial filtering
     #define REBLUR_SPATIAL_MODE REBLUR_PRE_BLUR
 
-    #ifdef REBLUR_DIFFUSE
+    #if( NRD_DIFF )
     {
         uint2 pos = pixelPos;
         pos.x >>= gDiffCheckerboard == 2 ? 0 : 1;
 
         float sum = 1.0;
         REBLUR_TYPE diff = gIn_Diff[ pos ];
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             float4 diffSh = gIn_DiffSh[ pos ];
         #endif
 
@@ -85,7 +86,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         {
             sum = 0;
             diff = 0;
-            #ifdef REBLUR_SH
+            #if( NRD_MODE == SH )
                 diffSh = 0;
             #endif
         }
@@ -95,14 +96,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     }
     #endif
 
-    #ifdef REBLUR_SPECULAR
+    #if( NRD_SPEC )
     {
         uint2 pos = pixelPos;
         pos.x >>= gSpecCheckerboard == 2 ? 0 : 1;
 
         float sum = 1.0;
         REBLUR_TYPE spec = gIn_Spec[ pos ];
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             float4 specSh = gIn_SpecSh[ pos ];
         #endif
 
@@ -111,7 +112,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         {
             sum = 0;
             spec = 0;
-            #ifdef REBLUR_SH
+            #if( NRD_MODE == SH )
                 specSh = 0;
             #endif
         }

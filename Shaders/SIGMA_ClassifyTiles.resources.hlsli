@@ -20,7 +20,7 @@ NRD_SAMPLERS_END
 NRD_INPUTS_START
     NRD_INPUT( Texture2D<float>, gIn_ViewZ, t, 0 )
     NRD_INPUT( Texture2D<float>, gIn_Penumbra, t, 1 )
-    #ifdef SIGMA_TRANSLUCENCY
+    #if( TRANSLUCENCY == 1 )
         NRD_INPUT( Texture2D<SIGMA_TYPE>, gIn_Shadow_Translucency, t, 2 )
     #endif
 NRD_INPUTS_END

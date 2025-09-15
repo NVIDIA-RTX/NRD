@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "REBLUR_PostBlur.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "REBLUR_Common.hlsli"
 
 [numthreads( GROUP_X, GROUP_Y, 1 )]
@@ -54,34 +55,48 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Output
     gOut_Normal_Roughness[ pixelPos ] = normalAndRoughnessPacked;
-    #ifdef REBLUR_NO_TEMPORAL_STABILIZATION
+    #if( TEMPORAL_STABILIZATION == 0 )
         gOut_InternalData[ pixelPos ] = PackInternalData( data1.x + 1.0, data1.y + 1.0, materialID ); // increment history length
     #endif
 
     // Spatial filtering
     #define REBLUR_SPATIAL_MODE REBLUR_POST_BLUR
 
-    #ifdef REBLUR_DIFFUSE
+    #if( NRD_DIFF )
     {
         float sum = 1.0;
         REBLUR_TYPE diff = gIn_Diff[ pixelPos ];
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             float4 diffSh = gIn_DiffSh[ pixelPos ];
         #endif
 
         #include "REBLUR_Common_DiffuseSpatialFilter.hlsli"
+
+        #if( TEMPORAL_STABILIZATION == 0 )
+            gOut_DiffCopy[ pixelPos ] = diff;
+            #if( NRD_MODE == SH )
+                gOut_DiffShCopy[ pixelPos ] = diffSh;
+            #endif
+        #endif
     }
     #endif
 
-    #ifdef REBLUR_SPECULAR
+    #if( NRD_SPEC )
     {
         float sum = 1.0;
         REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             float4 specSh = gIn_SpecSh[ pixelPos ];
         #endif
 
         #include "REBLUR_Common_SpecularSpatialFilter.hlsli"
+
+        #if( TEMPORAL_STABILIZATION == 0 )
+            gOut_SpecCopy[ pixelPos ] = spec;
+            #if( NRD_MODE == SH )
+                gOut_SpecShCopy[ pixelPos ] = specSh;
+            #endif
+        #endif
     }
     #endif
 }

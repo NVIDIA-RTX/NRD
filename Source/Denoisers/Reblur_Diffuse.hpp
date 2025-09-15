@@ -132,9 +132,9 @@ void nrd::InstanceImpl::Add_ReblurDiffuse(DenoiserData& denoiserData) {
             PushInput(AsUint(Permanent::DIFF_FAST_HISTORY));
 
             // Outputs
+            PushOutput(AsUint(Transient::DATA1));
             PushOutput(DIFF_TEMP2);
             PushOutput(AsUint(Transient::DIFF_FAST_HISTORY));
-            PushOutput(AsUint(Transient::DATA1));
             PushOutput(AsUint(Transient::DATA2));
 
             // Shaders
@@ -165,13 +165,13 @@ void nrd::InstanceImpl::Add_ReblurDiffuse(DenoiserData& denoiserData) {
         // Inputs
         PushInput(AsUint(Transient::TILES));
         PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
+        PushInput(AsUint(ResourceType::IN_VIEWZ));
         PushInput(AsUint(Transient::DATA1));
         PushInput(DIFF_TEMP1);
-        PushInput(AsUint(ResourceType::IN_VIEWZ));
 
         // Outputs
-        PushOutput(DIFF_TEMP2);
         PushOutput(AsUint(Permanent::PREV_VIEWZ));
+        PushOutput(DIFF_TEMP2);
 
         // Shaders
         AddDispatch(REBLUR_Blur, commonDefines);
@@ -186,8 +186,8 @@ void nrd::InstanceImpl::Add_ReblurDiffuse(DenoiserData& denoiserData) {
             PushInput(AsUint(Transient::TILES));
             PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
             PushInput(AsUint(Transient::DATA1));
-            PushInput(DIFF_TEMP2);
             PushInput(AsUint(Permanent::PREV_VIEWZ));
+            PushInput(DIFF_TEMP2);
 
             // Outputs
             PushOutput(AsUint(Permanent::PREV_NORMAL_ROUGHNESS));

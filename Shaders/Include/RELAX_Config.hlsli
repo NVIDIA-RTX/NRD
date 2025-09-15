@@ -8,24 +8,6 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#define RELAX
-
-// Knobs remapping
-#ifdef NRD_SIGNAL
-    #if( ( NRD_SIGNAL & 0x1 ) != 0 )
-        #define RELAX_DIFFUSE
-    #endif
-    #if( ( NRD_SIGNAL & 0x2 ) != 0 )
-        #define RELAX_SPECULAR
-    #endif
-#endif
-
-#ifdef NRD_MODE
-    #if( NRD_MODE == 1 )
-        #define RELAX_SH
-    #endif
-#endif
-
 // Settings
 // IMPORTANT: if == 1, then for 0-roughness "GetEncodingAwareNormalWeight" can return values < 1 even for same normals due to data re-packing
 #define RELAX_NORMAL_ULP                                    ( 1.5 / 255.0 )

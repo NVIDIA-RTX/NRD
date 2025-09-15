@@ -48,7 +48,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 // DEFAULT SETTINGS ( can be modified )
 //==================================================================================================================
 
-// Safe defaults, but should come from CMake
+// CMake options
 #ifndef NRD_SUPPORTS_VIEWPORT_OFFSET
     #define NRD_SUPPORTS_VIEWPORT_OFFSET                        0
 #endif
@@ -71,10 +71,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #ifndef NRD_SUPPORTS_ANTIFIREFLY
     #define NRD_SUPPORTS_ANTIFIREFLY                            1
-#endif
-
-#ifndef REBLUR_PERFORMANCE_MODE
-    #define REBLUR_PERFORMANCE_MODE                             0
 #endif
 
 // Switches ( default 1 )
@@ -379,21 +375,6 @@ float GetColorCompressionExposureForSpatialPasses( float roughness )
     #else
         return 0;
     #endif
-}
-
-float2 StochasticBilinear( float2 uv, float2 texSize )
-{
-#if( REBLUR_USE_STF == 1 && NRD_NORMAL_ENCODING == NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
-    // Requires: Rng::Hash::Initialize( pixelPos, gFrameIndex )
-    Filtering::Bilinear f = Filtering::GetBilinearFilter( uv, texSize );
-
-    float2 rnd = Rng::Hash::GetFloat2( );
-    f.origin += step( rnd, f.weights );
-
-    return ( f.origin + 0.5 ) / texSize;
-#else
-    return uv;
-#endif
 }
 
 // Thin lens

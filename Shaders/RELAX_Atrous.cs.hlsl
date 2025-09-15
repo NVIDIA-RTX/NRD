@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "RELAX_Atrous.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "RELAX_Common.hlsli"
 
 [numthreads(GROUP_X, GROUP_Y, 1)]
@@ -41,12 +42,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Diffuse normal weight is used for diffuse and can be used for specular depending on settings.
     // Weight strictness is higher as the Atrous step size increases.
     float diffuseLobeAngleFraction = gLobeAngleFraction / sqrt(gStepSize);
-    #ifdef RELAX_SH
+    #if( NRD_MODE == SH )
         diffuseLobeAngleFraction = 1.0 / sqrt(gStepSize);
     #endif
     diffuseLobeAngleFraction = lerp(0.99, diffuseLobeAngleFraction, saturate(historyLength / 5.0));
 
-#ifdef RELAX_SPECULAR
+#if( NRD_SPEC )
     float4 centerSpecularIlluminationAndVariance = gIn_Spec_Variance[pixelPos];
     float centerSpecularLuminance = Color::Luminance(centerSpecularIlluminationAndVariance.rgb);
     float centerSpecularVar = centerSpecularIlluminationAndVariance.a;
@@ -87,14 +88,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     float sumWSpecular = 0.44198 * 0.44198;
     float4 sumSpecularIlluminationAndVariance = centerSpecularIlluminationAndVariance * float4(sumWSpecular.xxx, sumWSpecular * sumWSpecular);
-    #ifdef RELAX_SH
+    #if( NRD_MODE == SH )
         float4 centerSpecularSH = gIn_SpecSh[pixelPos];
         float4 sumSpecularSH = centerSpecularSH * sumWSpecular;
         float roughnessModified = centerSpecularSH.w;
     #endif
 #endif
 
-#ifdef RELAX_DIFFUSE
+#if( NRD_DIFF )
     float4 centerDiffuseIlluminationAndVariance = gIn_Diff_Variance[pixelPos];
     float centerDiffuseLuminance = Color::Luminance(centerDiffuseIlluminationAndVariance.rgb);
     float centerDiffuseVar = centerDiffuseIlluminationAndVariance.a;
@@ -117,7 +118,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     float sumWDiffuse = 0.44198 * 0.44198;
     float4 sumDiffuseIlluminationAndVariance = centerDiffuseIlluminationAndVariance * float4(sumWDiffuse.xxx, sumWDiffuse * sumWDiffuse);
-    #ifdef RELAX_SH
+    #if( NRD_MODE == SH )
         float4 centerDiffuseSH = gIn_DiffSh[pixelPos];
         float4 sumDiffuseSH = centerDiffuseSH * sumWDiffuse;
     #endif
@@ -165,7 +166,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             geometryW *= kernel;
             geometryW *= float(isInside && sampleViewZ < gDenoisingRange);
 
-#ifdef RELAX_SPECULAR
+#if( NRD_SPEC )
             // Getting sample view vector closer to center view vector
             // by adding gRoughnessEdgeStoppingRelaxation * centerWorldPos
             // relaxes view direction based rejection
@@ -193,13 +194,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                 sumWSpecular += wSpecular;
                 sumSpecularIlluminationAndVariance += float4(wSpecular.xxx, wSpecular * wSpecular) * sampleSpecularIlluminationAndVariance;
-                #ifdef RELAX_SH
+                #if( NRD_MODE == SH )
                     sumSpecularSH += gIn_SpecSh[p] * wSpecular;
                 #endif
             }
 #endif
 
-#ifdef RELAX_DIFFUSE
+#if( NRD_DIFF )
             // Calculating weights for diffuse
             float angled = Math::AcosApprox(dot(centerNormal, sampleNormal));
             float normalWDiffuse = ComputeWeight(angled, diffuseNormalWeightParam, 0.0);
@@ -220,7 +221,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                 sumWDiffuse += wDiffuse;
                 sumDiffuseIlluminationAndVariance +=  float4(wDiffuse.xxx, wDiffuse * wDiffuse) * sampleDiffuseIlluminationAndVariance;
-                #ifdef RELAX_SH
+                #if( NRD_MODE == SH )
                     sumDiffuseSH += gIn_DiffSh[p] * wDiffuse;
                 #endif
             }
@@ -228,9 +229,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
     }
 
-#ifdef RELAX_SPECULAR
+#if( NRD_SPEC )
     float4 filteredSpecularIlluminationAndVariance = float4(sumSpecularIlluminationAndVariance / float4(sumWSpecular.xxx, sumWSpecular * sumWSpecular));
-    #ifdef RELAX_SH
+    #if( NRD_MODE == SH )
         // Luminance output is expected in YCoCg color space in SH mode, converting to YCoCg in last A-Trous pass
         if (gIsLastPass == 1)
             filteredSpecularIlluminationAndVariance.rgb = _NRD_LinearToYCoCg(filteredSpecularIlluminationAndVariance.rgb);
@@ -239,9 +240,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     gOut_Spec_Variance[pixelPos] = filteredSpecularIlluminationAndVariance;
 #endif
 
-#ifdef RELAX_DIFFUSE
+#if( NRD_DIFF )
     float4 filteredDiffuseIlluminationAndVariance = float4(sumDiffuseIlluminationAndVariance / float4(sumWDiffuse.xxx, sumWDiffuse * sumWDiffuse));
-    #ifdef RELAX_SH
+    #if( NRD_MODE == SH )
         // Luminance output is expected in YCoCg color space in SH mode, converting to YCoCg in last A-Trous pass
         if (gIsLastPass == 1)
             filteredDiffuseIlluminationAndVariance.rgb = _NRD_LinearToYCoCg(filteredDiffuseIlluminationAndVariance.rgb);

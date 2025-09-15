@@ -15,14 +15,15 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "RELAX_HistoryClamping.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "RELAX_Common.hlsli"
 
-#ifdef RELAX_SPECULAR
+#if( NRD_SPEC )
     groupshared float4 s_SpecResponsiveYCoCg[BUFFER_Y][BUFFER_X];
     groupshared float4 s_SpecNoisy_IsValid[BUFFER_Y][BUFFER_X];
 #endif
 
-#ifdef RELAX_DIFFUSE
+#if( NRD_DIFF )
     groupshared float4 s_DiffResponsiveYCoCg[BUFFER_Y][BUFFER_X];
     groupshared float4 s_DiffNoisy_IsValid[BUFFER_Y][BUFFER_X];
 #endif
@@ -34,7 +35,7 @@ void Preload(uint2 sharedPos, int2 globalPos)
     float viewZ = gIn_ViewZ[globalPos];
     float isValid = float(viewZ < gDenoisingRange);
 
-    #ifdef RELAX_SPECULAR
+    #if( NRD_SPEC )
         float4 specularResponsive = gIn_SpecFast[globalPos];
         s_SpecResponsiveYCoCg[sharedPos.y][sharedPos.x] = float4(Color::RgbToYCoCg(specularResponsive.rgb), specularResponsive.a);
 
@@ -42,7 +43,7 @@ void Preload(uint2 sharedPos, int2 globalPos)
         s_SpecNoisy_IsValid[sharedPos.y][sharedPos.x] = float4(specularNoisy, isValid);
     #endif
 
-    #ifdef RELAX_DIFFUSE
+    #if( NRD_DIFF )
         float4 diffuseResponsive = gIn_DiffFast[globalPos];
         s_DiffResponsiveYCoCg[sharedPos.y][sharedPos.x] = float4(Color::RgbToYCoCg(diffuseResponsive.rgb), diffuseResponsive.a);
 
@@ -73,7 +74,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Early out
     uint2 sharedMemoryIndex = threadPos.xy + int2(BORDER, BORDER);
-#ifdef RELAX_SPECULAR
+#if( NRD_SPEC )
     if (s_SpecNoisy_IsValid[sharedMemoryIndex.y][sharedMemoryIndex.x].w == 0.0)
         return;
 #else
@@ -85,14 +86,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float historyLength = 255.0 * gIn_HistoryLength[pixelPos];
 
     // Reading normal history
-#ifdef RELAX_SPECULAR
+#if( NRD_SPEC )
     float3 specularResponsiveFirstMomentYCoCg = 0;
     float3 specularResponsiveSecondMomentYCoCg = 0;
     float3 specularNoisyFirstMoment = 0;
     float specularNoisySecondMoment = 0;
 #endif
 
-#ifdef RELAX_DIFFUSE
+#if( NRD_DIFF )
     float3 diffuseResponsiveFirstMomentYCoCg = 0;
     float3 diffuseResponsiveSecondMomentYCoCg = 0;
     float3 diffuseNoisyFirstMoment = 0;
@@ -110,18 +111,18 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             uint2 sharedMemoryIndexP = sharedMemoryIndex + int2(dx, dy);
 
             float w;
-        #ifdef RELAX_SPECULAR
+        #if( NRD_SPEC )
             float4 specularNoisySample = s_SpecNoisy_IsValid[sharedMemoryIndexP.y][sharedMemoryIndexP.x];
             w = specularNoisySample.w;
         #endif
-        #ifdef RELAX_DIFFUSE
+        #if( NRD_DIFF )
             float4 diffuseNoisySample = s_DiffNoisy_IsValid[sharedMemoryIndexP.y][sharedMemoryIndexP.x];
             w = diffuseNoisySample.w; // yes, overwrite to the same value
         #endif
 
             if( w != 0.0 )
             {
-            #ifdef RELAX_SPECULAR
+            #if( NRD_SPEC )
                 float3 specularSampleYCoCg = s_SpecResponsiveYCoCg[sharedMemoryIndexP.y][sharedMemoryIndexP.x].rgb;
                 specularResponsiveFirstMomentYCoCg += specularSampleYCoCg;
                 specularResponsiveSecondMomentYCoCg += specularSampleYCoCg * specularSampleYCoCg;
@@ -130,7 +131,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 specularNoisyFirstMoment += specularNoisySample.rgb;
                 specularNoisySecondMoment += specularNoisyLuminance * specularNoisyLuminance;
             #endif
-            #ifdef RELAX_DIFFUSE
+            #if( NRD_DIFF )
                 float3 diffuseSampleYCoCg = s_DiffResponsiveYCoCg[sharedMemoryIndexP.y][sharedMemoryIndexP.x].rgb;
                 diffuseResponsiveFirstMomentYCoCg += diffuseSampleYCoCg;
                 diffuseResponsiveSecondMomentYCoCg += diffuseSampleYCoCg * diffuseSampleYCoCg;
@@ -145,7 +146,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
     }
 
-#ifdef RELAX_SPECULAR
+#if( NRD_SPEC )
     // Calculating color box
     specularResponsiveFirstMomentYCoCg /= sum;
     specularResponsiveSecondMomentYCoCg /= sum;
@@ -180,9 +181,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Clamping factor: (clamped - slow) / (fast - slow)
      // The closer clamped is to fast, the closer clamping factor is to 1.
-    float specClampingFactor = (clampedSpecularYCoCg.x - specularYCoCg.x) == 0 ?
-        0.0 : saturate((clampedSpecularYCoCg.x - specularYCoCg.x) / (specularResponsiveCenterYCoCg.x - specularYCoCg.x));
-
+    float specClampingFactor = (clampedSpecularYCoCg.x - specularYCoCg.x) == 0 ? 0.0 : saturate((clampedSpecularYCoCg.x - specularYCoCg.x) / (specularResponsiveCenterYCoCg.x - specularYCoCg.x));
     if (historyLength <= gHistoryFixFrameNum)
         specClampingFactor = 1.0;
 
@@ -199,23 +198,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Using color space distance from responsive history to averaged noisy input to accelerate history
     float3 specularColorDistanceToNoisyInput = specularNoisyFirstMoment.rgb - specularResponsiveCenter;
-
     float specularColorDistanceToNoisyInputL = Color::Luminance(abs(specularColorDistanceToNoisyInput));
-
-    float3 specularColorAcceleration = (specularColorDistanceToNoisyInputL == 0) ?
-        0.0 : specularColorDistanceToNoisyInput * specularHistoryDifferenceL / specularColorDistanceToNoisyInputL;
+    float3 specularColorAcceleration = (specularColorDistanceToNoisyInputL == 0) ? 0.0 : specularColorDistanceToNoisyInput * specularHistoryDifferenceL / specularColorDistanceToNoisyInputL;
 
     // Preventing overshooting and noise amplification by making sure luminance of accelerated responsive history
     // does not move beyond luminance of noisy input,
     // or does not move back from noisy input
     float specularColorAccelerationL = Color::Luminance(abs(specularColorAcceleration.rgb));
-
-    float specularColorAccelerationRatio = (specularColorAccelerationL == 0) ?
-        0 : specularColorDistanceToNoisyInputL / specularColorAccelerationL;
-
+    float specularColorAccelerationRatio = (specularColorAccelerationL == 0) ? 0 : specularColorDistanceToNoisyInputL / specularColorAccelerationL;
     if (specularColorAccelerationRatio < 1.0)
         specularColorAcceleration *= specularColorAccelerationRatio;
-
     if (specularColorAccelerationRatio <= 0.0)
         specularColorAcceleration = 0;
 
@@ -247,17 +239,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     gOut_Spec[pixelPos.xy] = outSpecular;
     gOut_SpecFast[pixelPos.xy] = outSpecularResponsive;
 
-#ifdef RELAX_SH
+#if( NRD_MODE == SH )
     float4 specularSH = gIn_SpecSh[pixelPos.xy];
     float4 specularResponsiveSH = gIn_SpecShFast[pixelPos.xy];
 
     gOut_SpecSh[pixelPos.xy] = lerp(specularSH, specularResponsiveSH, specClampingFactor);
     gOut_SpecShFast[pixelPos.xy] = specularResponsiveSH;
 #endif
-
 #endif
 
-#ifdef RELAX_DIFFUSE
+#if( NRD_DIFF )
     // Calculating color box
     diffuseResponsiveFirstMomentYCoCg /= sum;
     diffuseResponsiveSecondMomentYCoCg /= sum;
@@ -293,9 +284,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Clamping factor: (clamped - slow) / (fast - slow)
     // The closer clamped is to fast, the closer clamping factor is to 1.
-    float diffClampingFactor = (clampedDiffuseYCoCg.x - diffuseYCoCg.x) == 0 ?
-        0.0 : saturate((clampedDiffuseYCoCg.x - diffuseYCoCg.x) / (diffuseResponsiveCenterYCoCg.x - diffuseYCoCg.x));
-
+    float diffClampingFactor = (clampedDiffuseYCoCg.x - diffuseYCoCg.x) == 0 ? 0.0 : saturate((clampedDiffuseYCoCg.x - diffuseYCoCg.x) / (diffuseResponsiveCenterYCoCg.x - diffuseYCoCg.x));
     if (historyLength <= gHistoryFixFrameNum)
         diffClampingFactor = 1.0;
 
@@ -311,23 +300,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Using color space distance from responsive history to averaged noisy input to accelerate history
     float3 diffuseColorDistanceToNoisyInput = diffuseNoisyFirstMoment.rgb - diffuseResponsiveCenter;
-
     float diffuseColorDistanceToNoisyInputL = Color::Luminance(abs(diffuseColorDistanceToNoisyInput));
-
-    float3 diffuseColorAcceleration = (diffuseColorDistanceToNoisyInputL == 0) ?
-        0.0 : diffuseColorDistanceToNoisyInput * diffuseHistoryDifferenceL / diffuseColorDistanceToNoisyInputL;
+    float3 diffuseColorAcceleration = (diffuseColorDistanceToNoisyInputL == 0) ? 0.0 : diffuseColorDistanceToNoisyInput * diffuseHistoryDifferenceL / diffuseColorDistanceToNoisyInputL;
 
     // Preventing overshooting and noise amplification by making sure luminance of accelerated responsive history
     // does not move beyond luminance of noisy input,
     // or does not move back from noisy input
     float diffuseColorAccelerationL = Color::Luminance(abs(diffuseColorAcceleration.rgb));
-
-    float diffuseColorAccelerationRatio = (diffuseColorAccelerationL == 0) ?
-        0 : diffuseColorDistanceToNoisyInputL / diffuseColorAccelerationL;
-
+    float diffuseColorAccelerationRatio = (diffuseColorAccelerationL == 0) ? 0 : diffuseColorDistanceToNoisyInputL / diffuseColorAccelerationL;
     if (diffuseColorAccelerationRatio < 1.0)
         diffuseColorAcceleration *= diffuseColorAccelerationRatio;
-
     if (diffuseColorAccelerationRatio <= 0.0)
         diffuseColorAcceleration = 0;
 
@@ -358,14 +340,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     gOut_Diff[pixelPos.xy] = outDiffuse;
     gOut_DiffFast[pixelPos.xy] = outDiffuseResponsive;
 
-    #ifdef RELAX_SH
+    #if( NRD_MODE == SH )
         float4 diffuseSH = gIn_DiffSh[pixelPos.xy];
         float4 diffuseResponsiveSH = gIn_DiffShFast[pixelPos.xy];
 
         gOut_DiffSh[pixelPos.xy] = lerp(diffuseSH, diffuseResponsiveSH, diffClampingFactor);
         gOut_DiffShFast[pixelPos.xy] = diffuseResponsiveSH;
     #endif
-
 #endif
 
     // Writing out history length for use in the next frame

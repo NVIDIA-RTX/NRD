@@ -17,48 +17,30 @@ NRD_SAMPLERS_START
     NRD_SAMPLER( SamplerState, gLinearClamp, s, 1 )
 NRD_SAMPLERS_END
 
-#if( defined REBLUR_DIFFUSE && defined REBLUR_SPECULAR )
-
-    NRD_INPUTS_START
-        NRD_INPUT( Texture2D<REBLUR_TILE_TYPE>, gIn_Tiles, t, 0 )
-        NRD_INPUT( Texture2D<float4>, gIn_Normal_Roughness, t, 1 )
-        NRD_INPUT( Texture2D<float>, gIn_ViewZ, t, 2 )
+NRD_INPUTS_START
+    NRD_INPUT( Texture2D<REBLUR_TILE_TYPE>, gIn_Tiles, t, 0 )
+    NRD_INPUT( Texture2D<float4>, gIn_Normal_Roughness, t, 1 )
+    NRD_INPUT( Texture2D<float>, gIn_ViewZ, t, 2 )
+    #if( NRD_DIFF && NRD_SPEC )
         NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Diff, t, 3 )
         NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Spec, t, 4 )
-    NRD_INPUTS_END
+    #elif( NRD_DIFF )
+        NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Diff, t, 3 )
+    #else
+        NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Spec, t, 3 )
+    #endif
+NRD_INPUTS_END
 
-    NRD_OUTPUTS_START
+NRD_OUTPUTS_START
+    #if( NRD_DIFF && NRD_SPEC )
         NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_Diff, u, 0 )
         NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_Spec, u, 1 )
-    NRD_OUTPUTS_END
-
-#elif( defined REBLUR_DIFFUSE )
-
-    NRD_INPUTS_START
-        NRD_INPUT( Texture2D<REBLUR_TILE_TYPE>, gIn_Tiles, t, 0 )
-        NRD_INPUT( Texture2D<float4>, gIn_Normal_Roughness, t, 1 )
-        NRD_INPUT( Texture2D<float>, gIn_ViewZ, t, 2 )
-        NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Diff, t, 3 )
-    NRD_INPUTS_END
-
-    NRD_OUTPUTS_START
+    #elif( NRD_DIFF )
         NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_Diff, u, 0 )
-    NRD_OUTPUTS_END
-
-#else
-
-    NRD_INPUTS_START
-        NRD_INPUT( Texture2D<REBLUR_TILE_TYPE>, gIn_Tiles, t, 0 )
-        NRD_INPUT( Texture2D<float4>, gIn_Normal_Roughness, t, 1 )
-        NRD_INPUT( Texture2D<float>, gIn_ViewZ, t, 2 )
-        NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Spec, t, 3 )
-    NRD_INPUTS_END
-
-    NRD_OUTPUTS_START
+    #else
         NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_Spec, u, 0 )
-    NRD_OUTPUTS_END
-
-#endif
+    #endif
+NRD_OUTPUTS_END
 
 // Macro magic
 #define REBLUR_HitDistReconstructionGroupX 8

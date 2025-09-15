@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "REBLUR_HitDistReconstruction.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "REBLUR_Common.hlsli"
 
 groupshared float4 s_Normal_Roughness[ BUFFER_Y ][ BUFFER_X ];
@@ -30,7 +31,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
     s_Normal_Roughness[ sharedPos.y ][ sharedPos.x ] = normalAndRoughness;
 
     float2 hitDist = 0.0;
-    #ifdef REBLUR_DIFFUSE
+    #if( NRD_DIFF )
         hitDist.x = ExtractHitDist( gIn_Diff[ globalPos ] );
 
         #if( REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION == 1 )
@@ -38,7 +39,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
         #endif
     #endif
 
-    #ifdef REBLUR_SPECULAR
+    #if( NRD_SPEC )
         hitDist.y = ExtractHitDist( gIn_Spec[ globalPos ] );
 
         #if( REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION == 1 )
@@ -144,8 +145,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #endif
 
     // Output
-    #ifdef REBLUR_DIFFUSE
-        #ifdef REBLUR_OCCLUSION
+    #if( NRD_DIFF )
+        #if( NRD_MODE == OCCLUSION )
             gOut_Diff[ pixelPos ] = center.x;
         #else
             float3 diff = gIn_Diff[ pixelPos ].xyz;
@@ -153,8 +154,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
     #endif
 
-    #ifdef REBLUR_SPECULAR
-        #ifdef REBLUR_OCCLUSION
+    #if( NRD_SPEC )
+        #if( NRD_MODE == OCCLUSION )
             gOut_Spec[ pixelPos ] = center.y;
         #else
             float3 spec = gIn_Spec[ pixelPos ].xyz;

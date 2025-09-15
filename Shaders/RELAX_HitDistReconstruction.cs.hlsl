@@ -15,6 +15,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "RELAX_HitDistReconstruction.resources.hlsli"
 
 #include "Common.hlsli"
+
 #include "RELAX_Common.hlsli"
 
 groupshared float4 s_Normal_Roughness[BUFFER_Y][BUFFER_X];
@@ -29,11 +30,11 @@ void Preload(uint2 sharedPos, int2 globalPos)
     float viewZ = UnpackViewZ(gIn_ViewZ[WithRectOrigin(globalPos)]);
     float2 hitDist = gDenoisingRange;
 
-    #ifdef RELAX_SPECULAR
+    #if( NRD_SPEC )
         hitDist.x = gIn_Spec[globalPos].w;
     #endif
 
-    #ifdef RELAX_DIFFUSE
+    #if( NRD_DIFF )
         hitDist.y = gIn_Diff[globalPos].w;
     #endif
 
@@ -70,7 +71,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float centerRoughness = normalAndRoughness.w;
 
     // Hit distance reconstruction
-#ifdef RELAX_SPECULAR
+#if( NRD_SPEC )
     float3 centerSpecularIllumination = gIn_Spec[pixelPos].xyz;
     float centerSpecularHitDist = centerHitdistViewZ.x;
     float2 relaxedRoughnessWeightParams = GetRelaxedRoughnessWeightParams(centerRoughness * centerRoughness);
@@ -80,7 +81,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float sumSpecularHitDist = centerSpecularHitDist * sumSpecularWeight;
 #endif
 
-#ifdef RELAX_DIFFUSE
+#if( NRD_DIFF )
     float3 centerDiffuseIllumination = gIn_Diff[pixelPos].xyz;
     float centerDiffuseHitDist = centerHitdistViewZ.y;
     float diffuseNormalWeightParam = GetNormalWeightParam(1.0, 1.0);
@@ -114,7 +115,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             w *= GetGaussianWeight(length(o) * 0.5);
             w *= GetBilateralWeight(sampleViewZ, centerViewZ);
 
-#ifdef RELAX_SPECULAR
+#if( NRD_SPEC )
             float specularWeight = w;
             specularWeight *= ComputeExponentialWeight(angle, specularNormalWeightParam, 0.0);
             specularWeight *= ComputeExponentialWeight(normalAndRoughness.w * normalAndRoughness.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y);
@@ -128,7 +129,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             sumSpecularWeight += specularWeight;
 #endif
 
-#ifdef RELAX_DIFFUSE
+#if( NRD_DIFF )
             float diffuseWeight = w;
             diffuseWeight *= ComputeExponentialWeight(angle, diffuseNormalWeightParam, 0.0);
 
@@ -144,12 +145,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     }
 
     // Output
-#ifdef RELAX_SPECULAR
+#if( NRD_SPEC )
     sumSpecularHitDist /= max(sumSpecularWeight, 1e-6);
     gOut_Spec[pixelPos] = float4(centerSpecularIllumination, sumSpecularHitDist);
 #endif
 
-#ifdef RELAX_DIFFUSE
+#if( NRD_DIFF )
     sumDiffuseHitDist /= max(sumDiffuseWeight, 1e-6);
     gOut_Diff[pixelPos] = float4(centerDiffuseIllumination, sumDiffuseHitDist);
 #endif

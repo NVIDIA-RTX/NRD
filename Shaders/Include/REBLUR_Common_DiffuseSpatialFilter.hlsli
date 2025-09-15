@@ -73,7 +73,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float minHitDistWeight = gMinHitDistanceWeight * fractionScale;
 
         // ( Optional ) Gradually reduce "minHitDistWeight" to preserve contact details
-    #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && !defined( REBLUR_OCCLUSION ) )
+    #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && NRD_MODE != OCCLUSION )
         minHitDistWeight *= sqrt( diffNonLinearAccumSpeed );
     #endif
 
@@ -158,7 +158,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             sum += w;
 
             diff += s * w;
-            #ifdef REBLUR_SH
+            #if( NRD_MODE == SH )
                 float4 sh = gIn_DiffSh.SampleLevel( gNearestClamp, checkerboardUvScaled, 0 );
                 sh = Denanify( w, sh );
                 diffSh += sh * w;
@@ -167,7 +167,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
         float invSum = Math::PositiveRcp( sum );
         diff *= invSum;
-    #ifdef REBLUR_SH
+    #if( NRD_MODE == SH )
         diffSh *= invSum;
     #endif
 
@@ -187,7 +187,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
         diff = s0 * wc.x + s1 * wc.y;
 
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             float4 sh0 = gIn_DiffSh[ checkerboardPos.xz ];
             float4 sh1 = gIn_DiffSh[ checkerboardPos.yz ];
 
@@ -202,15 +202,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
     // Output
     gOut_Diff[ pixelPos ] = diff;
-    #ifdef REBLUR_SH
+    #if( NRD_MODE == SH )
         gOut_DiffSh[ pixelPos ] = diffSh;
-    #endif
-
-    #ifdef REBLUR_NO_TEMPORAL_STABILIZATION
-        gOut_DiffCopy[ pixelPos ] = diff;
-        #ifdef REBLUR_SH
-            gOut_DiffShCopy[ pixelPos ] = diffSh;
-        #endif
     #endif
 }
 

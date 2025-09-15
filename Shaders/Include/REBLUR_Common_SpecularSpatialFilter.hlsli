@@ -95,7 +95,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float minHitDistWeight = gMinHitDistanceWeight * fractionScale * smc;
 
         // ( Optional ) Gradually reduce "minHitDistWeight" to preserve contact details
-    #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && !defined( REBLUR_OCCLUSION ) )
+    #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && NRD_MODE != REBLUR_OCCLUSION )
         minHitDistWeight *= sqrt( specNonLinearAccumSpeed );
     #endif
 
@@ -203,7 +203,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             sum += w;
 
             spec += s * w;
-            #ifdef REBLUR_SH
+            #if( NRD_MODE == SH )
                 float4 sh = gIn_SpecSh.SampleLevel( gNearestClamp, checkerboardUvScaled, 0 );
                 sh = Denanify( w, sh );
                 specSh.xyz += sh.xyz * w;
@@ -212,7 +212,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
         float invSum = Math::PositiveRcp( sum );
         spec *= invSum;
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             specSh.xyz *= invSum;
         #endif
 
@@ -234,7 +234,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
         spec = s0 * wc.x + s1 * wc.y;
 
-        #ifdef REBLUR_SH
+        #if( NRD_MODE == SH )
             float4 sh0 = gIn_SpecSh[ checkerboardPos.xz ];
             float4 sh1 = gIn_SpecSh[ checkerboardPos.yz ];
 
@@ -249,15 +249,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
     // Output
     gOut_Spec[ pixelPos ] = spec;
-    #ifdef REBLUR_SH
+    #if( NRD_MODE == SH )
         gOut_SpecSh[ pixelPos ] = specSh;
-    #endif
-
-    #ifdef REBLUR_NO_TEMPORAL_STABILIZATION
-        gOut_SpecCopy[ pixelPos ] = spec;
-        #ifdef REBLUR_SH
-            gOut_SpecShCopy[ pixelPos ] = specSh;
-        #endif
     #endif
 }
 

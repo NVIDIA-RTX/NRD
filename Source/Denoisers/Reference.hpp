@@ -46,7 +46,7 @@ void nrd::InstanceImpl::Add_Reference(DenoiserData& denoiserData) {
         PushOutput(AsUint(ResourceType::OUT_SIGNAL));
 
         // Shaders
-        AddDispatch(REFERENCE_TemporalAccumulation, commonDefines);
+        AddDispatch(REFERENCE_Copy, commonDefines);
     }
 }
 
@@ -71,7 +71,6 @@ void nrd::InstanceImpl::Update_Reference(const DenoiserData& denoiserData) {
 
     { // ACCUMULATE
         REFERENCE_TemporalAccumulationConstants* consts = (REFERENCE_TemporalAccumulationConstants*)PushDispatch(denoiserData, AsUint(Dispatch::ACCUMULATE));
-        consts->gRectOrigin = uint2(m_CommonSettings.rectOrigin[0], m_CommonSettings.rectOrigin[1]);
         consts->gAccumSpeed = 1.0f / (1.0f + m_AccumulatedFrameNum);
         consts->gDebug = m_CommonSettings.debug;
     }
