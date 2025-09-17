@@ -123,7 +123,7 @@ Result Integration::Recreate(const IntegrationCreationDesc& integrationDesc, con
         return Result::FAILURE;
     }
 
-    const LibraryDesc& libraryDesc = GetLibraryDesc();
+    const LibraryDesc& libraryDesc = *GetLibraryDesc();
     if (libraryDesc.versionMajor != NRD_VERSION_MAJOR || libraryDesc.versionMinor != NRD_VERSION_MINOR) {
         NRD_INTEGRATION_ASSERT(false, "NRD version mismatch detected!");
         return Result::FAILURE;
@@ -205,7 +205,7 @@ bool Integration::RecreatePipelines() {
     m_Pipelines.clear();
 
     // Create new
-    const InstanceDesc& instanceDesc = GetInstanceDesc(*m_Instance);
+    const InstanceDesc& instanceDesc = *GetInstanceDesc(*m_Instance);
     const nri::DeviceDesc& deviceDesc = m_iCore.GetDeviceDesc(*m_Device);
 
     for (uint32_t i = 0; i < instanceDesc.pipelinesNum; i++) {
@@ -231,7 +231,7 @@ bool Integration::RecreatePipelines() {
 }
 
 bool Integration::_CreateResources() {
-    const InstanceDesc& instanceDesc = GetInstanceDesc(*m_Instance);
+    const InstanceDesc& instanceDesc = *GetInstanceDesc(*m_Instance);
     const nri::DeviceDesc& deviceDesc = m_iCore.GetDeviceDesc(*m_Device);
     const uint32_t poolSize = instanceDesc.permanentPoolSize + instanceDesc.transientPoolSize;
 
@@ -364,7 +364,7 @@ bool Integration::_CreateResources() {
         uint32_t storageTextureOffset = 0;
 
         if (deviceDesc.graphicsAPI == nri::GraphicsAPI::VK) {
-            const LibraryDesc& nrdLibraryDesc = GetLibraryDesc();
+            const LibraryDesc& nrdLibraryDesc = *GetLibraryDesc();
             constantBufferOffset = nrdLibraryDesc.spirvBindingOffsets.constantBufferOffset;
             samplerOffset = nrdLibraryDesc.spirvBindingOffsets.samplerOffset;
             textureOffset = nrdLibraryDesc.spirvBindingOffsets.textureOffset;
@@ -522,7 +522,7 @@ void Integration::Denoise(const Identifier* denoisers, uint32_t denoisersNum, nr
     if (m_FrameIndex == 0) {
         const nri::Texture* normalRoughnessTexture = resourceSnapshot.slots[(size_t)ResourceType::IN_NORMAL_ROUGHNESS]->nri.texture;
         const nri::TextureDesc& normalRoughnessDesc = m_iCore.GetTextureDesc(*normalRoughnessTexture);
-        const LibraryDesc& nrdLibraryDesc = GetLibraryDesc();
+        const LibraryDesc& nrdLibraryDesc = *GetLibraryDesc();
 
         bool isNormalRoughnessFormatValid = false;
         switch (nrdLibraryDesc.normalEncoding) {
@@ -540,6 +540,8 @@ void Integration::Denoise(const Identifier* denoisers, uint32_t denoisersNum, nr
                 break;
             case NormalEncoding::RGBA16_SNORM:
                 isNormalRoughnessFormatValid = normalRoughnessDesc.format == nri::Format::RGBA16_SNORM || normalRoughnessDesc.format == nri::Format::RGBA16_SFLOAT || normalRoughnessDesc.format == nri::Format::RGBA32_SFLOAT;
+                break;
+            default:
                 break;
         }
 
@@ -709,7 +711,7 @@ void Integration::DenoiseVK(const Identifier* denoisers, uint32_t denoisersNum, 
 #endif
 
 void Integration::_Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPool& descriptorPool, const DispatchDesc& dispatchDesc, ResourceSnapshot& resourceSnapshot) {
-    const InstanceDesc& instanceDesc = GetInstanceDesc(*m_Instance);
+    const InstanceDesc& instanceDesc = *GetInstanceDesc(*m_Instance);
     const PipelineDesc& pipelineDesc = instanceDesc.pipelines[dispatchDesc.pipelineIndex];
 
     nri::Descriptor** descriptors = (nri::Descriptor**)alloca(sizeof(nri::Descriptor*) * dispatchDesc.resourcesNum);

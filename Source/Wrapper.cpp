@@ -117,8 +117,8 @@ const char* g_NrdDenoiserNames[] = {
 };
 static_assert(GetCountOf(g_NrdDenoiserNames) == (uint32_t)nrd::Denoiser::MAX_NUM);
 
-NRD_API const nrd::LibraryDesc& NRD_CALL nrd::GetLibraryDesc() {
-    return g_NrdLibraryDesc;
+NRD_API const nrd::LibraryDesc* NRD_CALL nrd::GetLibraryDesc() {
+    return &g_NrdLibraryDesc;
 }
 
 NRD_API nrd::Result NRD_CALL nrd::CreateInstance(const InstanceCreationDesc& instanceCreationDesc, Instance*& instance) {
@@ -140,8 +140,8 @@ NRD_API nrd::Result NRD_CALL nrd::CreateInstance(const InstanceCreationDesc& ins
     return result;
 }
 
-NRD_API const nrd::InstanceDesc& NRD_CALL nrd::GetInstanceDesc(const Instance& denoiser) {
-    return ((const InstanceImpl&)denoiser).GetDesc();
+NRD_API const nrd::InstanceDesc* NRD_CALL nrd::GetInstanceDesc(const Instance& denoiser) {
+    return &((const InstanceImpl&)denoiser).GetDesc();
 }
 
 NRD_API nrd::Result NRD_CALL nrd::SetCommonSettings(Instance& instance, const CommonSettings& commonSettings) {

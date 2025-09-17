@@ -309,6 +309,8 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
             diffCheckerboard = 1;
             specCheckerboard = 0;
             break;
+        default:
+            break;
     }
 
     SharedConstants* consts = (SharedConstants*)data;
@@ -388,52 +390,52 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
 
 // Shaders
 #if NRD_EMBEDS_DXBC_SHADERS
-#    include "REBLUR_ClassifyTiles.cs.dxbc.h"
-#    include "REBLUR_HitDistReconstruction.cs.dxbc.h"
-#    include "REBLUR_PrePass.cs.dxbc.h"
-#    include "REBLUR_TemporalAccumulation.cs.dxbc.h"
-#    include "REBLUR_HistoryFix.cs.dxbc.h"
 #    include "REBLUR_Blur.cs.dxbc.h"
+#    include "REBLUR_ClassifyTiles.cs.dxbc.h"
+#    include "REBLUR_HistoryFix.cs.dxbc.h"
+#    include "REBLUR_HitDistReconstruction.cs.dxbc.h"
 #    include "REBLUR_PostBlur.cs.dxbc.h"
-#    include "REBLUR_TemporalStabilization.cs.dxbc.h"
+#    include "REBLUR_PrePass.cs.dxbc.h"
 #    include "REBLUR_SplitScreen.cs.dxbc.h"
+#    include "REBLUR_TemporalAccumulation.cs.dxbc.h"
+#    include "REBLUR_TemporalStabilization.cs.dxbc.h"
 #    include "REBLUR_Validation.cs.dxbc.h"
 #endif
 
 #if NRD_EMBEDS_DXIL_SHADERS
-#    include "REBLUR_ClassifyTiles.cs.dxil.h"
-#    include "REBLUR_HitDistReconstruction.cs.dxil.h"
-#    include "REBLUR_PrePass.cs.dxil.h"
-#    include "REBLUR_TemporalAccumulation.cs.dxil.h"
-#    include "REBLUR_HistoryFix.cs.dxil.h"
 #    include "REBLUR_Blur.cs.dxil.h"
+#    include "REBLUR_ClassifyTiles.cs.dxil.h"
+#    include "REBLUR_HistoryFix.cs.dxil.h"
+#    include "REBLUR_HitDistReconstruction.cs.dxil.h"
 #    include "REBLUR_PostBlur.cs.dxil.h"
-#    include "REBLUR_TemporalStabilization.cs.dxil.h"
+#    include "REBLUR_PrePass.cs.dxil.h"
 #    include "REBLUR_SplitScreen.cs.dxil.h"
+#    include "REBLUR_TemporalAccumulation.cs.dxil.h"
+#    include "REBLUR_TemporalStabilization.cs.dxil.h"
 #    include "REBLUR_Validation.cs.dxil.h"
 #endif
 
 #if NRD_EMBEDS_SPIRV_SHADERS
-#    include "REBLUR_ClassifyTiles.cs.spirv.h"
-#    include "REBLUR_HitDistReconstruction.cs.spirv.h"
-#    include "REBLUR_PrePass.cs.spirv.h"
-#    include "REBLUR_TemporalAccumulation.cs.spirv.h"
-#    include "REBLUR_HistoryFix.cs.spirv.h"
 #    include "REBLUR_Blur.cs.spirv.h"
+#    include "REBLUR_ClassifyTiles.cs.spirv.h"
+#    include "REBLUR_HistoryFix.cs.spirv.h"
+#    include "REBLUR_HitDistReconstruction.cs.spirv.h"
 #    include "REBLUR_PostBlur.cs.spirv.h"
-#    include "REBLUR_TemporalStabilization.cs.spirv.h"
+#    include "REBLUR_PrePass.cs.spirv.h"
 #    include "REBLUR_SplitScreen.cs.spirv.h"
+#    include "REBLUR_TemporalAccumulation.cs.spirv.h"
+#    include "REBLUR_TemporalStabilization.cs.spirv.h"
 #    include "REBLUR_Validation.cs.spirv.h"
 #endif
 
 // Denoisers
 #include "Denoisers/Reblur_Diffuse.hpp"
+#include "Denoisers/Reblur_DiffuseDirectionalOcclusion.hpp"
 #include "Denoisers/Reblur_DiffuseOcclusion.hpp"
 #include "Denoisers/Reblur_DiffuseSh.hpp"
-#include "Denoisers/Reblur_Specular.hpp"
-#include "Denoisers/Reblur_SpecularOcclusion.hpp"
-#include "Denoisers/Reblur_SpecularSh.hpp"
 #include "Denoisers/Reblur_DiffuseSpecular.hpp"
 #include "Denoisers/Reblur_DiffuseSpecularOcclusion.hpp"
 #include "Denoisers/Reblur_DiffuseSpecularSh.hpp"
-#include "Denoisers/Reblur_DiffuseDirectionalOcclusion.hpp"
+#include "Denoisers/Reblur_Specular.hpp"
+#include "Denoisers/Reblur_SpecularOcclusion.hpp"
+#include "Denoisers/Reblur_SpecularSh.hpp"

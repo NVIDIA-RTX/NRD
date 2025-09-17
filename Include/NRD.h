@@ -52,8 +52,8 @@ namespace nrd
     NRD_API void NRD_CALL DestroyInstance(Instance& instance);
 
     // Get
-    NRD_API const LibraryDesc& NRD_CALL GetLibraryDesc();
-    NRD_API const InstanceDesc& NRD_CALL GetInstanceDesc(const Instance& instance);
+    NRD_API const LibraryDesc* NRD_CALL GetLibraryDesc();
+    NRD_API const InstanceDesc* NRD_CALL GetInstanceDesc(const Instance& instance);
 
     // Typically needs to be called once per frame
     NRD_API Result NRD_CALL SetCommonSettings(Instance& instance, const CommonSettings& commonSettings);

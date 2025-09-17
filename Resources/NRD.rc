@@ -43,7 +43,7 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "NVIDIA"
             VALUE "FileVersion", VERSION_STRING
-            VALUE "LegalCopyright", "Copyright © 2023"
+            VALUE "LegalCopyright", "Copyright (c) 2023"
             VALUE "ProductName", "NVIDIA Real-time Denoising"
             VALUE "ProductVersion", VERSION_STRING
         END

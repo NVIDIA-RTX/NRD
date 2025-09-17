@@ -93,6 +93,8 @@ void nrd::InstanceImpl::AddSharedConstants_Relax(const RelaxSettings& settings, 
             diffCheckerboard = 1;
             specCheckerboard = 0;
             break;
+        default:
+            break;
     }
 
     SharedConstants* consts = (SharedConstants*)data;
@@ -281,54 +283,54 @@ void nrd::InstanceImpl::Update_Relax(const DenoiserData& denoiserData) {
 
 // Shaders
 #if NRD_EMBEDS_DXBC_SHADERS
+#    include "RELAX_AntiFirefly.cs.dxbc.h"
+#    include "RELAX_Atrous.cs.dxbc.h"
+#    include "RELAX_AtrousSmem.cs.dxbc.h"
 #    include "RELAX_ClassifyTiles.cs.dxbc.h"
+#    include "RELAX_Copy.cs.dxbc.h"
+#    include "RELAX_HistoryClamping.cs.dxbc.h"
+#    include "RELAX_HistoryFix.cs.dxbc.h"
 #    include "RELAX_HitDistReconstruction.cs.dxbc.h"
 #    include "RELAX_PrePass.cs.dxbc.h"
-#    include "RELAX_TemporalAccumulation.cs.dxbc.h"
-#    include "RELAX_HistoryFix.cs.dxbc.h"
-#    include "RELAX_HistoryClamping.cs.dxbc.h"
-#    include "RELAX_Copy.cs.dxbc.h"
-#    include "RELAX_AntiFirefly.cs.dxbc.h"
-#    include "RELAX_AtrousSmem.cs.dxbc.h"
-#    include "RELAX_Atrous.cs.dxbc.h"
 #    include "RELAX_SplitScreen.cs.dxbc.h"
+#    include "RELAX_TemporalAccumulation.cs.dxbc.h"
 #    include "RELAX_Validation.cs.dxbc.h"
 #endif
 
 #if NRD_EMBEDS_DXIL_SHADERS
+#    include "RELAX_AntiFirefly.cs.dxil.h"
+#    include "RELAX_Atrous.cs.dxil.h"
+#    include "RELAX_AtrousSmem.cs.dxil.h"
 #    include "RELAX_ClassifyTiles.cs.dxil.h"
+#    include "RELAX_Copy.cs.dxil.h"
+#    include "RELAX_HistoryClamping.cs.dxil.h"
+#    include "RELAX_HistoryFix.cs.dxil.h"
 #    include "RELAX_HitDistReconstruction.cs.dxil.h"
 #    include "RELAX_PrePass.cs.dxil.h"
-#    include "RELAX_TemporalAccumulation.cs.dxil.h"
-#    include "RELAX_HistoryFix.cs.dxil.h"
-#    include "RELAX_HistoryClamping.cs.dxil.h"
-#    include "RELAX_Copy.cs.dxil.h"
-#    include "RELAX_AntiFirefly.cs.dxil.h"
-#    include "RELAX_AtrousSmem.cs.dxil.h"
-#    include "RELAX_Atrous.cs.dxil.h"
 #    include "RELAX_SplitScreen.cs.dxil.h"
+#    include "RELAX_TemporalAccumulation.cs.dxil.h"
 #    include "RELAX_Validation.cs.dxil.h"
 #endif
 
 #if NRD_EMBEDS_SPIRV_SHADERS
+#    include "RELAX_AntiFirefly.cs.spirv.h"
+#    include "RELAX_Atrous.cs.spirv.h"
+#    include "RELAX_AtrousSmem.cs.spirv.h"
 #    include "RELAX_ClassifyTiles.cs.spirv.h"
+#    include "RELAX_Copy.cs.spirv.h"
+#    include "RELAX_HistoryClamping.cs.spirv.h"
+#    include "RELAX_HistoryFix.cs.spirv.h"
 #    include "RELAX_HitDistReconstruction.cs.spirv.h"
 #    include "RELAX_PrePass.cs.spirv.h"
-#    include "RELAX_TemporalAccumulation.cs.spirv.h"
-#    include "RELAX_HistoryFix.cs.spirv.h"
-#    include "RELAX_HistoryClamping.cs.spirv.h"
-#    include "RELAX_Copy.cs.spirv.h"
-#    include "RELAX_AntiFirefly.cs.spirv.h"
-#    include "RELAX_AtrousSmem.cs.spirv.h"
-#    include "RELAX_Atrous.cs.spirv.h"
 #    include "RELAX_SplitScreen.cs.spirv.h"
+#    include "RELAX_TemporalAccumulation.cs.spirv.h"
 #    include "RELAX_Validation.cs.spirv.h"
 #endif
 
 // Denoisers
 #include "Denoisers/Relax_Diffuse.hpp"
 #include "Denoisers/Relax_DiffuseSh.hpp"
-#include "Denoisers/Relax_Specular.hpp"
-#include "Denoisers/Relax_SpecularSh.hpp"
 #include "Denoisers/Relax_DiffuseSpecular.hpp"
 #include "Denoisers/Relax_DiffuseSpecularSh.hpp"
+#include "Denoisers/Relax_Specular.hpp"
+#include "Denoisers/Relax_SpecularSh.hpp"

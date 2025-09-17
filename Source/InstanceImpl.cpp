@@ -91,7 +91,7 @@ inline bool IsInList(nrd::Identifier identifier, const nrd::Identifier* identifi
 }
 
 nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreationDesc) {
-    const LibraryDesc& libraryDesc = GetLibraryDesc();
+    const LibraryDesc& libraryDesc = *GetLibraryDesc();
 
     // Collect dispatches from all denoisers
     for (uint32_t i = 0; i < instanceCreationDesc.denoisersNum; i++) {
@@ -230,7 +230,7 @@ nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreati
         PushOutput(0);
 
         std::array<ShaderMake::ShaderConstant, 1> defines = {
-            {"FLOAT", "1"},
+            {{"FLOAT", "1"}},
         };
         AddDispatchNoConstants(Clear, defines);
     }
@@ -241,7 +241,7 @@ nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreati
         PushOutput(0);
 
         std::array<ShaderMake::ShaderConstant, 1> defines = {
-            {"FLOAT", "0"},
+            {{"FLOAT", "0"}},
         };
         AddDispatchNoConstants(Clear, defines);
     }
@@ -314,10 +314,10 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
     isValid &= m_CommonSettings.disocclusionThresholdAlternate > 0.0f;
     assert("'disocclusionThresholdAlternate' must be > 0" && isValid);
 
-    isValid &= m_CommonSettings.strandMaterialID != 0.0f || GetLibraryDesc().normalEncoding == NormalEncoding::R10_G10_B10_A2_UNORM;
+    isValid &= m_CommonSettings.strandMaterialID != 0.0f || GetLibraryDesc()->normalEncoding == NormalEncoding::R10_G10_B10_A2_UNORM;
     assert("'strandMaterialID' can't be 0 if material ID is not supported by encoding" && isValid);
 
-    isValid &= m_CommonSettings.cameraAttachedReflectionMaterialID != 0.0f || GetLibraryDesc().normalEncoding == NormalEncoding::R10_G10_B10_A2_UNORM;
+    isValid &= m_CommonSettings.cameraAttachedReflectionMaterialID != 0.0f || GetLibraryDesc()->normalEncoding == NormalEncoding::R10_G10_B10_A2_UNORM;
     assert("'cameraAttachedReflectionMaterialID' can't be 0 if material ID is not supported by encoding" && isValid);
 
     isValid &= NRD_SUPPORTS_VIEWPORT_OFFSET || (m_CommonSettings.rectOrigin[0] == 0 && m_CommonSettings.rectOrigin[1] == 0);
