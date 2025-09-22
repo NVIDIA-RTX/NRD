@@ -302,6 +302,11 @@ namespace nrd
         // it's still needed to find optimal hit distance for tracking. This boolean allow to use
         // specular pre-pass for tracking purposes only (use with care)
         bool usePrepassOnlyForSpecularMotionEstimation = false;
+
+        // Allows to get diffuse or specular history length in ".w" channel of the output instead of denoised ambient/specular occlusion (normalized hit distance).
+        // Diffuse history length shows disocclusions, specular history length is more complex and includes accelerations of various kinds caused by specular tracking.
+        // History length is measured in frames, it can be in "[0; maxAccumulatedFrameNum]" range
+        bool returnHistoryLengthInsteadOfOcclusion = false;
     };
 
     //====================================================================================================================================================

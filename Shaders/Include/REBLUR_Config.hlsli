@@ -183,7 +183,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( uint, gSpecCheckerboard ) \
     NRD_CONSTANT( uint, gFrameIndex ) \
     NRD_CONSTANT( uint, gIsRectChanged ) \
-    NRD_CONSTANT( uint, gResetHistory )
+    NRD_CONSTANT( uint, gResetHistory ) \
+    NRD_CONSTANT( uint, gReturnHistoryLengthInsteadOfOcclusion )
 
 // ( Optional ) This can provide a minor performance boost by sacrificing IQ a bit.
 // The negative effect is minimal if SH resolve is in use

@@ -314,3 +314,7 @@ A single NRD instance can now include any combination of denoisers, including re
   - reworked `GetLibraryDesc` and `GetInstanceDesc` to return a pointer instead of a reference to be conformant with "C" linkage
 - *NRD INTEGRATION*:
   - expects unique register spaces
+- *REBLUR*:
+  - added `ReblurSettings::returnHistoryLengthInsteadOfOcclusion`
+- *RELAX*:
+  - diffuse history length is returned in ".w"

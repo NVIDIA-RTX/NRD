@@ -386,6 +386,7 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gFrameIndex = m_CommonSettings.frameIndex;
     consts->gIsRectChanged = isRectChanged ? 1 : 0;
     consts->gResetHistory = isHistoryReset ? 1 : 0;
+    consts->gReturnHistoryLengthInsteadOfOcclusion = settings.returnHistoryLengthInsteadOfOcclusion ? 1 : 0;
 }
 
 // Shaders

@@ -107,15 +107,19 @@ namespace nrd
 
         // IMPORTANT: Most of denoisers do not write into output pixels outside of "CommonSettings::denoisingRange"!
 
-        // Radiance and hit distance
-        //      REBLUR: use "REBLUR_BackEnd_UnpackRadianceAndNormHitDist" for decoding (RGBA16f+)
+        // Radiance and normalized hit distance (occlusion) or history length
+        //      REBLUR: use "REBLUR_BackEnd_UnpackRadianceAndNormHitDist" for decoding (R11G11B10f+)
+        //          .w = diffuse or specular occlusion (default) or history length in frames if "ReblurSettings::returnHistoryLengthInsteadOfOcclusion = true"
         //      RELAX: use "RELAX_BackEnd_UnpackRadiance" for decoding (R11G11B10f+)
+        //          .w = diffuse history length in frames
         OUT_DIFF_RADIANCE_HITDIST,
         OUT_SPEC_RADIANCE_HITDIST,
 
         // SH data
         //      REBLUR: use "REBLUR_BackEnd_UnpackSh" for decoding (2x RGBA16f+)
+        //          .normHitDist = diffuse or specular occlusion (default) or history length in frames if "ReblurSettings::returnHistoryLengthInsteadOfOcclusion = true"
         //      RELAX: use "RELAX_BackEnd_UnpackSh" for decoding (2x RGBA16f+)
+        //          .normHitDist = diffuse history length in frames
         OUT_DIFF_SH0,
         OUT_DIFF_SH1,
         OUT_SPEC_SH0,

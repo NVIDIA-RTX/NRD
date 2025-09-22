@@ -229,6 +229,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
     }
 
+    float currHistoryLength = max( historyLength - 1.0, 0.0 );
 #if( NRD_SPEC )
     float4 filteredSpecularIlluminationAndVariance = float4(sumSpecularIlluminationAndVariance / float4(sumWSpecular.xxx, sumWSpecular * sumWSpecular));
     #if( NRD_MODE == SH )
@@ -237,6 +238,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             filteredSpecularIlluminationAndVariance.rgb = _NRD_LinearToYCoCg(filteredSpecularIlluminationAndVariance.rgb);
         gOut_SpecSh[pixelPos] = float4(sumSpecularSH.rgb / sumWSpecular, roughnessModified);
     #endif
+    if (gIsLastPass == 1)
+        filteredSpecularIlluminationAndVariance.w = currHistoryLength;
     gOut_Spec_Variance[pixelPos] = filteredSpecularIlluminationAndVariance;
 #endif
 
@@ -248,6 +251,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             filteredDiffuseIlluminationAndVariance.rgb = _NRD_LinearToYCoCg(filteredDiffuseIlluminationAndVariance.rgb);
         gOut_DiffSh[pixelPos] = sumDiffuseSH / sumWDiffuse;
     #endif
+    if (gIsLastPass == 1)
+        filteredDiffuseIlluminationAndVariance.w = currHistoryLength;
     gOut_Diff_Variance[pixelPos] = filteredDiffuseIlluminationAndVariance;
 #endif
 }

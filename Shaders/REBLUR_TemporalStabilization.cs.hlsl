@@ -170,6 +170,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         // Output
+        diff.w = gReturnHistoryLengthInsteadOfOcclusion ? data1.x : diff.w;
+
         gOut_Diff[ pixelPos ] = diff;
         gOut_DiffLumaStabilized[ pixelPos ] = diffLumaStabilized;
         #if( NRD_MODE == SH )
@@ -341,6 +343,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         // Output
+        spec.w = gReturnHistoryLengthInsteadOfOcclusion ? data1.y : spec.w;
+
         gOut_Spec[ pixelPos ] = spec;
         gOut_SpecLumaStabilized[ pixelPos ] = specLumaStabilized;
         #if( NRD_MODE == SH )

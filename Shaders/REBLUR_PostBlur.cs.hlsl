@@ -73,6 +73,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #include "REBLUR_Common_DiffuseSpatialFilter.hlsli"
 
         #if( TEMPORAL_STABILIZATION == 0 )
+            #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
+                diff.w = gReturnHistoryLengthInsteadOfOcclusion ? data1.x : diff.w;
+            #endif
+
             gOut_DiffCopy[ pixelPos ] = diff;
             #if( NRD_MODE == SH )
                 gOut_DiffShCopy[ pixelPos ] = diffSh;
@@ -92,6 +96,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #include "REBLUR_Common_SpecularSpatialFilter.hlsli"
 
         #if( TEMPORAL_STABILIZATION == 0 )
+            #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
+                spec.w = gReturnHistoryLengthInsteadOfOcclusion ? data1.y : spec.w;
+            #endif
+
             gOut_SpecCopy[ pixelPos ] = spec;
             #if( NRD_MODE == SH )
                 gOut_SpecShCopy[ pixelPos ] = specSh;
