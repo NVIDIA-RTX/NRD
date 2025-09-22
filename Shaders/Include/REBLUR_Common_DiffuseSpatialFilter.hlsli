@@ -48,10 +48,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float blurRadius = gDiffPrepassBlurRadius;
         float areaFactor = hitDistFactor;
     #else
-        float boost = 1.0 - GetFadeBasedOnAccumulatedFrames( data1.x ); // TODO: still needed?
-        boost *= 1.0 - BRDF::Pow5( NoV );
-
-        float diffNonLinearAccumSpeed = 1.0 / ( 1.0 + REBLUR_SAMPLES_PER_FRAME * ( 1.0 - boost ) * data1.x );
+        float diffNonLinearAccumSpeed = 1.0 / ( 1.0 + REBLUR_SAMPLES_PER_FRAME * data1.x );
 
         float blurRadius = gMaxBlurRadius;
         float areaFactor = hitDistFactor * diffNonLinearAccumSpeed;

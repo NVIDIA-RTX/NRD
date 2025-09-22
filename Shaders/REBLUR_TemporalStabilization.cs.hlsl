@@ -106,8 +106,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float diffLuma = s_DiffLuma[ smemPos.y ][ smemPos.x ];
         float diffLumaM1 = diffLuma;
         float diffLumaM2 = diffLuma * diffLuma;
-        float diffMin = NRD_INF;
-        float diffMax = -NRD_INF;
 
         [unroll]
         for( j = 0; j <= BORDER * 2; j++ )
@@ -124,26 +122,18 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float d = s_DiffLuma[ pos.y ][ pos.x ];
                 diffLumaM1 += d;
                 diffLumaM2 += d * d;
-
-                // RCRS
-                #if( REBLUR_PERFORMANCE_MODE == 0 )
-                    diffMin = min( diffMin, d );
-                    diffMax = max( diffMax, d );
-                #endif
             }
         }
 
         // Compute sigma
         diffLumaM1 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
         diffLumaM2 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
+
         float diffLumaSigma = GetStdDev( diffLumaM1, diffLumaM2 );
 
-        // RCRS
-        #if( REBLUR_PERFORMANCE_MODE == 0 )
-            [flatten]
-            if( gMaxBlurRadius != 0 )
-                diffLuma = clamp( diffLuma, diffMin, diffMax );
-        #endif
+        // Clean-up fireflies if HistoryFix pass was in action
+        if( data1.x < gHistoryFixFrameNum )
+            diffLuma = min( diffLuma, diffLumaM1 * ( 1.2 + 1.0 / ( 1.0 + data1.x ) ) );
 
         // Sample history - surface motion
         float smbDiffLumaHistory;
@@ -199,8 +189,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float specLuma = s_SpecLuma[ smemPos.y ][ smemPos.x ];
         float specLumaM1 = specLuma;
         float specLumaM2 = specLuma * specLuma;
-        float specMin = NRD_INF;
-        float specMax = -NRD_INF;
 
         [unroll]
         for( j = 0; j <= BORDER * 2; j++ )
@@ -217,29 +205,18 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float s = s_SpecLuma[ pos.y ][ pos.x ];
                 specLumaM1 += s;
                 specLumaM2 += s * s;
-
-                // RCRS
-                #if( REBLUR_PERFORMANCE_MODE == 0 )
-                    specMin = min( specMin, s );
-                    specMax = max( specMax, s );
-                #endif
             }
         }
 
         // Compute sigma
         specLumaM1 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
         specLumaM2 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
+
         float specLumaSigma = GetStdDev( specLumaM1, specLumaM2 );
 
-        // RCRS
-        #if( REBLUR_PERFORMANCE_MODE == 0 )
-            [flatten]
-            if( gMaxBlurRadius != 0 )
-                specLuma = clamp( specLuma, specMin, specMax );
-        #endif
-
-        float virtualHistoryAmount = data2.x;
-        float curvature = data2.y;
+        // Clean-up fireflies if HistoryFix pass was in action
+        if( data1.y < gHistoryFixFrameNum )
+            specLuma = min( specLuma, specLumaM1 * ( 1.2 + 1.0 / ( 1.0 + data1.y ) ) );
 
         // Hit distance for tracking ( tests 6, 67, 155 )
         REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
@@ -251,6 +228,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             hitDistForTracking = min( hitDistForTracking, gIn_SpecHitDistForTracking[ pixelPos ] );
 
         // Virtual motion
+        float virtualHistoryAmount = data2.x;
+        float curvature = data2.y;
+
         float3 V = GetViewVector( X );
         float NoV = abs( dot( N, V ) );
         float3 Xvirtual = GetXvirtual( hitDistForTracking, curvature, X, Xprev, N, V, roughness );

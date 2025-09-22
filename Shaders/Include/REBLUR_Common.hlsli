@@ -106,14 +106,6 @@ float GetMinAllowedLimitForHitDistNonLinearAccumSpeed( float roughness )
     return 1.0 / ( 1.0 + frameNum );
 }
 
-float GetFadeBasedOnAccumulatedFrames( float accumSpeed )
-{
-    float a = gHistoryFixFrameNum * 2.0 / 3.0 + 1e-6;
-    float b = gHistoryFixFrameNum * 4.0 / 3.0 + 2e-6;
-
-    return Math::LinearStep( a, b, accumSpeed );
-}
-
 float GetNonLinearAccumSpeed( float accumSpeed, float maxAccumSpeed, float confidence, bool hasData )
 {
     #if( REBLUR_USE_CONFIDENCE_NON_LINEARLY == 1 )

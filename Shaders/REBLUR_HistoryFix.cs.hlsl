@@ -75,11 +75,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float2 frameNum = s_FrameNum[ smemPos.y ][ smemPos.x ];
 
     // Use smaller strides if neighborhood pixels have longer history to minimize chances of ruining contact details // TODO: it would be good to apply the same logic in spatial passes
-    float2 stride;
+    float2 stride = gHistoryFixBasePixelStride;
     {
-        float2 frameNumAvg = frameNum;
         float2 sum = 1.0;
         float invHistoryFixFrameNum = 1.0 / ( gHistoryFixFrameNum + NRD_EPS );
+        float2 frameNumAvg = saturate( frameNum * invHistoryFixFrameNum );
 
         [unroll]
         for( i = -1; i <= 1; i++ )
@@ -100,7 +100,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         frameNumAvg /= sum;
 
-        stride = gHistoryFixBasePixelStride / ( 2.0 + frameNumAvg * gHistoryFixFrameNum ); // +1 to match RELAX
         stride *= float2( frameNum < gHistoryFixFrameNum );
     }
 
@@ -113,8 +112,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         // Stride between taps
-         float diffStride = stride.x;
-         diffStride = floor( diffStride );
+        float diffStride = stride.x;
+
+        float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, 1.0 );
+        float hitDist = ExtractHitDist( diff ) * hitDistScale;
+        float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
+        diffStride *= lerp( Math::Sqrt01( hitDistFactor ), 1.0, 1.0 / ( 1.0 + frameNum.x ) );
+
+        diffStride = floor( diffStride );
 
         // History reconstruction
         if( diffStride != 0.0 )
@@ -136,7 +141,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, 1.0 );
             float hitDist = ExtractHitDist( diff ) * hitDistScale;
             float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
-            float2 hitDistanceWeightParams = GetHitDistanceWeightParams( hitDistFactor, diffNonLinearAccumSpeed, 1.0 );
 
             diff *= sumd;
             #if( NRD_MODE == SH )
@@ -178,6 +182,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
                     w *= CompareMaterials( materialID, materialIDs, gDiffMinMaterial );
                     w *= ComputeExponentialWeight( angle, normalWeightParam, 0.0 );
+                    w *= GetGaussianWeight( length( float2( i, j ) / 2.0 ) );
 
                     #if( REBLUR_PERFORMANCE_MODE == 0 )
                         w *= 1.0 + UnpackData1( gIn_Data1[ pos ] ).x;
@@ -186,9 +191,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     REBLUR_TYPE s = gIn_Diff[ pos ];
                     s = Denanify( w, s );
 
-                    float hs = ExtractHitDist( s ) * hitDistScale;
+                    // A-trous weight
+                    float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistParams, 1.0 );
                     float hsFactor = GetHitDistFactor( hs, frustumSize );
-                    w *= ComputeExponentialWeight( hsFactor, hitDistanceWeightParams.x, hitDistanceWeightParams.y );
+                    float d1 = hsFactor - hitDistFactor;
+                    w *= saturate( exp( -d1 * d1 / ( 0.75 * diffNonLinearAccumSpeed ) ) );
 
                     // Accumulate
                     sumd += w;
@@ -310,7 +317,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Stride between taps
         float smc = GetSpecMagicCurve( roughness );
         float specStride = stride.y;
-        specStride *= lerp( 0.5, 1.0, smc ); // hand tuned
+
+        float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, roughness );
+        float hitDist = ExtractHitDist( spec ) * hitDistScale;
+        float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
+        specStride *= lerp( Math::Sqrt01( hitDistFactor ), 1.0, 1.0 / ( 1.0 + frameNum.y ) );
+        specStride *= lerp( 0.25, 1.0, smc ); // hand tuned
+
         specStride = floor( specStride );
 
         // History reconstruction
@@ -329,7 +342,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, roughness );
             float hitDist = ExtractHitDist( spec ) * hitDistScale;
             float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
-            float2 hitDistanceWeightParams = GetHitDistanceWeightParams( hitDistFactor, specNonLinearAccumSpeed, roughness );
 
             float sums = 1.0 + frameNum.y;
             #if( REBLUR_PERFORMANCE_MODE == 1 )
@@ -377,6 +389,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     w *= CompareMaterials( materialID, materialIDs, gSpecMinMaterial );
                     w *= ComputeExponentialWeight( angle, normalWeightParam, 0.0 );
                     w *= ComputeExponentialWeight( Ns.w * Ns.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
+                    w *= GetGaussianWeight( length( float2( i, j ) / 2.0 ) );
 
                     #if( REBLUR_PERFORMANCE_MODE == 0 )
                         w *= 1.0 + UnpackData1( gIn_Data1[ pos ] ).y;
@@ -385,14 +398,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     REBLUR_TYPE s = gIn_Spec[ pos ];
                     s = Denanify( w, s );
 
-                    float hs = ExtractHitDist( s ) * hitDistScale;
+                    // A-trous weight
+                    float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistParams, Ns.w );
                     float hsFactor = GetHitDistFactor( hs, frustumSize );
-                    w *= ComputeExponentialWeight( hsFactor, hitDistanceWeightParams.x, hitDistanceWeightParams.y );
+                    float d1 = hitDistFactor - hsFactor;
+                    w *= saturate( exp( -d1 * d1 / ( 0.75 * specNonLinearAccumSpeed ) ) );
 
                     // Special case for low roughness ( hit distances work as a non-noisy guide )
-                    float d = abs( hitDist - hs ) / ( max( hitDist, hs ) + 0.001 );
+                    float d2 = abs( hitDist - hs ) / ( max( hitDist, hs ) + 0.001 );
                     float b = Math::LinearStep( 0.03, 0.05, roughness );
-                    w *= Math::SmoothStep( 0.2 + b, 0.05 + b, d );
+                    w *= Math::SmoothStep( 0.2 + b, 0.05 + b, d2 );
 
                     // Accumulate
                     sums += w;
