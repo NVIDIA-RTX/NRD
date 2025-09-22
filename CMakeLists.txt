@@ -4,7 +4,7 @@ include(CMakeDependentOption)
 include(FetchContent)
 
 # Architecture
-if((CMAKE_GENERATOR_PLATFORM MATCHES "ARM64") OR (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64"))
+if((CMAKE_GENERATOR_PLATFORM MATCHES "ARM64") OR (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64"))
     set(IS_ARM64 TRUE)
 else()
     set(IS_ARM64 FALSE)
@@ -100,7 +100,7 @@ if(NOT TARGET ShaderMake)
     FetchContent_Declare(
         shadermake
         GIT_REPOSITORY https://github.com/NVIDIA-RTX/ShaderMake.git
-        GIT_TAG 757594f0539314467f74950c8d898e815ecbd383
+        GIT_TAG main
         GIT_SHALLOW 1
     )
     list(APPEND DEPS shadermake)
