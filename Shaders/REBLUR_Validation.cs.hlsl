@@ -87,6 +87,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         Text::Print_ch( 'A', textState );
         Text::Print_ch( 'L', textState );
         Text::Print_ch( 'S', textState );
+        Text::Print_ch( '-', textState );
+        Text::NextChar( textState );
+        Text::Print_ui( NRD_NORMAL_ENCODING, textState );
 
         result.xyz = N * 0.5 + 0.5;
         result.w = 1.0;
@@ -103,6 +106,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         Text::Print_ch( 'E', textState );
         Text::Print_ch( 'S', textState );
         Text::Print_ch( 'S', textState );
+        Text::Print_ch( '-', textState );
+        Text::NextChar( textState );
+        Text::Print_ui( NRD_ROUGHNESS_ENCODING, textState );
 
         result.xyz = normalAndRoughness.w;
         result.w = 1.0;
@@ -145,24 +151,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         Text::Print_ch( 'I', textState );
         Text::Print_ch( 'T', textState );
         Text::Print_ch( 'S', textState );
-        Text::Print_ch( '-', textState );
-        Text::Print_ch( 'J', textState );
-        Text::Print_ch( 'I', textState );
-        Text::Print_ch( 'T', textState );
-        Text::Print_ch( 'T', textState );
-        Text::Print_ch( 'E', textState );
-        Text::Print_ch( 'R', textState );
-        Text::Print_ch( '-', textState );
-        Text::Print_ch( 'F', textState );
-        Text::Print_ch( 'R', textState );
-        Text::Print_ch( 'A', textState );
-        Text::Print_ch( 'M', textState );
-        Text::Print_ch( 'E', textState );
-        Text::Print_ch( 'I', textState );
-        Text::Print_ch( 'N', textState );
-        Text::Print_ch( 'D', textState );
-        Text::Print_ch( 'E', textState );
-        Text::Print_ch( 'X', textState );
 
         float2 dim = float2( 0.5 * gResourceSize.y / gResourceSize.x, 0.5 );
         float2 dimInPixels = gResourceSize * VIEWPORT_SIZE * dim;

@@ -76,6 +76,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         Text::Print_ch( 'A', textState );
         Text::Print_ch( 'L', textState );
         Text::Print_ch( 'S', textState );
+        Text::NextChar( textState );
+        Text::Print_ui( NRD_NORMAL_ENCODING, textState );
 
         result.xyz = N * 0.5 + 0.5;
         result.w = 1.0;
@@ -92,6 +94,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         Text::Print_ch( 'E', textState );
         Text::Print_ch( 'S', textState );
         Text::Print_ch( 'S', textState );
+        Text::NextChar( textState );
+        Text::Print_ui( NRD_ROUGHNESS_ENCODING, textState );
 
         result.xyz = normalAndRoughness.w;
         result.w = 1.0;
