@@ -795,7 +795,7 @@ maxAccumulatedFrameNum > maxFastAccumulatedFrameNum > historyFixFrameNum
 
 **[NRD]** *SH* denoisers can use more relaxed `lobeAngleFraction`. It can help to improve stability, while details will be reconstructed back by *SG* resolve.
 
-**[REBLUR]** If more performance is needed, consider using `enablePerformanceMode = true`.
+**[REBLUR]** If more performance is needed, consider using `REBLUR_PERFORMANCE_MODE = ON`.
 
 **[REBLUR]** *REBLUR* expects hit distances in a normalized form. To avoid mismatching, `NRD.hlsli/REBLUR_FrontEnd_GetNormHitDist` must be used for normalization. Normalization parameters should be passed into *NRD* as `HitDistanceParameters` for internal hit distance denormalization. Some tweaking can be needed here, but in most cases default `HitDistanceParameters` works well. *REBLUR* outputs denoised normalized hit distance, which can be used by the application as ambient or specular occlusion (AO & SO) (see unpacking functions from `NRD.hlsli`).
 
