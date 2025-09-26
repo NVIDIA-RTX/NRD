@@ -74,34 +74,29 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     int2 smemPos = threadPos + BORDER;
     float2 frameNum = s_FrameNum[ smemPos.y ][ smemPos.x ];
 
-    // Use smaller strides if neighborhood pixels have longer history to minimize chances of ruining contact details // TODO: it would be good to apply the same logic in spatial passes
-    float2 stride = gHistoryFixBasePixelStride;
+    float invHistoryFixFrameNum = 1.0 / max( gHistoryFixFrameNum, NRD_EPS );
+    float2 frameNumAvgNorm = saturate( frameNum * invHistoryFixFrameNum );
+
+    // Use smaller strides if neighborhood pixels have longer history to minimize chances of ruining contact details
+    float2 stride = 1.0;
+
+    [unroll]
+    for( i = -1; i <= 1; i++ )
     {
-        float2 sum = 1.0;
-        float invHistoryFixFrameNum = 1.0 / ( gHistoryFixFrameNum + NRD_EPS );
-        float2 frameNumAvg = saturate( frameNum * invHistoryFixFrameNum );
-
         [unroll]
-        for( i = -1; i <= 1; i++ )
+        for( j = -1; j <= 1; j++ )
         {
-            [unroll]
-            for( j = -1; j <= 1; j++ )
-            {
-                if( i == 0 && j == 0 )
-                    continue;
+            if( i == 0 && j == 0 )
+                continue;
 
-                float2 f = s_FrameNum[ smemPos.y + j ][ smemPos.x + i ];
-                float2 w = step( frameNum, f ); // use only neighbors with longer history
+            float2 f = s_FrameNum[ smemPos.y + j ][ smemPos.x + i ];
 
-                frameNumAvg += saturate( f * invHistoryFixFrameNum ) * w;
-                sum += w;
-            }
+            stride -= saturate( ( f - frameNum ) * invHistoryFixFrameNum ) / 9.0;
         }
-
-        frameNumAvg /= sum;
-
-        stride *= float2( frameNum < gHistoryFixFrameNum );
     }
+
+    stride = lerp( 1.0, gHistoryFixBasePixelStride, stride );
+    stride *= float2( frameNum < gHistoryFixFrameNum );
 
     // Diffuse
     #if( NRD_DIFF )
@@ -221,7 +216,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float diffM1 = diffCenter;
         float diffM2 = diffM1 * diffM1;
 
-        float f = saturate( frameNum.x / ( gHistoryFixFrameNum + NRD_EPS ) );
+        float f = frameNumAvgNorm.x;
         diffCenter = lerp( GetLuma( diff ), diffCenter, f );
         gOut_DiffFast[ pixelPos ] = diffCenter;
 
@@ -433,7 +428,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float specM1 = specCenter;
         float specM2 = specM1 * specM1;
 
-        float f = saturate( frameNum.y / ( gHistoryFixFrameNum + NRD_EPS ) );
+        float f = frameNumAvgNorm.y;
         f = lerp( 1.0, f, smc ); // HistoryFix-ed data is undesired in fast history for low roughness ( test 115 )
         specCenter = lerp( GetLuma( spec ), specCenter, f );
         gOut_SpecFast[ pixelPos ] = specCenter;
