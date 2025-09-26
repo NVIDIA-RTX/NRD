@@ -43,7 +43,9 @@ float2 PackData1( float diffAccumSpeed, float specAccumSpeed )
         r.x = r.y;
     #endif
 
-    return r;
+    // Proper rounding, otherwise for "accumSpeed = 3":
+    //  3 / REBLUR_MAX_ACCUM_FRAME_NUM => "255 * 3 / 63" = 12.142857 => 12 / 255 * 63 = 2.964 frames => invoke HistoryFix
+    return r + 0.5 / 255.0;
 }
 
 float2 UnpackData1( float2 p )
