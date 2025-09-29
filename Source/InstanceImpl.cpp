@@ -314,11 +314,14 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
     isValid &= m_CommonSettings.disocclusionThresholdAlternate > 0.0f;
     assert("'disocclusionThresholdAlternate' must be > 0" && isValid);
 
-    isValid &= m_CommonSettings.strandMaterialID != 0.0f || GetLibraryDesc()->normalEncoding == NormalEncoding::R10_G10_B10_A2_UNORM;
-    assert("'strandMaterialID' can't be 0 if material ID is not supported by encoding" && isValid);
+    isValid &= m_CommonSettings.strandMaterialID == 999.0f || GetLibraryDesc()->normalEncoding == NormalEncoding::R10_G10_B10_A2_UNORM;
+    assert("'strandMaterialID' must be 999 if material ID is not supported by encoding" && isValid);
 
-    isValid &= m_CommonSettings.cameraAttachedReflectionMaterialID != 0.0f || GetLibraryDesc()->normalEncoding == NormalEncoding::R10_G10_B10_A2_UNORM;
-    assert("'cameraAttachedReflectionMaterialID' can't be 0 if material ID is not supported by encoding" && isValid);
+    isValid &= m_CommonSettings.cameraAttachedReflectionMaterialID == 999.0f || GetLibraryDesc()->normalEncoding == NormalEncoding::R10_G10_B10_A2_UNORM;
+    assert("'cameraAttachedReflectionMaterialID' must be 999 if material ID is not supported by encoding" && isValid);
+
+    isValid &= m_CommonSettings.historyFixAlternatePixelStrideMaterialID == 999.0f || GetLibraryDesc()->normalEncoding == NormalEncoding::R10_G10_B10_A2_UNORM;
+    assert("'historyFixAlternatePixelStrideMaterialID' must be 999 if material ID is not supported by encoding" && isValid);
 
     isValid &= NRD_SUPPORTS_VIEWPORT_OFFSET || (m_CommonSettings.rectOrigin[0] == 0 && m_CommonSettings.rectOrigin[1] == 0);
     assert("'rectOrigin' must be 0 if 'NRD_SUPPORTS_VIEWPORT_OFFSET = 0'" && isValid);

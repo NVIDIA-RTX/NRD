@@ -83,6 +83,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float, gJitterDelta ) \
     NRD_CONSTANT( float, gHistoryFixFrameNum ) \
     NRD_CONSTANT( float, gHistoryFixBasePixelStride ) \
+    NRD_CONSTANT( float, gHistoryFixAlternatePixelStride ) \
+    NRD_CONSTANT( float, gHistoryFixAlternatePixelStrideMaterialID ) \
     NRD_CONSTANT( float, gHistoryThreshold ) \
     NRD_CONSTANT( float, gViewZScale ) \
     NRD_CONSTANT( float, gMinHitDistanceWeight ) \

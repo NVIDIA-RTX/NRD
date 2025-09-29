@@ -164,6 +164,8 @@ void nrd::InstanceImpl::AddSharedConstants_Relax(const RelaxSettings& settings, 
     consts->gJitterDelta = m_JitterDelta;
     consts->gHistoryFixFrameNum = settings.historyFixFrameNum + 1.0f;
     consts->gHistoryFixBasePixelStride = (float)settings.historyFixBasePixelStride;
+    consts->gHistoryFixAlternatePixelStride = (float)settings.historyFixAlternatePixelStride;
+    consts->gHistoryFixAlternatePixelStrideMaterialID = m_CommonSettings.historyFixAlternatePixelStrideMaterialID;
     consts->gHistoryThreshold = (float)settings.spatialVarianceEstimationHistoryThreshold;
     consts->gViewZScale = m_CommonSettings.viewZScale;
     consts->gMinHitDistanceWeight = settings.minHitDistanceWeight * 2.0f; // TODO: 2 to match REBLUR units and make Pre passes identical (matches old default)

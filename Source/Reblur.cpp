@@ -368,7 +368,9 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gRoughnessFraction = settings.roughnessFraction;
     consts->gResponsiveAccumulationRoughnessThreshold = settings.responsiveAccumulationRoughnessThreshold;
     consts->gHistoryFixFrameNum = (float)settings.historyFixFrameNum;
-    consts->gHistoryFixBasePixelStride = (float)settings.historyFixBasePixelStride * 0.5f; // to match RELAX
+    consts->gHistoryFixBasePixelStride = (float)settings.historyFixBasePixelStride;
+    consts->gHistoryFixAlternatePixelStride = (float)settings.historyFixAlternatePixelStride;
+    consts->gHistoryFixAlternatePixelStrideMaterialID = m_CommonSettings.historyFixAlternatePixelStrideMaterialID;
     consts->gMinRectDimMulUnproject = (float)min(rectW, rectH) * unproject;
     consts->gUsePrepassNotOnlyForSpecularMotionEstimation = settings.usePrepassOnlyForSpecularMotionEstimation ? 0.0f : 1.0f;
     consts->gSplitScreen = m_CommonSettings.splitScreen;

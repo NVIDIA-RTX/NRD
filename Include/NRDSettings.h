@@ -153,6 +153,10 @@ namespace nrd
         // (Optional) (>=0) - marks hair (grass) geometry to enable "under-the-hood" tweaks (requires "NormalEncoding::R10_G10_B10_A2_UNORM")
         float strandMaterialID = 999.0f;
 
+        // (Optional) (>=0) - marks pixels using "historyFixAlternatePixelStride" instead of "historyFixBasePixelStride". This is the last resort
+        // setting improving behavior on moving objects (like protagonist's weapon) constantly getting a history reset for some reasons
+        float historyFixAlternatePixelStrideMaterialID = 999.0f;
+
         // (units > 0) - defines how "disocclusionThreshold" blends into "disocclusionThresholdAlternate" = pixelSize / (pixelSize + strandThickness)
         float strandThickness = 80e-6f;
 
@@ -248,8 +252,9 @@ namespace nrd
         // [0; 3] - number of reconstructed frames after history reset (less than "maxFastAccumulatedFrameNum")
         uint32_t historyFixFrameNum = 3;
 
-        // (> 0) - base stride between pixels in 5x5 history reconstruction kernel (gets reduced over time)
+        // (> 0) - base stride between pixels in 5x5 history reconstruction kernel
         uint32_t historyFixBasePixelStride = 14;
+        uint32_t historyFixAlternatePixelStride = 14; // see "historyFixAlternatePixelStrideMaterialID"
 
         // (pixels) - pre-accumulation spatial reuse pass blur radius (0 = disabled, must be used in case of badly defined signals and probabilistic sampling)
         float diffusePrepassBlurRadius = 30.0f;
@@ -350,8 +355,9 @@ namespace nrd
         // [0; 3] - number of reconstructed frames after history reset (less than "maxFastAccumulatedFrameNum")
         uint32_t historyFixFrameNum = 3;
 
-        // (> 0) - base stride between pixels in 5x5 history reconstruction kernel (gets reduced over time)
+        // (> 0) - base stride between pixels in 5x5 history reconstruction kernel
         uint32_t historyFixBasePixelStride = 14;
+        uint32_t historyFixAlternatePixelStride = 14; // see "historyFixAlternatePixelStrideMaterialID"
 
         // (> 0) - normal edge stopper for history reconstruction pass
         float historyFixEdgeStoppingNormalPower = 8.0f;

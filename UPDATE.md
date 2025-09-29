@@ -253,12 +253,12 @@ A single NRD instance can now include any combination of denoisers, including re
 ## To v4.9
 
 - *API*:
-  - exposed `ReblurSettings::hitDistanceStabilizationStrength` allowing to control the responsiviness of ambient and specular occlusion in the temporal stabilization pass and reach parity with `REBLUR_OCCLUSION` if set to `0`
   - `MemoryAllocatorInterface` renamed to `AllocationCallbacks`
   - exposed `CommonSettings::strandMaterialID`, enabling "under-the-hood" tweaks for hair (and grass) denoising
   - exposed `CommonSettings::strandThickness`, defining how NRD adapts to sub-pixel thick details. It works in conjunction with `CommonSettings::disocclusionThresholdAlternate` for `CommonSettings::strandMaterialID` without a need to provide `IN_DISOCCLUSION_THRESHOLD_MIX` texture
 - *REBLUR*:
   - changed usage of `maxBlurRadius` and its default value, old values should be scaled by `2`
+  - exposed `hitDistanceStabilizationStrength` allowing to control the responsiviness of ambient and specular occlusion in the temporal stabilization pass and reach parity with `REBLUR_OCCLUSION` if set to `0`
 
 ## To v4.10
 
@@ -301,7 +301,7 @@ A single NRD instance can now include any combination of denoisers, including re
 - *REBLUR*:
   - Disabled temporal stabilization for `hitT`:
     - removed `ReblurAntilagSettings::hitDistanceSigmaScale` and `ReblurAntilagSettings::hitDistanceSensitivity`
-    - removed `ReblurSettings::maxStabilizedFrameNumForHitDistance`
+    - removed `maxStabilizedFrameNumForHitDistance`
   - output textures are not used as history buffers on the next frame anymore
 
 ## To v4.15
@@ -312,9 +312,12 @@ A single NRD instance can now include any combination of denoisers, including re
   - separated base registers in `InstanceDesc` into constant buffer, samplers and resources
   - reworked `DescriptorPoolDesc`
   - reworked `GetLibraryDesc` and `GetInstanceDesc` to return a pointer instead of a reference to be conformant with "C" linkage
+  - added `CommonSettings::historyFixAlternatePixelStrideMaterialID` allowing to use `historyFixAlternatePixelStride` for a specific material ID
 - *NRD INTEGRATION*:
   - expects unique register spaces
 - *REBLUR*:
-  - added `ReblurSettings::returnHistoryLengthInsteadOfOcclusion`
+  - added `returnHistoryLengthInsteadOfOcclusion`
+  - added `historyFixAlternatePixelStride`
 - *RELAX*:
   - diffuse history length is returned in ".w"
+  - added `historyFixAlternatePixelStride`

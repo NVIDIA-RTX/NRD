@@ -78,6 +78,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float2 frameNumAvgNorm = saturate( frameNum * invHistoryFixFrameNum );
 
     // Use smaller strides if neighborhood pixels have longer history to minimize chances of ruining contact details
+    float2 baseStride = materialID == gHistoryFixAlternatePixelStrideMaterialID ? gHistoryFixAlternatePixelStride : gHistoryFixBasePixelStride;
+    baseStride /= 1.0 + 1.0; // to match RELAX, where "frameNum" after "TemporalAccumulation" is "1", not "0"
+
     float2 stride = 1.0;
 
     [unroll]
@@ -95,7 +98,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
     }
 
-    stride = lerp( 1.0, gHistoryFixBasePixelStride, stride );
+    stride = lerp( 1.0, baseStride, stride );
+    stride *= 2.0 / REBLUR_HISTORY_FIX_FILTER_RADIUS; // preserve blur radius in pixels ( default blur radius is 2 taps )
     stride *= float2( frameNum < gHistoryFixFrameNum );
 
     // Diffuse
@@ -106,22 +110,21 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 diffSh = gIn_DiffSh[ pixelPos ];
         #endif
 
-        // Stride between taps
-        float diffStride = stride.x;
+        float diffNonLinearAccumSpeed = 1.0 / ( 1.0 + frameNum.x );
 
         float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, 1.0 );
         float hitDist = ExtractHitDist( diff ) * hitDistScale;
         float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
-        diffStride *= lerp( Math::Sqrt01( hitDistFactor ), 1.0, 1.0 / ( 1.0 + frameNum.x ) );
 
+        // Stride between taps
+        float diffStride = stride.x;
+        diffStride *= lerp( 0.25 + 0.75 * Math::Sqrt01( hitDistFactor ), 1.0, diffNonLinearAccumSpeed ); // "hitDistFactor" is very noisy and breaks nice patterns
         diffStride = round( diffStride );
 
         // History reconstruction
         if( diffStride != 0.0 )
         {
             // Parameters
-            float diffNonLinearAccumSpeed = 1.0 / ( 1.0 + frameNum.x );
-
             float normalWeightParam = GetNormalWeightParam( diffNonLinearAccumSpeed, gLobeAngleFraction );
             float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv, diffNonLinearAccumSpeed );
 
@@ -130,28 +133,23 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 sumd = 1.0 + 1.0 / ( 1.0 + gMaxAccumulatedFrameNum ) - diffNonLinearAccumSpeed;
             #endif
 
-            // TODO: non-standard use of "hitDistFactor" as "hitDist", but works well
-            float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, 1.0 );
-            float hitDist = ExtractHitDist( diff ) * hitDistScale;
-            float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
-
             diff *= sumd;
             #if( NRD_MODE == SH )
                 diffSh *= sumd;
             #endif
 
             [unroll]
-            for( j = -2; j <= 2; j++ )
+            for( j = -REBLUR_HISTORY_FIX_FILTER_RADIUS; j <= REBLUR_HISTORY_FIX_FILTER_RADIUS; j++ )
             {
                 [unroll]
-                for( i = -2; i <= 2; i++ )
+                for( i = -REBLUR_HISTORY_FIX_FILTER_RADIUS; i <= REBLUR_HISTORY_FIX_FILTER_RADIUS; i++ )
                 {
                     // Skip center
                     if( i == 0 && j == 0 )
                         continue;
 
                     // Skip corners
-                    if( abs( i ) + abs( j ) == 4 )
+                    if( abs( i ) + abs( j ) == REBLUR_HISTORY_FIX_FILTER_RADIUS * 2 )
                         continue;
 
                     // Sample uv ( already at the pixel center )
@@ -175,7 +173,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
                     w *= CompareMaterials( materialID, materialIDs, gDiffMinMaterial );
                     w *= ComputeExponentialWeight( angle, normalWeightParam, 0.0 );
-                    w *= GetGaussianWeight( length( float2( i, j ) / 2.0 ) );
+                    w *= GetGaussianWeight( length( float2( i, j ) / REBLUR_HISTORY_FIX_FILTER_RADIUS ) );
 
                     #if( REBLUR_PERFORMANCE_MODE == 0 )
                         w *= 1.0 + UnpackData1( gIn_Data1[ pos ] ).x;
@@ -307,32 +305,27 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 specSh = gIn_SpecSh[ pixelPos ];
         #endif
 
-        // Stride between taps
-        float smc = GetSpecMagicCurve( roughness );
-        float specStride = stride.y;
+        float specNonLinearAccumSpeed = 1.0 / ( 1.0 + frameNum.y );
 
         float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, roughness );
         float hitDist = ExtractHitDist( spec ) * hitDistScale;
         float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
-        specStride *= lerp( Math::Sqrt01( hitDistFactor ), 1.0, 1.0 / ( 1.0 + frameNum.y ) );
-        specStride *= lerp( 0.25, 1.0, smc ); // hand tuned
 
+        float smc = GetSpecMagicCurve( roughness );
+
+        // Stride between taps
+        float specStride = stride.y;
+        specStride *= lerp( 0.25 + 0.75 * Math::Sqrt01( hitDistFactor ), 1.0, specNonLinearAccumSpeed ); // "hitDistFactor" is very noisy and breaks nice patterns
+        specStride *= lerp( 0.25, 1.0, smc ); // hand tuned
         specStride = round( specStride );
 
         // History reconstruction
         if( specStride != 0 )
         {
             // Parameters
-            float specNonLinearAccumSpeed = 1.0 / ( 1.0 + frameNum.y );
-
             float normalWeightParam = GetNormalWeightParam( specNonLinearAccumSpeed, gLobeAngleFraction, roughness );
             float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv, specNonLinearAccumSpeed );
             float2 relaxedRoughnessWeightParams = GetRelaxedRoughnessWeightParams( roughness * roughness, sqrt( gRoughnessFraction ) );
-
-            // TODO: non-standard use of "hitDistFactor" as "hitDist", but works well
-            float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, roughness );
-            float hitDist = ExtractHitDist( spec ) * hitDistScale;
-            float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
 
             float sums = 1.0 + frameNum.y;
             #if( REBLUR_PERFORMANCE_MODE == 1 )
@@ -345,17 +338,17 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             #endif
 
             [unroll]
-            for( j = -2; j <= 2; j++ )
+            for( j = -REBLUR_HISTORY_FIX_FILTER_RADIUS; j <= REBLUR_HISTORY_FIX_FILTER_RADIUS; j++ )
             {
                 [unroll]
-                for( i = -2; i <= 2; i++ )
+                for( i = -REBLUR_HISTORY_FIX_FILTER_RADIUS; i <= REBLUR_HISTORY_FIX_FILTER_RADIUS; i++ )
                 {
                     // Skip center
                     if( i == 0 && j == 0 )
                         continue;
 
                     // Skip corners
-                    if( abs( i ) + abs( j ) == 4 )
+                    if( abs( i ) + abs( j ) == REBLUR_HISTORY_FIX_FILTER_RADIUS * 2 )
                         continue;
 
                     // Sample uv ( already at the pixel center )
@@ -380,7 +373,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     w *= CompareMaterials( materialID, materialIDs, gSpecMinMaterial );
                     w *= ComputeExponentialWeight( angle, normalWeightParam, 0.0 );
                     w *= ComputeExponentialWeight( Ns.w * Ns.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
-                    w *= GetGaussianWeight( length( float2( i, j ) / 2.0 ) );
+                    w *= GetGaussianWeight( length( float2( i, j ) / REBLUR_HISTORY_FIX_FILTER_RADIUS ) );
 
                     #if( REBLUR_PERFORMANCE_MODE == 0 )
                         w *= 1.0 + UnpackData1( gIn_Data1[ pos ] ).y;
