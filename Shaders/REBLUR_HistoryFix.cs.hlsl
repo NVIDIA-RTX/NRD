@@ -114,13 +114,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
         diffStride *= lerp( Math::Sqrt01( hitDistFactor ), 1.0, 1.0 / ( 1.0 + frameNum.x ) );
 
-        diffStride = floor( diffStride );
+        diffStride = round( diffStride );
 
         // History reconstruction
         if( diffStride != 0.0 )
         {
-            int diffStridei = int( diffStride + 0.5 );
-
             // Parameters
             float diffNonLinearAccumSpeed = 1.0 / ( 1.0 + frameNum.x );
 
@@ -156,10 +154,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     if( abs( i ) + abs( j ) == 4 )
                         continue;
 
-                    // Sample uv
+                    // Sample uv ( already at the pixel center )
                     float2 uv = pixelUv + float2( i, j ) * diffStride * gRectSizeInv;
 
-                    int2 pos = pixelPos + int2( i, j ) * diffStridei;
+                    int2 pos = uv * gRectSize;
                     pos = clamp( pos, 0, gRectSizeMinusOne );
 
                     // Fetch data
@@ -319,13 +317,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         specStride *= lerp( Math::Sqrt01( hitDistFactor ), 1.0, 1.0 / ( 1.0 + frameNum.y ) );
         specStride *= lerp( 0.25, 1.0, smc ); // hand tuned
 
-        specStride = floor( specStride );
+        specStride = round( specStride );
 
         // History reconstruction
         if( specStride != 0 )
         {
-            int specStridei = int( specStride + 0.5 );
-
             // Parameters
             float specNonLinearAccumSpeed = 1.0 / ( 1.0 + frameNum.y );
 
@@ -362,10 +358,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     if( abs( i ) + abs( j ) == 4 )
                         continue;
 
-                    // Sample uv
+                    // Sample uv ( already at the pixel center )
                     float2 uv = pixelUv + float2( i, j ) * specStride * gRectSizeInv;
 
-                    int2 pos = pixelPos + int2( i, j ) * specStridei;
+                    int2 pos = uv * gRectSize;
                     pos = clamp( pos, 0, gRectSizeMinusOne );
 
                     // Fetch data
