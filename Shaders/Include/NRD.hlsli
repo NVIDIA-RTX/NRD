@@ -78,7 +78,7 @@ NOISY INPUTS:
 // ( Optional ) Bindings
 #define NRD_CONSTANT_BUFFER_REGISTER_INDEX                                              0
 
-// ( Optional ) Spaces (NRD integration expects unique values)
+// ( Optional ) Spaces ( NRD integration expects unique values )
 #define NRD_RESOURCES_SPACE_INDEX                                                       0 // SRVs and UAVs
 #define NRD_CONSTANT_BUFFER_AND_SAMPLERS_SPACE_INDEX                                    1 // constant buffer and samplers
 
