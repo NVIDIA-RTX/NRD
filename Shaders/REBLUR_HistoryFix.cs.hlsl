@@ -78,7 +78,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float2 frameNumAvgNorm = saturate( frameNum * invHistoryFixFrameNum );
 
     // Use smaller strides if neighborhood pixels have longer history to minimize chances of ruining contact details
-    float2 baseStride = materialID == gHistoryFixAlternatePixelStrideMaterialID ? gHistoryFixAlternatePixelStride : gHistoryFixBasePixelStride;
+    float baseStride = materialID == gHistoryFixAlternatePixelStrideMaterialID ? gHistoryFixAlternatePixelStride : gHistoryFixBasePixelStride;
     baseStride /= 1.0 + 1.0; // to match RELAX, where "frameNum" after "TemporalAccumulation" is "1", not "0"
 
     float2 stride = 1.0;
@@ -186,7 +186,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistParams, 1.0 );
                     float hsFactor = GetHitDistFactor( hs, frustumSize );
                     float d1 = hsFactor - hitDistFactor;
-                    w *= saturate( exp( -d1 * d1 / ( 0.75 * diffNonLinearAccumSpeed ) ) );
+                    w *= saturate( exp( -d1 * d1 / ( 0.4 * diffNonLinearAccumSpeed ) ) );
 
                     // Accumulate
                     sumd += w;
@@ -386,7 +386,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistParams, Ns.w );
                     float hsFactor = GetHitDistFactor( hs, frustumSize );
                     float d1 = hitDistFactor - hsFactor;
-                    w *= saturate( exp( -d1 * d1 / ( 0.75 * specNonLinearAccumSpeed ) ) );
+                    w *= saturate( exp( -d1 * d1 / ( 0.4 * specNonLinearAccumSpeed ) ) );
 
                     // Special case for low roughness ( hit distances work as a non-noisy guide )
                     float d2 = abs( hitDist - hs ) / ( max( hitDist, hs ) + 0.001 );
