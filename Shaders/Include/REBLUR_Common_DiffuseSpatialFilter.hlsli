@@ -107,6 +107,10 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             float2 uv = GetKernelSampleCoordinates( gViewToClip, offset, Xv, TvBv[ 0 ], TvBv[ 1 ], rotator );
         #endif
 
+            // Apply "mirror once" to not waste taps going outside of the screen
+            float2 uv01 = saturate( uv );
+            uv = uv01 - sign( uv - uv01 ) * frac( uv );
+
             // Snap to the pixel center!
             uv = floor( uv * gRectSize ) + 0.5;
 
@@ -115,7 +119,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             uv = ApplyCheckerboardShift( uv, gDiffCheckerboard, n, gFrameIndex );
         #endif
 
-            // Texture coordinates
+            // TODO: "pos" or "uv"?
             uv *= gRectSizeInv;
 
             float2 uvScaled = ClampUvToViewport( uv );
@@ -140,7 +144,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             float angle = Math::AcosApprox( dot( N, Ns.xyz ) );
             float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
 
-            float w = IsInScreenNearest( uv );
+            float w = IsInScreenNearest( uv ); // needed in checkerboard mode, "just in case" otherwise
             w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
             w *= CompareMaterials( materialID, materialIDs, gDiffMinMaterial );
             w *= ComputeWeight( angle, normalWeightParam, 0.0 );
@@ -149,7 +153,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             s = Denanify( w, s );
 
             w *= lerp( minHitDistWeight, 1.0, ComputeExponentialWeight( ExtractHitDist( s ), hitDistanceWeightParams.x, hitDistanceWeightParams.y ) );
-            w *= GetGaussianWeight( offset.z );
+            w *= GetGaussianWeight( length( ( uv - pixelUv ) * gRectSize ) / ( blurRadius + 0.5 ) );
 
             // Accumulate
             sum += w;

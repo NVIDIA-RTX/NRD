@@ -152,9 +152,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     if( abs( i ) + abs( j ) == REBLUR_HISTORY_FIX_FILTER_RADIUS * 2 )
                         continue;
 
-                    // Sample uv ( already at the pixel center )
+                    // Sample uv ( at the pixel center )
                     float2 uv = pixelUv + float2( i, j ) * diffStride * gRectSizeInv;
 
+                    // Apply "mirror once" to not waste taps going outside of the screen
+                    float2 uv01 = saturate( uv );
+                    uv = uv01 - sign( uv - uv01 ) * frac( uv );
+
+                    // TODO: "pos" or "uv"?
                     int2 pos = uv * gRectSize;
                     pos = clamp( pos, 0, gRectSizeMinusOne );
 
@@ -169,11 +174,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     float angle = Math::AcosApprox( dot( Ns.xyz, N ) );
                     float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
 
-                    float w = IsInScreenNearest( uv );
+                    float w = IsInScreenNearest( uv ); // just in case
                     w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
                     w *= CompareMaterials( materialID, materialIDs, gDiffMinMaterial );
                     w *= ComputeExponentialWeight( angle, normalWeightParam, 0.0 );
-                    w *= GetGaussianWeight( length( float2( i, j ) / REBLUR_HISTORY_FIX_FILTER_RADIUS ) );
+                    // gaussian weight is not needed
 
                     #if( REBLUR_PERFORMANCE_MODE == 0 )
                         w *= 1.0 + UnpackData1( gIn_Data1[ pos ] ).x;
@@ -351,9 +356,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     if( abs( i ) + abs( j ) == REBLUR_HISTORY_FIX_FILTER_RADIUS * 2 )
                         continue;
 
-                    // Sample uv ( already at the pixel center )
+                    // Sample uv ( at the pixel center )
                     float2 uv = pixelUv + float2( i, j ) * specStride * gRectSizeInv;
 
+                    // Apply "mirror once" to not waste taps going outside of the screen
+                    float2 uv01 = saturate( uv );
+                    uv = uv01 - sign( uv - uv01 ) * frac( uv );
+
+                    // TODO: "pos" or "uv"?
                     int2 pos = uv * gRectSize;
                     pos = clamp( pos, 0, gRectSizeMinusOne );
 
@@ -368,12 +378,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
 
                     // Weight
-                    float w = IsInScreenNearest( uv );
+                    float w = IsInScreenNearest( uv ); // just in case
                     w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
                     w *= CompareMaterials( materialID, materialIDs, gSpecMinMaterial );
                     w *= ComputeExponentialWeight( angle, normalWeightParam, 0.0 );
                     w *= ComputeExponentialWeight( Ns.w * Ns.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
-                    w *= GetGaussianWeight( length( float2( i, j ) / REBLUR_HISTORY_FIX_FILTER_RADIUS ) );
+                    // gaussian weight is not needed
 
                     #if( REBLUR_PERFORMANCE_MODE == 0 )
                         w *= 1.0 + UnpackData1( gIn_Data1[ pos ] ).y;
