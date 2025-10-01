@@ -27,9 +27,12 @@ NRD_INPUTS_START
         NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Spec, t, 5 )
         NRD_INPUT( Texture2D<REBLUR_FAST_TYPE>, gIn_DiffFast, t, 6 )
         NRD_INPUT( Texture2D<REBLUR_FAST_TYPE>, gIn_SpecFast, t, 7 )
+        #if( NRD_MODE != OCCLUSION )
+            NRD_INPUT( Texture2D<float>, gIn_SpecHitDistForTracking, t, 8 )
+        #endif
         #if( NRD_MODE == SH )
-            NRD_INPUT( Texture2D<REBLUR_SH_TYPE>, gIn_DiffSh, t, 8 )
-            NRD_INPUT( Texture2D<REBLUR_SH_TYPE>, gIn_SpecSh, t, 9 )
+            NRD_INPUT( Texture2D<REBLUR_SH_TYPE>, gIn_DiffSh, t, 9 )
+            NRD_INPUT( Texture2D<REBLUR_SH_TYPE>, gIn_SpecSh, t, 10 )
         #endif
     #elif( NRD_DIFF )
         NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Diff, t, 4 )
@@ -40,8 +43,11 @@ NRD_INPUTS_START
     #else
         NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Spec, t, 4 )
         NRD_INPUT( Texture2D<REBLUR_FAST_TYPE>, gIn_SpecFast, t, 5 )
+        #if( NRD_MODE != OCCLUSION )
+            NRD_INPUT( Texture2D<float>, gIn_SpecHitDistForTracking, t, 6 )
+        #endif
         #if( NRD_MODE == SH )
-            NRD_INPUT( Texture2D<REBLUR_SH_TYPE>, gIn_SpecSh, t, 6 )
+            NRD_INPUT( Texture2D<REBLUR_SH_TYPE>, gIn_SpecSh, t, 7 )
         #endif
     #endif
 NRD_INPUTS_END

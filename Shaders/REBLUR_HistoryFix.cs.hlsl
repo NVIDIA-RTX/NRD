@@ -127,6 +127,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // Parameters
             float normalWeightParam = GetNormalWeightParam( diffNonLinearAccumSpeed, gLobeAngleFraction );
             float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv, diffNonLinearAccumSpeed );
+            float hitDistWeightNorm = 1.0 / ( hitDistScale * hitDistScale * 0.5 * diffNonLinearAccumSpeed );
 
             float sumd = 1.0 + frameNum.x;
             #if( REBLUR_PERFORMANCE_MODE == 1 )
@@ -159,9 +160,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     float2 uv01 = saturate( uv );
                     uv = uv01 - sign( uv - uv01 ) * frac( uv );
 
-                    // TODO: "pos" or "uv"?
+                    // "uv" to "pos"
                     int2 pos = uv * gRectSize;
-                    pos = clamp( pos, 0, gRectSizeMinusOne );
+                    pos = min( pos, gRectSizeMinusOne ); // handle almost impossible "uv == 1.0" case
 
                     // Fetch data
                     float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
@@ -174,8 +175,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     float angle = Math::AcosApprox( dot( Ns.xyz, N ) );
                     float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
 
-                    float w = IsInScreenNearest( uv ); // just in case
-                    w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
+                    float w = ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
                     w *= CompareMaterials( materialID, materialIDs, gDiffMinMaterial );
                     w *= ComputeExponentialWeight( angle, normalWeightParam, 0.0 );
                     // gaussian weight is not needed
@@ -189,9 +189,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                     // A-trous weight
                     float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistParams, 1.0 );
-                    float hsFactor = GetHitDistFactor( hs, frustumSize );
-                    float d1 = hsFactor - hitDistFactor;
-                    w *= saturate( exp( -d1 * d1 / ( 0.4 * diffNonLinearAccumSpeed ) ) );
+                    float d1 = hs - hitDist;
+                    w *= exp( -d1 * d1 * hitDistWeightNorm );
 
                     // Accumulate
                     sumd += w;
@@ -310,18 +309,21 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 specSh = gIn_SpecSh[ pixelPos ];
         #endif
 
+        float smc = GetSpecMagicCurve( roughness );
         float specNonLinearAccumSpeed = 1.0 / ( 1.0 + frameNum.y );
 
         float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, roughness );
         float hitDist = ExtractHitDist( spec ) * hitDistScale;
+        #if( NRD_MODE != OCCLUSION )
+            // "gIn_SpecHitDistForTracking" is better for low roughness, but doesn't suit for high roughness ( because it's min )
+            hitDist = lerp( gIn_SpecHitDistForTracking[ pixelPos ], hitDist, smc );
+        #endif
         float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
-
-        float smc = GetSpecMagicCurve( roughness );
 
         // Stride between taps
         float specStride = stride.y;
         specStride *= lerp( 0.25 + 0.75 * Math::Sqrt01( hitDistFactor ), 1.0, specNonLinearAccumSpeed ); // "hitDistFactor" is very noisy and breaks nice patterns
-        specStride *= lerp( 0.25, 1.0, smc ); // hand tuned
+        specStride *= lerp( 0.25, 1.0, smc ); // hand tuned // TODO: use "lobeRadius"?
         specStride = round( specStride );
 
         // History reconstruction
@@ -330,6 +332,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // Parameters
             float normalWeightParam = GetNormalWeightParam( specNonLinearAccumSpeed, gLobeAngleFraction, roughness );
             float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv, specNonLinearAccumSpeed );
+            float hitDistWeightNorm = 1.0 / ( hitDistScale * hitDistScale * 0.5 * specNonLinearAccumSpeed );
             float2 relaxedRoughnessWeightParams = GetRelaxedRoughnessWeightParams( roughness * roughness, sqrt( gRoughnessFraction ) );
 
             float sums = 1.0 + frameNum.y;
@@ -363,23 +366,22 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     float2 uv01 = saturate( uv );
                     uv = uv01 - sign( uv - uv01 ) * frac( uv );
 
-                    // TODO: "pos" or "uv"?
+                    // "uv" to "pos"
                     int2 pos = uv * gRectSize;
-                    pos = clamp( pos, 0, gRectSizeMinusOne );
+                    pos = min( pos, gRectSizeMinusOne ); // handle almost impossible "uv == 1.0" case
 
                     // Fetch data
                     float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
+                    float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
 
                     float materialIDs;
                     float4 Ns = gIn_Normal_Roughness[ WithRectOrigin( pos ) ];
                     Ns = NRD_FrontEnd_UnpackNormalAndRoughness( Ns, materialIDs );
 
-                    float angle = Math::AcosApprox( dot( Ns.xyz, N ) );
-                    float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
-
                     // Weight
-                    float w = IsInScreenNearest( uv ); // just in case
-                    w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
+                    float angle = Math::AcosApprox( dot( Ns.xyz, N ) );
+
+                    float w = ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
                     w *= CompareMaterials( materialID, materialIDs, gSpecMinMaterial );
                     w *= ComputeExponentialWeight( angle, normalWeightParam, 0.0 );
                     w *= ComputeExponentialWeight( Ns.w * Ns.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
@@ -394,9 +396,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                     // A-trous weight
                     float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistParams, Ns.w );
-                    float hsFactor = GetHitDistFactor( hs, frustumSize );
-                    float d1 = hitDistFactor - hsFactor;
-                    w *= saturate( exp( -d1 * d1 / ( 0.4 * specNonLinearAccumSpeed ) ) );
+                    float d1 = hs - hitDist;
+                    w *= exp( -d1 * d1 * hitDistWeightNorm );
 
                     // Special case for low roughness ( hit distances work as a non-noisy guide )
                     float d2 = abs( hitDist - hs ) / ( max( hitDist, hs ) + 0.001 );

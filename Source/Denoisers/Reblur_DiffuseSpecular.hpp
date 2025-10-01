@@ -187,6 +187,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecular(DenoiserData& denoiserData) {
         PushInput(SPEC_TEMP2);
         PushInput(AsUint(Transient::DIFF_FAST_HISTORY));
         PushInput(AsUint(Transient::SPEC_FAST_HISTORY));
+        PushInput(AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PONG), AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PING));
 
         // Outputs
         PushOutput(DIFF_TEMP1);
