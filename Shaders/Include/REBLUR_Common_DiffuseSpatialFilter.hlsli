@@ -109,58 +109,59 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
             // Apply "mirror once" to not waste taps going outside of the screen
             float2 uv01 = saturate( uv );
-            uv = uv01 - sign( uv - uv01 ) * frac( uv );
+            float w = GetGaussianWeight( offset.z );
+            if( any( uv != uv01 ) ) // TODO: this saves a lot of perf! but why?
+            {
+                uv = uv01 - sign( uv - uv01 ) * frac( uv );
+                w = 1.0; // offset.z is not valid after mirroring
+            }
 
-            // Snap to the pixel center!
-            uv = floor( uv * gRectSize ) + 0.5;
+            // "uv" to "pos"
+            int2 pos = int2( uv * gRectSize );
+            pos = min( pos, gRectSizeMinusOne ); // handle almost impossible "uv == 1.0" case
 
-            // Apply checkerboard shift
-        #if( NRD_SUPPORTS_CHECKERBOARD == 1 && REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
-            uv = ApplyCheckerboardShift( uv, gDiffCheckerboard, n, gFrameIndex );
-        #endif
-
-            // TODO: "pos" or "uv"?
-            uv *= gRectSizeInv;
-
-            float2 uvScaled = ClampUvToViewport( uv );
-            float2 checkerboardUvScaled = uvScaled;
+            // Move to a "valid" pixel in checkerboard mode
+            int checkerboardX = pos.x;
         #if( NRD_SUPPORTS_CHECKERBOARD == 1 && REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
             if( gDiffCheckerboard != 2 )
-                checkerboardUvScaled.x *= 0.5;
+            {
+                int shift = ( ( n & 0x1 ) == 0 ) ? -1 : 1;
+                pos.x += Sequence::CheckerBoard( pos, gFrameIndex ) != gDiffCheckerboard ? shift : 0;
+                checkerboardX = pos.x >> 1;
+                w = pos.x < 0.0 || pos.x > gRectSizeMinusOne.x ? 0.0 : w; // "pos.x" clamping can make the sample "invalid"
+            }
         #endif
 
             // Fetch data
         #if( REBLUR_SPATIAL_MODE == REBLUR_POST_BLUR )
-            float zs = UnpackViewZ( gIn_ViewZ.SampleLevel( gNearestClamp, uvScaled, 0 ) );
+            float zs = UnpackViewZ( gIn_ViewZ[ pos ] );
         #else
-            float zs = UnpackViewZ( gIn_ViewZ.SampleLevel( gNearestClamp, WithRectOffset( uvScaled ), 0 ) );
+            float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
         #endif
+            float3 Xvs = Geometry::ReconstructViewPosition( float2( pos + 0.5 ) * gRectSizeInv, gFrustum, zs, gOrthoMode );
 
             float materialIDs;
-            float4 Ns = gIn_Normal_Roughness.SampleLevel( gNearestClamp, WithRectOffset( uvScaled ), 0 );
+            float4 Ns = gIn_Normal_Roughness[ WithRectOrigin( pos ) ];
             Ns = NRD_FrontEnd_UnpackNormalAndRoughness( Ns, materialIDs );
 
             // Weight
             float angle = Math::AcosApprox( dot( N, Ns.xyz ) );
-            float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
 
-            float w = IsInScreenNearest( uv ); // needed in checkerboard mode, "just in case" otherwise
             w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
             w *= CompareMaterials( materialID, materialIDs, gDiffMinMaterial );
             w *= ComputeWeight( angle, normalWeightParam, 0.0 );
 
-            REBLUR_TYPE s = gIn_Diff.SampleLevel( gNearestClamp, checkerboardUvScaled, 0 );
+            REBLUR_TYPE s = gIn_Diff[ int2( checkerboardX, pos.y ) ];
             s = Denanify( w, s );
 
             w *= lerp( minHitDistWeight, 1.0, ComputeExponentialWeight( ExtractHitDist( s ), hitDistanceWeightParams.x, hitDistanceWeightParams.y ) );
-            w *= GetGaussianWeight( length( ( uv - pixelUv ) * gRectSize ) / ( blurRadius + 0.5 ) );
 
             // Accumulate
             sum += w;
 
             diff += s * w;
             #if( NRD_MODE == SH )
-                float4 sh = gIn_DiffSh.SampleLevel( gNearestClamp, checkerboardUvScaled, 0 );
+                float4 sh = gIn_DiffSh[ int2( checkerboardX, pos.y ) ];
                 sh = Denanify( w, sh );
                 diffSh += sh * w;
             #endif
