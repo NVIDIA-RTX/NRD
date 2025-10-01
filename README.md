@@ -16,7 +16,7 @@ For quick starting see *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* 
 - *SIGMA* - shadow-only denoiser
 
 Performance on RTX 4080 @ 1440p (native resolution, default denoiser settings, `NormalEncoding::R10_G10_B10_A2_UNORM`):
-- `REBLUR_DIFFUSE_SPECULAR` - 2.25 ms (2.00 ms in performance mode, 3.10 ms in `SH` mode)
+- `REBLUR_DIFFUSE_SPECULAR` - 2.25 ms (3.10 ms in `SH` mode, 2.00 ms in performance mode)
 - `RELAX_DIFFUSE_SPECULAR` - 3.00 ms (4.90 ms in `SH` mode)
 - `SIGMA_SHADOW` - 0.40 ms
 - `SIGMA_SHADOW_TRANSLUCENCY` - 0.45 ms
