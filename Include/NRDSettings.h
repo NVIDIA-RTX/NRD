@@ -231,10 +231,22 @@ namespace nrd
         float luminanceSensitivity = 3.0f; // can be 2.0 or even less if signal is good
     };
 
+    struct ResponsiveAccumulationSettings
+    {
+        // [0; 1] - if roughness < roughnessThreshold, temporal accumulation becomes responsive and driven by roughness (useful for animated water)
+        // maxAccumulatedFrameNum *= smoothstep( 0, 1, max( roughness, 1e-3 ) / max( roughnessThreshold, 1e-3 ) )
+        float roughnessThreshold = 0.0f;
+
+        // [0; historyFixFrameNum] - preserves a few frames in history even for 0-roughness
+        // If the signal is clean this value can be reduced to 0 or 1
+        uint32_t minAccumulatedFrameNum = 3;
+    };
+
     struct ReblurSettings
     {
         HitDistanceParameters hitDistanceParameters = {};
         ReblurAntilagSettings antilagSettings = {};
+        ResponsiveAccumulationSettings responsiveAccumulationSettings = {};
 
         // [0; REBLUR_MAX_HISTORY_FRAME_NUM] - maximum number of linearly accumulated frames
         uint32_t maxAccumulatedFrameNum = 30;
@@ -274,9 +286,6 @@ namespace nrd
 
         // (normalized %) - base fraction of center roughness used to drive roughness based rejection
         float roughnessFraction = 0.15f;
-
-        // [0; 1] - if roughness < this, temporal accumulation becomes responsive and driven by roughness (useful for animated water)
-        float responsiveAccumulationRoughnessThreshold = 0.0f;
 
         // (normalized %) - represents maximum allowed deviation from the local tangent plane
         float planeDistanceSensitivity = 0.02f;

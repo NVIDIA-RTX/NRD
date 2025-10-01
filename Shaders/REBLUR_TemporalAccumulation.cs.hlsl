@@ -657,7 +657,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             #endif
         );
 
-        // Surface motion ( test 9, 9e )
+        // Surface history confidence ( test 9, 9e )
         // IMPORTANT: needs to be responsive, because "vmb" fails on bumpy surfaces for the following reasons:
         //  - normal and prev-prev tests fail
         //  - curvature is so high that "vmb" regresses to "smb" and starts to lag
@@ -692,26 +692,20 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             f.y = dot( N, vmbN );
             f = lerp( smc, 1.0, responsiveFactor ) * Math::Pow01( f, lerp( 32.0, 1.0, smc ) * ( 1.0 - responsiveFactor ) );
 
-            maxResponsiveFrameNum = max( gMaxAccumulatedFrameNum * f, gHistoryFixFrameNum );
+            maxResponsiveFrameNum *= f;
+            maxResponsiveFrameNum = max( maxResponsiveFrameNum, gResponsiveAccumulationMinAccumulatedFrameNum );
         }
 
-        // Surface motion: max allowed frames
-        float smbMaxFrameNum = gMaxAccumulatedFrameNum;
-        smbMaxFrameNum *= surfaceHistoryConfidence;
-        smbMaxFrameNum = min( smbMaxFrameNum, maxResponsiveFrameNum.x );
-
-        // Ensure that HistoryFix pass doesn't pop up without a disocclusion in some critical cases
-        float smbBoostedMaxFrameNum = max( smbMaxFrameNum, gHistoryFixFrameNum * ( 1.0 - virtualHistoryConfidenceForSmbRelaxation ) );
-        float smbSpecAccumSpeedBoosted = min( smbSpecAccumSpeed, smbBoostedMaxFrameNum );
-
-        // Virtual motion: max allowed frames
-        float vmbMaxFrameNum = gMaxAccumulatedFrameNum;
-        vmbMaxFrameNum *= virtualHistoryConfidence; // previously was just "virtualHistoryParallaxBasedConfidence * virtualHistoryNormalBasedConfidence"
-        vmbMaxFrameNum = min( vmbMaxFrameNum, maxResponsiveFrameNum.y );
-
         // Limit number of accumulated frames
-        smbSpecAccumSpeed = min( smbSpecAccumSpeed, smbMaxFrameNum );
-        vmbSpecAccumSpeed = min( vmbSpecAccumSpeed, vmbMaxFrameNum );
+        float2 maxFrameNum = gMaxAccumulatedFrameNum * float2( surfaceHistoryConfidence, virtualHistoryConfidence );
+
+        float2 maxFrameNum_NoHistoryFix = min( maxFrameNum, max( maxResponsiveFrameNum, gHistoryFixFrameNum ) );
+        float smbSpecAccumSpeed_NoHistoryFix = min( smbSpecAccumSpeed, maxFrameNum_NoHistoryFix.x );
+        float vmbSpecAccumSpeed_NoHistoryFix = min( vmbSpecAccumSpeed, maxFrameNum_NoHistoryFix.y );
+
+        maxFrameNum = min( maxFrameNum, maxResponsiveFrameNum );
+        smbSpecAccumSpeed = min( smbSpecAccumSpeed, maxFrameNum.x );
+        vmbSpecAccumSpeed = min( vmbSpecAccumSpeed, maxFrameNum.y );
 
         // Fallback to "smb" if "vmb" history is short // ***
         float virtualHistoryAmountUnbiased = virtualHistoryAmount;
@@ -779,7 +773,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             specShResult.w = roughnessModified; // IMPORTANT: must not be blurred! this is why "specSh.xyz" is used ~everywhere
         #endif
 
-        float specAccumSpeed = lerp( smbSpecAccumSpeedBoosted, vmbSpecAccumSpeed, virtualHistoryAmount );
+        float specAccumSpeed = lerp( smbSpecAccumSpeed, vmbSpecAccumSpeed, virtualHistoryAmount );
         REBLUR_TYPE specHistory = lerp( smbSpecHistory, vmbSpecHistory, virtualHistoryAmount );
 
         // Firefly suppressor
@@ -821,6 +815,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         gOut_SpecFast[ pixelPos ] = specFastResult;
+
+        // Avoid "HistoryFix" in responsive accumulation
+        specAccumSpeed = lerp( smbSpecAccumSpeed_NoHistoryFix, vmbSpecAccumSpeed_NoHistoryFix, virtualHistoryAmount );
 
         // Debug
         #if( REBLUR_SHOW == REBLUR_SHOW_CURVATURE )

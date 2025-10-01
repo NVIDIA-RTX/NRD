@@ -165,7 +165,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float, gAntiFirefly ) \
     NRD_CONSTANT( float, gLobeAngleFraction ) \
     NRD_CONSTANT( float, gRoughnessFraction ) \
-    NRD_CONSTANT( float, gResponsiveAccumulationRoughnessThreshold ) \
     NRD_CONSTANT( float, gHistoryFixFrameNum ) \
     NRD_CONSTANT( float, gHistoryFixBasePixelStride ) \
     NRD_CONSTANT( float, gHistoryFixAlternatePixelStride ) \
@@ -180,6 +179,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float, gMinHitDistanceWeight ) \
     NRD_CONSTANT( float, gDiffMinMaterial ) \
     NRD_CONSTANT( float, gSpecMinMaterial ) \
+    NRD_CONSTANT( float, gResponsiveAccumulationInvRoughnessThreshold ) \
+    NRD_CONSTANT( uint, gResponsiveAccumulationMinAccumulatedFrameNum ) \
     NRD_CONSTANT( uint, gHasHistoryConfidence ) \
     NRD_CONSTANT( uint, gHasDisocclusionThresholdMix ) \
     NRD_CONSTANT( uint, gDiffCheckerboard ) \

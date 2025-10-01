@@ -124,7 +124,7 @@ float GetNonLinearAccumSpeed( float accumSpeed, float maxAccumSpeed, float confi
 
 float RemapRoughnessToResponsiveFactor( float roughness )
 {
-    float amount = ( roughness + NRD_EPS ) / ( gResponsiveAccumulationRoughnessThreshold + NRD_EPS );
+    float amount = max( roughness, 1e-3 ) * gResponsiveAccumulationInvRoughnessThreshold;
 
     return Math::SmoothStep01( amount );
 }
