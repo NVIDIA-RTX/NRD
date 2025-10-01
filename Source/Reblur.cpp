@@ -366,7 +366,6 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gAntiFirefly = settings.enableAntiFirefly ? 1.0f : 0.0f;
     consts->gLobeAngleFraction = settings.lobeAngleFraction * settings.lobeAngleFraction; // TODO: GetSpecularLobeTanHalfAngle has been fixed, but we want to use existing settings
     consts->gRoughnessFraction = settings.roughnessFraction;
-    consts->gResponsiveAccumulationRoughnessThreshold = settings.responsiveAccumulationRoughnessThreshold;
     consts->gHistoryFixFrameNum = (float)settings.historyFixFrameNum;
     consts->gHistoryFixBasePixelStride = (float)settings.historyFixBasePixelStride;
     consts->gHistoryFixAlternatePixelStride = (float)settings.historyFixAlternatePixelStride;
@@ -381,6 +380,8 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gMinHitDistanceWeight = settings.minHitDistanceWeight;
     consts->gDiffMinMaterial = settings.minMaterialForDiffuse;
     consts->gSpecMinMaterial = settings.minMaterialForSpecular;
+    consts->gResponsiveAccumulationInvRoughnessThreshold = 1.0f / max(settings.responsiveAccumulationSettings.roughnessThreshold, 1e-3f);
+    consts->gResponsiveAccumulationMinAccumulatedFrameNum = settings.responsiveAccumulationSettings.minAccumulatedFrameNum;
     consts->gHasHistoryConfidence = m_CommonSettings.isHistoryConfidenceAvailable;
     consts->gHasDisocclusionThresholdMix = m_CommonSettings.isDisocclusionThresholdMixAvailable;
     consts->gDiffCheckerboard = diffCheckerboard;
