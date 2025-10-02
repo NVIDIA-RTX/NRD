@@ -27,7 +27,7 @@ namespace nrd
     // to clamp to:
     inline uint32_t GetMaxAccumulatedFrameNum(float accumulationTime, float fps)
     {
-        return (uint32_t)(accumulationTime * fps);
+        return (uint32_t)(accumulationTime * fps + 0.5f);
     }
 
     // Sequence is based on "CommonSettings::frameIndex":
@@ -253,7 +253,7 @@ namespace nrd
 
         // [0; maxAccumulatedFrameNum) - maximum number of linearly accumulated frames for fast history
         // Values ">= maxAccumulatedFrameNum" disable fast history
-        // Usually 5x times shorter than the main history
+        // Usually 5x-7x times shorter than the main history (casting more rays, using SHARC or any other signal improving techniques help to accumulate less)
         uint32_t maxFastAccumulatedFrameNum = 6;
 
         // [0; maxAccumulatedFrameNum] - maximum number of linearly accumulated frames for stabilized radiance
@@ -351,14 +351,10 @@ namespace nrd
         uint32_t diffuseMaxAccumulatedFrameNum = 30;
         uint32_t specularMaxAccumulatedFrameNum = 30;
 
-        // [0; diffuseMaxAccumulatedFrameNum) - maximum number of linearly accumulated frames for diffuse fast history
-        // Values ">= diffuseMaxAccumulatedFrameNum" disable diffuse fast history
-        // Usually 5x times shorter than the main history
+        // [0; diffuseMaxAccumulatedFrameNum/specularMaxAccumulatedFrameNum) - maximum number of linearly accumulated frames for fast history
+        // Values ">= diffuseMaxAccumulatedFrameNum/specularMaxAccumulatedFrameNum" disable fast history
+        // Usually 5x-7x times shorter than the main history (casting more rays, using SHARC or any other signal improving techniques help to accumulate less)
         uint32_t diffuseMaxFastAccumulatedFrameNum = 6;
-
-        // [0; specularMaxAccumulatedFrameNum) - maximum number of linearly accumulated frames for specular fast history
-        // Values ">= specularMaxAccumulatedFrameNum" disable specular fast history
-        // Usually 5x times shorter than the main history
         uint32_t specularMaxFastAccumulatedFrameNum = 6;
 
         // [0; 3] - number of reconstructed frames after history reset (less than "maxFastAccumulatedFrameNum")
