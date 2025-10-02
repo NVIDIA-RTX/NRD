@@ -249,6 +249,7 @@ namespace nrd
         ResponsiveAccumulationSettings responsiveAccumulationSettings = {};
 
         // [0; REBLUR_MAX_HISTORY_FRAME_NUM] - maximum number of linearly accumulated frames
+        // Always accumulate in "seconds" not in "frames", use "GetMaxAccumulatedFrameNum" for conversion
         uint32_t maxAccumulatedFrameNum = 30;
 
         // [0; maxAccumulatedFrameNum) - maximum number of linearly accumulated frames for fast history
@@ -348,6 +349,7 @@ namespace nrd
         RelaxAntilagSettings antilagSettings = {};
 
         // [0; RELAX_MAX_HISTORY_FRAME_NUM] - maximum number of linearly accumulated frames
+        // Always accumulate in "seconds" not in "frames", use "GetMaxAccumulatedFrameNum" for conversion
         uint32_t diffuseMaxAccumulatedFrameNum = 30;
         uint32_t specularMaxAccumulatedFrameNum = 30;
 
@@ -453,6 +455,7 @@ namespace nrd
 
         // [0; SIGMA_MAX_HISTORY_FRAME_NUM] - maximum number of linearly accumulated frames
         // 0 - disables the stabilization pass
+        // Always accumulate in "seconds" not in "frames", use "GetMaxAccumulatedFrameNum" for conversion
         uint32_t maxStabilizedFrameNum = 5;
     };
 
