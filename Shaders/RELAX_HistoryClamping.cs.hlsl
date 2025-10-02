@@ -153,8 +153,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     specularNoisyFirstMoment /= sum;
     specularNoisySecondMoment /= sum;
     float3 specularResponsiveSigmaYCoCg = sqrt(max(0.0f, specularResponsiveSecondMomentYCoCg - specularResponsiveFirstMomentYCoCg * specularResponsiveFirstMomentYCoCg));
-    float3 specularResponsiveColorMinYCoCg = specularResponsiveFirstMomentYCoCg - gColorBoxSigmaScale * specularResponsiveSigmaYCoCg;
-    float3 specularResponsiveColorMaxYCoCg = specularResponsiveFirstMomentYCoCg + gColorBoxSigmaScale * specularResponsiveSigmaYCoCg;
+    float3 specularResponsiveColorMinYCoCg = specularResponsiveFirstMomentYCoCg - gFastHistoryClampingSigmaScale * specularResponsiveSigmaYCoCg;
+    float3 specularResponsiveColorMaxYCoCg = specularResponsiveFirstMomentYCoCg + gFastHistoryClampingSigmaScale * specularResponsiveSigmaYCoCg;
 
     // Expanding color box with color of the center pixel to minimize introduced bias
     float4 specularResponsiveCenterYCoCg = s_SpecResponsiveYCoCg[sharedMemoryIndex.y][sharedMemoryIndex.x];
@@ -255,8 +255,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     diffuseNoisyFirstMoment /= sum;
     diffuseNoisySecondMoment /= sum;
     float3 diffuseResponsiveSigmaYCoCg = sqrt(max(0.0f, diffuseResponsiveSecondMomentYCoCg - diffuseResponsiveFirstMomentYCoCg * diffuseResponsiveFirstMomentYCoCg));
-    float3 diffuseResponsiveColorMinYCoCg = diffuseResponsiveFirstMomentYCoCg - gColorBoxSigmaScale * diffuseResponsiveSigmaYCoCg;
-    float3 diffuseResponsiveColorMaxYCoCg = diffuseResponsiveFirstMomentYCoCg + gColorBoxSigmaScale * diffuseResponsiveSigmaYCoCg;
+    float3 diffuseResponsiveColorMinYCoCg = diffuseResponsiveFirstMomentYCoCg - gFastHistoryClampingSigmaScale * diffuseResponsiveSigmaYCoCg;
+    float3 diffuseResponsiveColorMaxYCoCg = diffuseResponsiveFirstMomentYCoCg + gFastHistoryClampingSigmaScale * diffuseResponsiveSigmaYCoCg;
 
     // Expanding color box with color of the center pixel to minimize introduced bias
     float4 diffuseResponsiveCenterYCoCg = s_DiffResponsiveYCoCg[sharedMemoryIndex.y][sharedMemoryIndex.x];

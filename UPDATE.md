@@ -318,7 +318,9 @@ A single NRD instance can now include any combination of denoisers, including re
 - *REBLUR*:
   - added `returnHistoryLengthInsteadOfOcclusion`
   - added `historyFixAlternatePixelStride`
+  - exposed previously hidden `fastHistoryClampingSigmaScale` (the default matches old behavior)
   - responsive accumulation settings extended and grouped into `ResponsiveAccumulationSettings`
 - *RELAX*:
   - diffuse history length is returned in ".w"
   - added `historyFixAlternatePixelStride`
+  - `historyClampingColorBoxSigmaScale` renamed to `fastHistoryClampingSigmaScale` (no changes in meaning)

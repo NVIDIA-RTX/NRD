@@ -276,8 +276,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Fast history
         diffM1 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
         diffM2 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
-        float diffSigma = GetStdDev( diffM1, diffM2 ) * REBLUR_COLOR_CLAMPING_SIGMA_SCALE;
 
+        float diffSigma = GetStdDev( diffM1, diffM2 ) * gFastHistoryClampingSigmaScale;
         float diffMin = diffM1 - diffSigma;
         float diffMax = diffM1 + diffSigma;
 
@@ -485,8 +485,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Fast history
         specM1 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
         specM2 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
-        float specSigma = GetStdDev( specM1, specM2 ) * REBLUR_COLOR_CLAMPING_SIGMA_SCALE;
 
+        float specSigma = GetStdDev( specM1, specM2 ) * gFastHistoryClampingSigmaScale;
         float specMin = specM1 - specSigma;
         float specMax = specM1 + specSigma;
 

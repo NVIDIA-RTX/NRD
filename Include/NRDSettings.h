@@ -254,7 +254,7 @@ namespace nrd
 
         // [0; maxAccumulatedFrameNum) - maximum number of linearly accumulated frames for fast history
         // Values ">= maxAccumulatedFrameNum" disable fast history
-        // Usually 5x-7x times shorter than the main history (casting more rays, using SHARC or any other signal improving techniques help to accumulate less)
+        // Usually 5x-7x times shorter than the main history (casting more rays, using SHARC or other signal improving techniques help to accumulate less)
         uint32_t maxFastAccumulatedFrameNum = 6;
 
         // [0; maxAccumulatedFrameNum] - maximum number of linearly accumulated frames for stabilized radiance
@@ -268,6 +268,11 @@ namespace nrd
         // (> 0) - base stride between pixels in 5x5 history reconstruction kernel
         uint32_t historyFixBasePixelStride = 14;
         uint32_t historyFixAlternatePixelStride = 14; // see "historyFixAlternatePixelStrideMaterialID"
+
+        // [1; 3] - standard deviation scale of the color box for clamping slow "main" history to responsive "fast" history
+        // REBLUR clamps the spatially processed "main" history to the spatially unprocessed "fast" history. It implies using smaller variance scaling than in RELAX.
+        // A bit smaller values (> 1) may be used with clean signals. The implementation will adjust this under the hood if spatial sampling is disabled
+        float fastHistoryClampingSigmaScale = 2.0f; // 2 is old default, 1.5 works well even for dirty signals, 1.1 is a safe value for occlusion denoising
 
         // (pixels) - pre-accumulation spatial reuse pass blur radius (0 = disabled, must be used in case of badly defined signals and probabilistic sampling)
         float diffusePrepassBlurRadius = 30.0f;
@@ -355,7 +360,7 @@ namespace nrd
 
         // [0; diffuseMaxAccumulatedFrameNum/specularMaxAccumulatedFrameNum) - maximum number of linearly accumulated frames for fast history
         // Values ">= diffuseMaxAccumulatedFrameNum/specularMaxAccumulatedFrameNum" disable fast history
-        // Usually 5x-7x times shorter than the main history (casting more rays, using SHARC or any other signal improving techniques help to accumulate less)
+        // Usually 5x-7x times shorter than the main history (casting more rays, using SHARC or other signal improving techniques help to accumulate less)
         uint32_t diffuseMaxFastAccumulatedFrameNum = 6;
         uint32_t specularMaxFastAccumulatedFrameNum = 6;
 
@@ -369,8 +374,8 @@ namespace nrd
         // (> 0) - normal edge stopper for history reconstruction pass
         float historyFixEdgeStoppingNormalPower = 8.0f;
 
-        // (>= 0) - history length threshold below which spatial variance estimation will be executed
-        uint32_t spatialVarianceEstimationHistoryThreshold = 3;
+        // [1; 3] - standard deviation scale of the color box for clamping slow "main" history to responsive "fast" history
+        float fastHistoryClampingSigmaScale = 2.0f;
 
         // (pixels) - pre-accumulation spatial reuse pass blur radius (0 = disabled, must be used in case of probabilistic sampling)
         float diffusePrepassBlurRadius = 30.0f;
@@ -378,6 +383,9 @@ namespace nrd
 
         // (0; 0.2] - bigger values reduce sensitivity to shadows in spatial passes, smaller values are recommended for signals with relatively clean hit distance (like RTXDI/RESTIR)
         float minHitDistanceWeight = 0.1f;
+
+        // (>= 0) - history length threshold below which spatial variance estimation will be executed
+        uint32_t spatialVarianceEstimationHistoryThreshold = 3;
 
         // A-trous edge stopping luminance sensitivity
         float diffusePhiLuminance = 2.0f;
@@ -395,9 +403,6 @@ namespace nrd
         // (degrees) - slack for the specular lobe angle used in normal based rejection of specular during A-Trous passes
         float specularLobeAngleSlack = 0.15f;
 
-        // [1; 3] - standard deviation scale of color box for clamping main "slow" history to responsive "fast" history
-        float historyClampingColorBoxSigmaScale = 2.0f;
-
         // [2; 8] - number of iterations for A-Trous wavelet transform
         uint32_t atrousIterationNum = 5;
 
@@ -405,7 +410,7 @@ namespace nrd
         float diffuseMinLuminanceWeight = 0.0f;
         float specularMinLuminanceWeight = 0.0f;
 
-        // (normalized %) - Depth threshold for spatial passes
+        // (normalized %) - depth threshold for spatial passes
         float depthThreshold = 0.003f;
 
         // Confidence inputs can affect spatial blurs, relaxing some weights in areas with low confidence

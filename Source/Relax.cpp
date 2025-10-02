@@ -142,7 +142,7 @@ void nrd::InstanceImpl::AddSharedConstants_Relax(const RelaxSettings& settings, 
     consts->gHistoryFixEdgeStoppingNormalPower = settings.historyFixEdgeStoppingNormalPower;
     consts->gRoughnessEdgeStoppingRelaxation = settings.roughnessEdgeStoppingRelaxation;
     consts->gNormalEdgeStoppingRelaxation = settings.normalEdgeStoppingRelaxation;
-    consts->gColorBoxSigmaScale = settings.historyClampingColorBoxSigmaScale;
+    consts->gFastHistoryClampingSigmaScale = settings.fastHistoryClampingSigmaScale;
     consts->gHistoryAccelerationAmount = settings.antilagSettings.accelerationAmount;
     consts->gHistoryResetTemporalSigmaScale = settings.antilagSettings.temporalSigmaScale;
     consts->gHistoryResetSpatialSigmaScale = settings.antilagSettings.spatialSigmaScale;

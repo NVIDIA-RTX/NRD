@@ -61,7 +61,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float, gHistoryFixEdgeStoppingNormalPower ) \
     NRD_CONSTANT( float, gRoughnessEdgeStoppingRelaxation ) \
     NRD_CONSTANT( float, gNormalEdgeStoppingRelaxation ) \
-    NRD_CONSTANT( float, gColorBoxSigmaScale ) \
+    NRD_CONSTANT( float, gFastHistoryClampingSigmaScale ) \
     NRD_CONSTANT( float, gHistoryAccelerationAmount ) \
     NRD_CONSTANT( float, gHistoryResetTemporalSigmaScale ) \
     NRD_CONSTANT( float, gHistoryResetSpatialSigmaScale ) \

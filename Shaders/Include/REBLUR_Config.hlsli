@@ -86,18 +86,12 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_FIREFLY_SUPPRESSOR_RADIUS_SCALE                  0.1
 #define REBLUR_FIREFLY_SUPPRESSOR_FAST_RELATIVE_INTENSITY       4.0 // TODO: needed only for high FPS. Why?
 #define REBLUR_ANTI_FIREFLY_FILTER_RADIUS                       4 // pixels
-#define REBLUR_HISTORY_FIX_FILTER_RADIUS                        2 // pixels
 #define REBLUR_ANTI_FIREFLY_SIGMA_SCALE                         2.0
+#define REBLUR_HISTORY_FIX_FILTER_RADIUS                        2 // pixels
 #define REBLUR_ROUGHNESS_SENSITIVITY_IN_TA                      ( NRD_ROUGHNESS_SENSITIVITY * 0.3 )
 #define REBLUR_ANTILAG_MODE                                     2 // 0 - modernized old, 1 - overly reactive @ low FPS, 2 - best?
 #define REBLUR_SAMPLES_PER_FRAME                                1.0 // TODO: expose in settings, it will become useful with very clean signals, when max number of accumulated frames is low
 #define REBLUR_MAX_PERCENT_OF_LOBE_VOLUME_FOR_PRE_PASS          0.3 // specially tuned for "hitDistForTracking"
-
-#if( NRD_MODE == OCCLUSION || NRD_MODE == DO )
-    #define REBLUR_COLOR_CLAMPING_SIGMA_SCALE                   1.0 // much more predictable signal quality
-#else
-    #define REBLUR_COLOR_CLAMPING_SIGMA_SCALE                   2.0 // using smaller values leads to bias under motion
-#endif
 
 // Data types
 #if( NRD_MODE == OCCLUSION )
@@ -169,6 +163,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float, gHistoryFixBasePixelStride ) \
     NRD_CONSTANT( float, gHistoryFixAlternatePixelStride ) \
     NRD_CONSTANT( float, gHistoryFixAlternatePixelStrideMaterialID ) \
+    NRD_CONSTANT( float, gFastHistoryClampingSigmaScale ) \
     NRD_CONSTANT( float, gMinRectDimMulUnproject ) \
     NRD_CONSTANT( float, gUsePrepassNotOnlyForSpecularMotionEstimation ) \
     NRD_CONSTANT( float, gSplitScreen ) \

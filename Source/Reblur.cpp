@@ -370,6 +370,7 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gHistoryFixBasePixelStride = (float)settings.historyFixBasePixelStride;
     consts->gHistoryFixAlternatePixelStride = (float)settings.historyFixAlternatePixelStride;
     consts->gHistoryFixAlternatePixelStrideMaterialID = m_CommonSettings.historyFixAlternatePixelStrideMaterialID;
+    consts->gFastHistoryClampingSigmaScale = lerp(3.0f, settings.fastHistoryClampingSigmaScale, saturate(max(maxBlurRadius, settings.minBlurRadius) / 2.0f));
     consts->gMinRectDimMulUnproject = (float)min(rectW, rectH) * unproject;
     consts->gUsePrepassNotOnlyForSpecularMotionEstimation = settings.usePrepassOnlyForSpecularMotionEstimation ? 0.0f : 1.0f;
     consts->gSplitScreen = m_CommonSettings.splitScreen;
