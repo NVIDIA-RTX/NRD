@@ -180,7 +180,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         outSpecular = outSpecularResponsive;
 
     // Clamping factor: (clamped - slow) / (fast - slow)
-     // The closer clamped is to fast, the closer clamping factor is to 1.
+    // The closer clamped is to fast, the closer clamping factor is to 1.
     float specClampingFactor = (clampedSpecularYCoCg.x - specularYCoCg.x) == 0 ? 0.0 : saturate((clampedSpecularYCoCg.x - specularYCoCg.x) / (specularResponsiveCenterYCoCg.x - specularYCoCg.x));
     if (historyLength <= gHistoryFixFrameNum)
         specClampingFactor = 1.0;
