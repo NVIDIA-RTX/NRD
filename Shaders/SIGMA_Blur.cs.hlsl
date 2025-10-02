@@ -132,10 +132,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             {
                 float2 uv = pixelUv + float2( i - BORDER, j - BORDER ) * gRectSizeInv;
                 float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
+                float NoX = dot( Nv, Xvs );
 
-                w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
+                w *= ComputeWeight( NoX, geometryWeightParams.x, geometryWeightParams.y );
                 w *= AreBothLitOrUnlit( centerPenumbra, penum );
                 w *= GetGaussianWeight( length( float2( i - BORDER, j - BORDER ) / BORDER ) );
+                w = zs < gDenoisingRange ? w : 0.0; // |NoX| can be ~0 if "zs" is out of range
             }
 
             // Accumulate
@@ -233,7 +235,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Fetch data
         float penum = gIn_Penumbra.SampleLevel( gNearestClamp, uvScaled, 0 );
+
         float zs = UnpackViewZ( gIn_ViewZ.SampleLevel( gNearestClamp, WithRectOffset( uvScaled ), 0 ) );
+        float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
 
         SIGMA_TYPE s;
         #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
@@ -247,12 +251,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         // Sample weight
-        float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
+        float NoX = dot( Nv, Xvs );
 
         float w = IsInScreenNearest( uv );
-        w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
+        w *= ComputeWeight( NoX, geometryWeightParams.x, geometryWeightParams.y );
         w *= AreBothLitOrUnlit( centerPenumbra, penum );
         w *= GetGaussianWeight( offset.z );
+        w = zs < gDenoisingRange ? w : 0.0; // |NoX| can be ~0 if "zs" is out of range
 
         // Avoid umbra leaking inside wide penumbra
         w *= saturate( penum * invEstimatedPenumbra ); // TODO: it works surprisingly well, keep an eye on it!

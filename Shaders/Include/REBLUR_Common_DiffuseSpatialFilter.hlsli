@@ -146,10 +146,12 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
             // Weight
             float angle = Math::AcosApprox( dot( N, Ns.xyz ) );
+            float NoX = dot( Nv, Xvs );
 
-            w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
+            w *= ComputeWeight( NoX, geometryWeightParams.x, geometryWeightParams.y );
             w *= CompareMaterials( materialID, materialIDs, gDiffMinMaterial );
             w *= ComputeWeight( angle, normalWeightParam, 0.0 );
+            w = zs < gDenoisingRange ? w : 0.0; // |NoX| can be ~0 if "zs" is out of range
 
             REBLUR_TYPE s = gIn_Diff[ int2( checkerboardX, pos.y ) ];
             s = Denanify( w, s );

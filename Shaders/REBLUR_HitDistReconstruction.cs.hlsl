@@ -110,7 +110,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // This weight is strict ( non exponential ) because we need to avoid accessing data from other surfaces
             float2 uv = pixelUv + o * gRectSizeInv;
             float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, data.z, gOrthoMode );
-            w *= ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
+            float NoX = dot( Nv, Xvs );
+
+            w *= ComputeWeight( NoX, geometryWeightParams.x, geometryWeightParams.y );
+            w = data.z < gDenoisingRange ? w : 0.0; // |NoX| can be ~0 if "data.z" is out of range
 
             float2 ww = w;
             #if( REBLUR_PERFORMANCE_MODE == 0 )
