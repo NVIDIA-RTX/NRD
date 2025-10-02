@@ -115,6 +115,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, 1.0 );
         float hitDist = ExtractHitDist( diff ) * hitDistScale;
         float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
+        hitDist = ExtractHitDist( diff );
 
         // Stride between taps
         float diffStride = stride.x;
@@ -127,7 +128,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // Parameters
             float normalWeightParam = GetNormalWeightParam( diffNonLinearAccumSpeed, gLobeAngleFraction );
             float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv, diffNonLinearAccumSpeed );
-            float hitDistWeightNorm = 1.0 / ( hitDistScale * hitDistScale * 0.5 * diffNonLinearAccumSpeed );
+            float hitDistWeightNorm = 1.0 / ( 0.5 * diffNonLinearAccumSpeed );
 
             float sumd = 1.0 + frameNum.x;
             #if( REBLUR_PERFORMANCE_MODE == 1 )
@@ -166,6 +167,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                     // Fetch data
                     float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
+                    float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
 
                     float materialIDs;
                     float4 Ns = gIn_Normal_Roughness[ WithRectOrigin( pos ) ];
@@ -173,7 +175,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                     // Weight
                     float angle = Math::AcosApprox( dot( Ns.xyz, N ) );
-                    float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
 
                     float w = ComputeWeight( dot( Nv, Xvs ), geometryWeightParams.x, geometryWeightParams.y );
                     w *= CompareMaterials( materialID, materialIDs, gDiffMinMaterial );
@@ -188,9 +189,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     s = Denanify( w, s );
 
                     // A-trous weight
-                    float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistParams, 1.0 );
-                    float d1 = hs - hitDist;
-                    w *= exp( -d1 * d1 * hitDistWeightNorm );
+                    float hs = ExtractHitDist( s );
+                    float d = hs - hitDist; // use normalized hit distanced for simplicity ( no difference )
+                    w *= exp( -d * d * hitDistWeightNorm );
 
                     // Accumulate
                     sumd += w;
@@ -319,6 +320,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             hitDist = lerp( gIn_SpecHitDistForTracking[ pixelPos ], hitDist, smc );
         #endif
         float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
+        hitDist = saturate( hitDist / hitDistScale );
 
         // Stride between taps
         float specStride = stride.y;
@@ -332,7 +334,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // Parameters
             float normalWeightParam = GetNormalWeightParam( specNonLinearAccumSpeed, gLobeAngleFraction, roughness );
             float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv, specNonLinearAccumSpeed );
-            float hitDistWeightNorm = 1.0 / ( hitDistScale * hitDistScale * 0.5 * specNonLinearAccumSpeed );
+            float hitDistWeightNorm = 1.0 / ( lerp( 0.005, 0.5, smc ) * specNonLinearAccumSpeed );
             float2 relaxedRoughnessWeightParams = GetRelaxedRoughnessWeightParams( roughness * roughness, sqrt( gRoughnessFraction ) );
 
             float sums = 1.0 + frameNum.y;
@@ -395,14 +397,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     s = Denanify( w, s );
 
                     // A-trous weight
-                    float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistParams, Ns.w );
-                    float d1 = hs - hitDist;
-                    w *= exp( -d1 * d1 * hitDistWeightNorm );
-
-                    // Special case for low roughness ( hit distances work as a non-noisy guide )
-                    float d2 = abs( hitDist - hs ) / ( max( hitDist, hs ) + 0.001 );
-                    float b = Math::LinearStep( 0.03, 0.05, roughness );
-                    w *= Math::SmoothStep( 0.2 + b, 0.05 + b, d2 );
+                    float hs = ExtractHitDist( s );
+                    float d = hs - hitDist; // use normalized hit distances for simplicity ( no difference, roughness weight handles the rest )
+                    w *= exp( -d * d * hitDistWeightNorm );
 
                     // Accumulate
                     sums += w;
