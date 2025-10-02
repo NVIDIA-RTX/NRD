@@ -111,7 +111,7 @@ if(NOT TARGET MathLib)
     FetchContent_Declare(
         mathlib
         GIT_REPOSITORY https://github.com/NVIDIA-RTX/MathLib.git
-        GIT_TAG v8
+        GIT_TAG v9
         GIT_SHALLOW 1
     )
     list(APPEND DEPS mathlib)
