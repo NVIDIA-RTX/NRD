@@ -18,11 +18,11 @@ NRD_SAMPLERS_START
 NRD_SAMPLERS_END
 
 NRD_INPUTS_START
-    NRD_INPUT( Texture2D<float3>, gIn_Tiles, t, 0 )
+    NRD_INPUT( Texture2D, float3, gIn_Tiles, t, 0 )
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
-    NRD_OUTPUT( RWTexture2D<float2>, gOut_Tiles, u, 0 )
+    NRD_OUTPUT( RWTexture2D, float2, gOut_Tiles, u, 0 )
 NRD_OUTPUTS_END
 
 // Macro magic

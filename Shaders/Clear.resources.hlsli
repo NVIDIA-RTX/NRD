@@ -15,9 +15,9 @@ NRD_CONSTANTS_END
 
 NRD_OUTPUTS_START
     #if( FLOAT == 1 )
-        NRD_OUTPUT( RWTexture2D<float4>, gOut, u, 0 )
+        NRD_OUTPUT( RWTexture2D, float4, gOut, u, 0 )
     #else
-        NRD_OUTPUT( RWTexture2D<uint4>, gOut, u, 0 )
+        NRD_OUTPUT( RWTexture2D, uint4, gOut, u, 0 )
     #endif
 NRD_OUTPUTS_END
 

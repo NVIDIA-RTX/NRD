@@ -18,27 +18,27 @@ NRD_SAMPLERS_START
 NRD_SAMPLERS_END
 
 NRD_INPUTS_START
-    NRD_INPUT( Texture2D<REBLUR_TILE_TYPE>, gIn_Tiles, t, 0 )
-    NRD_INPUT( Texture2D<float4>, gIn_Normal_Roughness, t, 1 )
-    NRD_INPUT( Texture2D<float>, gIn_ViewZ, t, 2 )
+    NRD_INPUT( Texture2D, REBLUR_TILE_TYPE, gIn_Tiles, t, 0 )
+    NRD_INPUT( Texture2D, float4, gIn_Normal_Roughness, t, 1 )
+    NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 2 )
     #if( NRD_DIFF && NRD_SPEC )
-        NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Diff, t, 3 )
-        NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Spec, t, 4 )
+        NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Diff, t, 3 )
+        NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Spec, t, 4 )
     #elif( NRD_DIFF )
-        NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Diff, t, 3 )
+        NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Diff, t, 3 )
     #else
-        NRD_INPUT( Texture2D<REBLUR_TYPE>, gIn_Spec, t, 3 )
+        NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Spec, t, 3 )
     #endif
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
     #if( NRD_DIFF && NRD_SPEC )
-        NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_Diff, u, 0 )
-        NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_Spec, u, 1 )
+        NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Diff, u, 0 )
+        NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Spec, u, 1 )
     #elif( NRD_DIFF )
-        NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_Diff, u, 0 )
+        NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Diff, u, 0 )
     #else
-        NRD_OUTPUT( RWTexture2D<REBLUR_TYPE>, gOut_Spec, u, 0 )
+        NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Spec, u, 0 )
     #endif
 NRD_OUTPUTS_END
 

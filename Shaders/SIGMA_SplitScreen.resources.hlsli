@@ -18,15 +18,15 @@ NRD_SAMPLERS_START
 NRD_SAMPLERS_END
 
 NRD_INPUTS_START
-    NRD_INPUT( Texture2D<float>, gIn_ViewZ, t, 0 )
-    NRD_INPUT( Texture2D<float>, gIn_Penumbra, t, 1 )
+    NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 0 )
+    NRD_INPUT( Texture2D, float, gIn_Penumbra, t, 1 )
     #if( TRANSLUCENCY == 1 )
-        NRD_INPUT( Texture2D<float4>, gIn_Shadow_Translucency, t, 2 )
+        NRD_INPUT( Texture2D, float4, gIn_Shadow_Translucency, t, 2 )
     #endif
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
-    NRD_OUTPUT( RWTexture2D<SIGMA_TYPE>, gOut_Shadow_Translucency, u, 0 )
+    NRD_OUTPUT( RWTexture2D, SIGMA_TYPE, gOut_Shadow_Translucency, u, 0 )
 NRD_OUTPUTS_END
 
 // Macro magic

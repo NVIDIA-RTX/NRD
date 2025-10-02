@@ -20,17 +20,17 @@ NRD_SAMPLERS_START
 NRD_SAMPLERS_END
 
 NRD_INPUTS_START
-    NRD_INPUT( Texture2D<float4>, gIn_Normal_Roughness, t, 0 )
-    NRD_INPUT( Texture2D<float>, gIn_ViewZ, t, 1 )
-    NRD_INPUT( Texture2D<float3>, gIn_Mv, t, 2 )
-    NRD_INPUT( Texture2D<REBLUR_DATA1_TYPE>, gIn_Data1, t, 3 )
-    NRD_INPUT( Texture2D<uint>, gIn_Data2, t, 4 )
-    NRD_INPUT( Texture2D<float4>, gIn_Diff, t, 5 )
-    NRD_INPUT( Texture2D<float4>, gIn_Spec, t, 6 )
+    NRD_INPUT( Texture2D, float4, gIn_Normal_Roughness, t, 0 )
+    NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 1 )
+    NRD_INPUT( Texture2D, float3, gIn_Mv, t, 2 )
+    NRD_INPUT( Texture2D, REBLUR_DATA1_TYPE, gIn_Data1, t, 3 )
+    NRD_INPUT( Texture2D, uint, gIn_Data2, t, 4 )
+    NRD_INPUT( Texture2D, float4, gIn_Diff, t, 5 )
+    NRD_INPUT( Texture2D, float4, gIn_Spec, t, 6 )
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
-    NRD_OUTPUT( RWTexture2D<float4>, gOut_Validation, u, 0 )
+    NRD_OUTPUT( RWTexture2D, float4, gOut_Validation, u, 0 )
 NRD_OUTPUTS_END
 
 // Macro magic

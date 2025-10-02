@@ -15,11 +15,11 @@ NRD_CONSTANTS_START( REFERENCE_TemporalAccumulationConstants )
 NRD_CONSTANTS_END
 
 NRD_INPUTS_START
-    NRD_INPUT( Texture2D<float4>, gIn_Input, t, 0 )
+    NRD_INPUT( Texture2D, float4, gIn_Input, t, 0 )
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
-    NRD_OUTPUT( RWTexture2D<float4>, gInOut_History, u, 0 )
+    NRD_OUTPUT( RWTexture2D, float4, gInOut_History, u, 0 )
 NRD_OUTPUTS_END
 
 // Macro magic

@@ -127,11 +127,11 @@ NOISY INPUTS:
     #define NRD_CONSTANTS_END                                                           };
 
     #define NRD_INPUTS_START
-    #define NRD_INPUT( resourceType, resourceName, regName, bindingIndex )              resourceType resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ), NRD_MERGE_TOKENS( space, NRD_RESOURCES_SPACE_INDEX ) );
+    #define NRD_INPUT( resourceType, dataType, resourceName, regName, bindingIndex )    resourceType<dataType> resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ), NRD_MERGE_TOKENS( space, NRD_RESOURCES_SPACE_INDEX ) );
     #define NRD_INPUTS_END
 
     #define NRD_OUTPUTS_START
-    #define NRD_OUTPUT( resourceType, resourceName, regName, bindingIndex )             NRD_FORMAT_UNKNOWN resourceType resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ), NRD_MERGE_TOKENS( space, NRD_RESOURCES_SPACE_INDEX ) );
+    #define NRD_OUTPUT( resourceType, dataType, resourceName, regName, bindingIndex )   NRD_FORMAT_UNKNOWN resourceType<dataType> resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ), NRD_MERGE_TOKENS( space, NRD_RESOURCES_SPACE_INDEX ) );
     #define NRD_OUTPUTS_END
 
     #define NRD_SAMPLERS_START
@@ -162,11 +162,11 @@ NOISY INPUTS:
     #define NRD_CONSTANTS_END                                                           };
 
     #define NRD_INPUTS_START
-    #define NRD_INPUT( resourceType, resourceName, regName, bindingIndex )              resourceType resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ) );
+    #define NRD_INPUT( resourceType, dataType, resourceName, regName, bindingIndex )    resourceType<dataType> resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ) );
     #define NRD_INPUTS_END
 
     #define NRD_OUTPUTS_START
-    #define NRD_OUTPUT( resourceType, resourceName, regName, bindingIndex )             resourceType resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ) );
+    #define NRD_OUTPUT( resourceType, dataType, resourceName, regName, bindingIndex )   resourceType<dataType> resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ) );
     #define NRD_OUTPUTS_END
 
     #define NRD_SAMPLERS_START
@@ -209,11 +209,11 @@ NOISY INPUTS:
     #define NRD_CONSTANTS_END
 
     #define NRD_INPUTS_START
-    #define NRD_INPUT( resourceType, resourceName, regName, bindingIndex )              resourceType resourceName;
+    #define NRD_INPUT( resourceType, dataType, resourceName, regName, bindingIndex )    resourceType<dataType> resourceName;
     #define NRD_INPUTS_END
 
     #define NRD_OUTPUTS_START
-    #define NRD_OUTPUT( resourceType, resourceName, regName, bindingIndex )             resourceType resourceName;
+    #define NRD_OUTPUT( resourceType, dataType, resourceName, regName, bindingIndex )   resourceType<dataType> resourceName;
     #define NRD_OUTPUTS_END
 
     #define NRD_SAMPLERS_START
@@ -223,18 +223,18 @@ NOISY INPUTS:
     #define NRD_EXPORT
 
 // FXC
-#else // TODO: is there a predefined macro in FXC?
+#else
 
     #define NRD_CONSTANTS_START( resourceName )                                         cbuffer resourceName : register( NRD_MERGE_TOKENS( b, NRD_CONSTANT_BUFFER_REGISTER_INDEX ) ) {
     #define NRD_CONSTANT( constantType, constantName )                                  constantType constantName;
     #define NRD_CONSTANTS_END                                                           };
 
     #define NRD_INPUTS_START
-    #define NRD_INPUT( resourceType, resourceName, regName, bindingIndex )              resourceType resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ) );
+    #define NRD_INPUT( resourceType, dataType, resourceName, regName, bindingIndex )    resourceType<dataType> resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ) );
     #define NRD_INPUTS_END
 
     #define NRD_OUTPUTS_START
-    #define NRD_OUTPUT( resourceType, resourceName, regName, bindingIndex )             resourceType resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ) );
+    #define NRD_OUTPUT( resourceType, dataType, resourceName, regName, bindingIndex )   resourceType<dataType> resourceName : register( NRD_MERGE_TOKENS( regName, bindingIndex ) );
     #define NRD_OUTPUTS_END
 
     #define NRD_SAMPLERS_START
