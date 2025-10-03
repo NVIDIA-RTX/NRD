@@ -583,7 +583,7 @@ void nrd::InstanceImpl::AddInternalDispatch(PipelineDesc& pipelineDesc, NumThrea
     // Add pipeline (unique only)
     size_t pipelineIndex = 0;
     for (; pipelineIndex < m_Pipelines.size(); pipelineIndex++) {
-        const PipelineDesc& pipeline = m_Pipelines[pipelineIndex];
+        [[maybe_unused]] const PipelineDesc& pipeline = m_Pipelines[pipelineIndex];
 
 #if NRD_EMBEDS_DXBC_SHADERS
         if (pipeline.computeShaderDXBC.bytecode == pipelineDesc.computeShaderDXBC.bytecode)
