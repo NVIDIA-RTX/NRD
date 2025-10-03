@@ -29,11 +29,6 @@ set(NRD_SHADERS_PATH "" CACHE STRING "Shader output path override")
 set(NRD_NORMAL_ENCODING "2" CACHE STRING "Normal encoding variant (0-4, matches nrd::NormalEncoding)")
 set(NRD_ROUGHNESS_ENCODING "1" CACHE STRING "Roughness encoding variant (0-2, matches nrd::RoughnessEncoding)")
 
-# Check
-if(NOT NRD_EMBEDS_SPIRV_SHADERS AND NOT NRD_EMBEDS_DXIL_SHADERS AND NOT NRD_EMBEDS_DXBC_SHADERS)
-    message(FATAL_ERROR "At least one of options 'NRD_EMBEDS_X_SHADERS' must be set!")
-endif()
-
 # Self-build?
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR}) # if not submodule
     get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)

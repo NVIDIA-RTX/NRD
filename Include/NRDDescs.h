@@ -11,7 +11,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #pragma once
 
 #define NRD_DESCS_VERSION_MAJOR 4
-#define NRD_DESCS_VERSION_MINOR 15
+#define NRD_DESCS_VERSION_MINOR 16
 
 static_assert(NRD_VERSION_MAJOR == NRD_DESCS_VERSION_MAJOR && NRD_VERSION_MINOR == NRD_DESCS_VERSION_MINOR, "Please, update all NRD SDK files");
 
@@ -444,12 +444,14 @@ namespace nrd
         ComputeShaderDesc computeShaderDXBC;
         ComputeShaderDesc computeShaderDXIL;
         ComputeShaderDesc computeShaderSPIRV;
-        const char* shaderEntryPointName; // = "NRD_CS_MAIN"
         const ResourceRangeDesc* resourceRanges;
         uint32_t resourceRangesNum; // up to 2 ranges: "TEXTURE" inputs (optional) and "TEXTURE_STORAGE" outputs
 
         // Hint that pipeline has a constant buffer with shared parameters from "InstanceDesc"
         bool hasConstantData;
+
+        // Format: "fileName|macro1=value1|macro2=value2..." (useful for custom integrations)
+        char shaderIdentifier[256];
     };
 
     struct DescriptorPoolDesc
@@ -492,6 +494,7 @@ namespace nrd
         uint32_t samplersNum;                           // = "Sampler::MAX_NUM"
 
         // Pipelines
+        const char* shaderEntryPoint;                   // = "NRD_CS_MAIN"
         const PipelineDesc* pipelines;
         uint32_t pipelinesNum;
 
@@ -501,17 +504,17 @@ namespace nrd
         const TextureDesc* transientPool;
         uint32_t transientPoolSize;
 
-        // ( Optional ) Limits
+        // (Optional) Limits
         DescriptorPoolDesc descriptorPoolDesc;
     };
 
     struct DispatchDesc
     {
-        // ( Optional )
+        // (Optional)
         const char* name;
         Identifier identifier; // denoiser this dispatch belongs to
 
-        // Concatenated resources for all "resourceRanges" in "DenoiserDesc::pipelines[ pipelineIndex ]"
+        // Concatenated resources for all "resourceRanges" in "DenoiserDesc::pipelines[pipelineIndex]"
         const ResourceDesc* resources;
         uint32_t resourcesNum;
 

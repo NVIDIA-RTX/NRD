@@ -598,7 +598,6 @@ void nrd::InstanceImpl::AddInternalDispatch(PipelineDesc& pipelineDesc, NumThrea
     }
 
     if (pipelineIndex == m_Pipelines.size()) {
-        pipelineDesc.shaderEntryPointName = NRD_STRINGIFY(NRD_CS_MAIN);
         pipelineDesc.resourceRanges = (ResourceRangeDesc*)m_ResourceRanges.size();
         pipelineDesc.hasConstantData = constantBufferDataSize != 0;
 
@@ -646,6 +645,7 @@ void nrd::InstanceImpl::PrepareDesc() {
     m_Desc.samplersNum = (uint32_t)g_Samplers.size();
     m_Desc.samplersBaseRegisterIndex = 0;
 
+    m_Desc.shaderEntryPoint = NRD_STRINGIFY(NRD_CS_MAIN);
     m_Desc.pipelines = m_Pipelines.data();
     m_Desc.pipelinesNum = (uint32_t)m_Pipelines.size();
     m_Desc.resourcesBaseRegisterIndex = 0;

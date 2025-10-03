@@ -306,13 +306,21 @@ A single NRD instance can now include any combination of denoisers, including re
 
 ## To v4.15
 - *API*:
-  - removed `DescriptorPoolDesc::totalConstantBuffersNum` and `DescriptorPoolDesc::totalSamplersNum`. If root (immutable) samplers and root (push) descriptor are not used, this can be deduced from `DescriptorPoolDesc::setMaxNum` and clarifying comments
-  - added `InstanceDesc::constantBufferAndSamplersSpaceIndex` for the constant buffer and samplers
-  - added `InstanceDesc::resourcesSpaceIndex` for other resources (SRVs and UAVs)
-  - separated base registers in `InstanceDesc` into constant buffer, samplers and resources
+  - removed `ResourceRangeDesc::baseRegisterIndex`and added global `InstanceDesc::resourcesBaseRegisterIndex`
+  - spaces for constant buffer and resources merged into a single `InstanceDesc::constantBufferAndResourcesSpaceIndex`
   - reworked `DescriptorPoolDesc`
-  - reworked `GetLibraryDesc` and `GetInstanceDesc` to return a pointer instead of a reference to be conformant with "C" linkage
+
+## To v4.16
+- *API*:
+  - removed `DescriptorPoolDesc::totalConstantBuffersNum` and `DescriptorPoolDesc::totalSamplersNum`. If root (immutable) samplers and root (push) descriptor are not used, this can be deduced from `DescriptorPoolDesc::setMaxNum` and clarifying comments
+  - merged register spaces for samplers and constant buffers into `InstanceDesc::constantBufferAndSamplersSpaceIndex`
+  - renamed register space for resources (SRVs and UAVs) to `InstanceDesc::resourcesSpaceIndex`
+  - separated base registers for constant buffer, samplers and resources in `InstanceDesc`
+  - removed `InstanceDesc::samplersInSeparateSet`
+  - moved `PipelineDesc::shaderEntryPoint` to `InstanceDesc`
   - added `CommonSettings::historyFixAlternatePixelStrideMaterialID` allowing to use `historyFixAlternatePixelStride` for a specific material ID
+  - replaced `PipelineDesc::shaderFileName` with `shaderIdentifier` (including shader name and permutation macros)
+  - reworked `GetLibraryDesc` and `GetInstanceDesc` to return a pointer instead of a reference to be conformant with "C" linkage
 - *NRD INTEGRATION*:
   - expects unique register spaces
 - *REBLUR*:

@@ -53,12 +53,23 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
 #    define FillSPIRV(blobName, defines, computeShader)
 #endif
 
+#define FillShaderItendifier(blobName, defines, shaderIdentifier) \
+    do { \
+        int32_t _n = snprintf(shaderIdentifier, sizeof(shaderIdentifier), _NRD_STRINGIFY(blobName)); \
+        for (const auto& define : defines) { \
+            int32_t _m = snprintf(shaderIdentifier + _n, sizeof(shaderIdentifier) - _n, "|%s=%s", define.name, define.value); \
+            _n += _m; \
+            assert("Buffer is too small" && _n < sizeof(shaderIdentifier) - 8); \
+        } \
+    } while (0)
+
 #define AddDispatchWithArgs(blobName, defines, downsampleFactor, repeatNum) \
     do { \
         PipelineDesc pipelineDesc = {}; \
         FillDXBC(blobName, defines, pipelineDesc.computeShaderDXBC); \
         FillDXIL(blobName, defines, pipelineDesc.computeShaderDXIL); \
         FillSPIRV(blobName, defines, pipelineDesc.computeShaderSPIRV); \
+        FillShaderItendifier(blobName, defines, pipelineDesc.shaderIdentifier); \
         AddInternalDispatch( \
             pipelineDesc, \
             NumThreads(blobName##GroupX, blobName##GroupY), \
@@ -71,6 +82,7 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
         FillDXBC(blobName, defines, pipelineDesc.computeShaderDXBC); \
         FillDXIL(blobName, defines, pipelineDesc.computeShaderDXIL); \
         FillSPIRV(blobName, defines, pipelineDesc.computeShaderSPIRV); \
+        FillShaderItendifier(blobName, defines, pipelineDesc.shaderIdentifier); \
         AddInternalDispatch( \
             pipelineDesc, \
             NumThreads(blobName##GroupX, blobName##GroupY), \
@@ -83,6 +95,7 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
         FillDXBC(blobName, defines, pipelineDesc.computeShaderDXBC); \
         FillDXIL(blobName, defines, pipelineDesc.computeShaderDXIL); \
         FillSPIRV(blobName, defines, pipelineDesc.computeShaderSPIRV); \
+        FillShaderItendifier(blobName, defines, pipelineDesc.shaderIdentifier); \
         AddInternalDispatch( \
             pipelineDesc, \
             NumThreads(blobName##GroupX, blobName##GroupY), \

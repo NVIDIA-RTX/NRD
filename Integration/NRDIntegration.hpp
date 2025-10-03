@@ -16,7 +16,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #    include <alloca.h>
 #endif
 
-static_assert(NRD_VERSION_MAJOR >= 4 && NRD_VERSION_MINOR >= 15, "Unsupported NRD version!");
+static_assert(NRD_VERSION_MAJOR >= 4 && NRD_VERSION_MINOR >= 16, "Unsupported NRD version!");
 static_assert(NRI_VERSION >= 175, "Unsupported NRI version!");
 
 #define NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(expr) \
@@ -215,7 +215,7 @@ bool Integration::RecreatePipelines() {
         nri::ShaderDesc computeShader = {};
         computeShader.bytecode = nrdComputeShader.bytecode;
         computeShader.size = nrdComputeShader.size;
-        computeShader.entryPointName = nrdPipelineDesc.shaderEntryPointName;
+        computeShader.entryPointName = instanceDesc.shaderEntryPoint;
         computeShader.stage = nri::StageBits::COMPUTE_SHADER;
 
         nri::ComputePipelineDesc pipelineDesc = {};
