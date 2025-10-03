@@ -14,4 +14,4 @@ _Build/
 _Shaders/
 _NRD_SDK/
 _NRI_SDK/
-NRDEncoding.hlsli
+NRDConfig.hlsli

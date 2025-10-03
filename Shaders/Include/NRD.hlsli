@@ -75,6 +75,8 @@ NOISY INPUTS:
 // SETTINGS
 //=================================================================================================================================
 
+#include "NRDConfig.hlsli"
+
 // ( Optional ) Bindings
 #define NRD_CONSTANT_BUFFER_REGISTER_INDEX                                              0
 
@@ -305,14 +307,6 @@ NOISY INPUTS:
 
     #define NRD_DIFF                                                                    ( ( NRD_SIGNAL & DIFF ) != 0 )
     #define NRD_SPEC                                                                    ( ( NRD_SIGNAL & SPEC ) != 0 )
-#endif
-
-#if( !defined( NRD_NORMAL_ENCODING ) || !defined( NRD_ROUGHNESS_ENCODING ) )
-    #ifdef NRD_INTERNAL
-        #error "For NRD project compilation, encoding variants must be set using Cmake parameters."
-    #else
-        #error "Include 'NRDEncoding.hlsli' file beforehand to get a match with the settings NRD has been compiled with. Or define encoding variants using Cmake parameters."
-    #endif
 #endif
 
 // Normal encoding variants ( match NormalEncoding )

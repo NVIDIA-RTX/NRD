@@ -57,8 +57,8 @@ CMake options:
   - `NRD_EMBEDS_DXBC_SHADERS` - *NRD* compiles and embeds DXBC shaders (ON by default on Windows)
   - `NRD_EMBEDS_DXIL_SHADERS` - *NRD* compiles and embeds DXIL shaders (ON by default on Windows)
   - `NRD_EMBEDS_SPIRV_SHADERS` - *NRD* compiles and embeds SPIRV shaders (ON by default)
-- Compile time switches (prefer to disable unused functionality to increase performance, these switches are also available as macro definitions in the parent project):
-  - `NRD_STATIC_LIBRARY` - build static library (OFF by default)
+- Compile time switches (prefer to disable unused functionality to increase performance):
+  - `NRD_STATIC_LIBRARY` - build static library (OFF by default, visible in the parent project)
   - `NRD_NORMAL_ENCODING` - *normal* encoding for the entire library
   - `NRD_ROUGHNESS_ENCODING` - *roughness* encoding for the entire library
   - `NRD_SUPPORTS_VIEWPORT_OFFSET` - enable `CommonSettings::rectOrigin` support (OFF by default)
@@ -69,7 +69,7 @@ CMake options:
   - `NRD_SUPPORTS_ANTIFIREFLY` - enable `enableAntiFirefly` support (ON by default)
   - `REBLUR_PERFORMANCE_MODE` - better performance and worse image quality, can be useful for consoles (OFF by default)
 
-`NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING` can be defined only *once* during project deployment. These settings are dumped in `NRDEncoding.hlsli` file, which needs to be optionally included on the application side prior `NRD.hlsli` inclusion to deliver encoding settings matching *NRD* settings. `LibraryDesc` includes encoding settings too. It can be used to verify that the library meets the application expectations.
+`NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING` can be defined only *once* during project deployment. `LibraryDesc` includes encoding settings too. It can be used to verify that the library meets the application expectations.
 
 SDK packaging:
 - Compile the solution (*Debug* / *Release* or both, depending on what you want to get in *NRD* package)
@@ -137,7 +137,7 @@ Commons inputs for primary hits (if *PSR* is not used, common use case) or for s
 
 * **IN\_NORMAL\_ROUGHNESS** - surface world-space normal and *linear* roughness
 
-  Normal and roughness encoding must be controlled via *Cmake* parameters `NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING`. Optional `NRDEncoding.hlsli` file is generated during project deployment, which can be included prior `NRD.hlsli` to make encoding macro definitions visible in shaders (if `NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING` are not defined in another way by the application). Encoding settings can be known at runtime by accessing `LibraryDesc::normalEncoding` and `LibraryDesc::roghnessEncoding` respectively. `NormalEncoding` and `RoughnessEncoding` enums briefly describe encoding variants. It's recommended to use `NRD.hlsli/NRD_FrontEnd_PackNormalAndRoughness` to match decoding.
+  Normal and roughness encoding must be controlled via *Cmake* parameters `NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING`. Encoding settings can be known at runtime by accessing `LibraryDesc::normalEncoding` and `LibraryDesc::roghnessEncoding` respectively. `NormalEncoding` and `RoughnessEncoding` enums briefly describe encoding variants. It's recommended to use `NRD.hlsli/NRD_FrontEnd_PackNormalAndRoughness` to match decoding.
 
   *NRD* computes local curvature using provided normals. Less accurate normals can lead to banding in curvature and local flatness. `RGBA8` normals is a good baseline, but `R10G10B10A10` oct-packed normals improve curvature calculations and specular tracking as the result.
 
@@ -537,12 +537,6 @@ NRD.Destroy();
 Shader part:
 
 ```cpp
-#if 1
-    #include "NRDEncoding.hlsli"
-#else
-    // Or define NRD encoding in Cmake and deliver macro definitions to shader compilation command line
-#endif
-
 #include "NRD.hlsli"
 
 // Pseudo code
