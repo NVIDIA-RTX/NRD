@@ -12,9 +12,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "InstanceImpl.h"
 
-#include <assert.h> // assert
-#include <array>
-
 constexpr std::array<nrd::Sampler, (size_t)nrd::Sampler::MAX_NUM> g_Samplers = {
     nrd::Sampler::NEAREST_CLAMP,
     nrd::Sampler::LINEAR_CLAMP,

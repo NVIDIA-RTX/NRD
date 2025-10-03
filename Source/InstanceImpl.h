@@ -21,6 +21,7 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
 #include "ml.hlsli"
 
 #include <array>
+#include <cassert> // assert
 #include <cstring> // memset
 
 // See "Shaders.cfg" and "NRD.hlsli"
@@ -59,7 +60,7 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
         for (const auto& define : defines) { \
             int32_t _m = snprintf(shaderIdentifier + _n, sizeof(shaderIdentifier) - _n, "|%s=%s", define.name, define.value); \
             _n += _m; \
-            assert("Buffer is too small" && _n < sizeof(shaderIdentifier) - 8); \
+            assert("Buffer is too small" && _n < int32_t(sizeof(shaderIdentifier) - 8)); \
         } \
     } while (0)
 
