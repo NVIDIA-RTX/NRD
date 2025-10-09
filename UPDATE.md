@@ -337,7 +337,7 @@ A single NRD instance can now include any combination of denoisers, including re
 ## Custom shader compilation
 - since v4.16 `NRDConfig.hlsli` is included into every shader (including `NRD.hlsli`), delivering shared compile-time options. So there is no need to "copy-paste" anything from CMake
 - `PipelineDesc::shaderIdentifier` defines a shader permutation as `fileName|macro1=value1|macro2=value2...` (or just `fileName`, no whitespace characters)
-  - the entry point is provided in `InstanceDesc::shaderEntryPoint` (same as `NRD_CS_MAIN` macro)
-  - an array of macro definitions needs to be passed to a custom shader build system alongside with the file name
-  - (offline) an application can loop through all pipelines in the NRD instance to gather all permutations and compile them via a custom shader build system
-  - (runtime) `PipelineDesc::shaderIdentifier` should be used to identify and provide a shader permutation NRD is asking for, since embedded shaders can't be used
+- the entry point is provided in `InstanceDesc::shaderEntryPoint` (same as `NRD_CS_MAIN` macro)
+- an array of macro definitions needs to be passed to a custom shader build system alongside with the file name
+- (offline) an application can loop through all pipelines in the NRD instance to gather all permutations and compile them via a custom shader build system
+- (runtime) `PipelineDesc::shaderIdentifier` should be used to identify and provide a shader permutation NRD is asking for, since embedded shaders can't be used
