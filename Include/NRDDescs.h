@@ -375,9 +375,9 @@ namespace nrd
 
     struct AllocationCallbacks
     {
-        void* (*Allocate)(void* userArg, size_t size, size_t alignment);
-        void* (*Reallocate)(void* userArg, void* memory, size_t size, size_t alignment);
-        void (*Free)(void* userArg, void* memory);
+        void* (NRD_CALL *Allocate)(void* userArg, size_t size, size_t alignment);
+        void* (NRD_CALL *Reallocate)(void* userArg, void* memory, size_t size, size_t alignment);
+        void (NRD_CALL *Free)(void* userArg, void* memory);
         void* userArg;
     };
 
