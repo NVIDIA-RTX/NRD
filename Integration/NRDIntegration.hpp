@@ -338,7 +338,7 @@ bool Integration::_CreateResources() {
         NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(iHelper.AllocateAndBindMemory(*m_Device, resourceGroupDesc, m_MemoryAllocations.data() + baseAllocation));
 
         resourceGroupDesc = {};
-        resourceGroupDesc.memoryLocation = nri::MemoryLocation::HOST_UPLOAD;
+        resourceGroupDesc.memoryLocation = nri::MemoryLocation::DEVICE_UPLOAD; // soft fallback to "HOST_UPLOAD"
         resourceGroupDesc.bufferNum = 1;
         resourceGroupDesc.buffers = &m_ConstantBuffer;
 
