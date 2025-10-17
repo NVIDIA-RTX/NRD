@@ -259,17 +259,17 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float depthThreshold = gDepthThreshold * (gOrthoMode == 0 ? centerViewZ : 1.0);
 
         [unroll]
-        for (int cx = -1; cx <= 1; cx++)
+        for (j = -1; j <= 1; j++)
         {
             [unroll]
-            for (int cy = -1; cy <= 1; cy++)
+            for (i = -1; i <= 1; i++)
             {
-                const int2 p = pixelPos + int2(cx, cy);
-                const bool isCenter = ((cx == 0) && (cy == 0));
+                const int2 p = pixelPos + int2(i, j);
+                const bool isCenter = i == 0 && j == 0;
                 const bool isInside = all(p >= 0) && all(p < gRectSize);
-                const float kernel = isInside ? kernelWeightGaussian3x3[abs(cx)] * kernelWeightGaussian3x3[abs(cy)] : 0.0;
+                const float kernel = isInside ? kernelWeightGaussian3x3[abs(i)] * kernelWeightGaussian3x3[abs(j)] : 0.0;
 
-                int2 sharedMemoryIndexP = sharedMemoryIndex + int2(cx, cy);
+                int2 sharedMemoryIndexP = sharedMemoryIndex + int2(i, j);
 
                 float4 sampleNormalRoughness = s_Normal_Roughness[sharedMemoryIndexP.y][sharedMemoryIndexP.x];
                 float3 sampleNormal = sampleNormalRoughness.rgb;
@@ -310,8 +310,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                 float wSpecular = geometryW * exp(-specularLuminanceW);
                 wSpecular *= gRoughnessEdgeStoppingEnabled ? (normalWSpecular * roughnessWSpecular) : normalWSpecularSimplified;
-                wSpecular = isCenter ? kernel : wSpecular;
                 wSpecular *= CompareMaterials(sampleMaterialID, centerMaterialID, gSpecMinMaterial);
+                wSpecular = isCenter ? kernel : wSpecular;
 
                 sumWSpecular += wSpecular;
                 sumSpecularIlluminationAnd2ndMoment += wSpecular * sampleSpecularIlluminationAnd2ndMoment;
@@ -333,8 +333,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 diffuseLuminanceW *= diffuseLuminanceWeightRelaxation;
 
                 float wDiffuse = geometryW * normalWDiffuse * exp(-diffuseLuminanceW);
-                wDiffuse = isCenter ? kernel : wDiffuse;
                 wDiffuse *= CompareMaterials(sampleMaterialID, centerMaterialID, gDiffMinMaterial);
+                wDiffuse = isCenter ? kernel : wDiffuse;
 
                 sumWDiffuse += wDiffuse;
                 sumDiffuseIlluminationAnd2ndMoment += wDiffuse * sampleDiffuseIlluminationAnd2ndMoment;

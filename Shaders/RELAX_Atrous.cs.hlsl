@@ -138,18 +138,17 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     }
 
     [unroll]
-    for (int yy = -1; yy <= 1; yy++)
+    for (int j = -1; j <= 1; j++)
     {
         [unroll]
-        for (int xx = -1; xx <= 1; xx++)
+        for (int i = -1; i <= 1; i++)
         {
-            int2 p = pixelPos + offset + int2(xx, yy) * gStepSize;
-            bool isCenter = ((xx == 0) && (yy == 0));
-            if (isCenter)
+            if (i == 0 && j == 0)
                 continue;
 
+            int2 p = pixelPos + offset + int2(i, j) * gStepSize;
             bool isInside = all(p >= int2(0, 0)) && all(p < gRectSize);
-            float kernel = kernelWeightGaussian3x3[abs(xx)] * kernelWeightGaussian3x3[abs(yy)];
+            float kernel = kernelWeightGaussian3x3[abs(i)] * kernelWeightGaussian3x3[abs(j)];
 
             // Fetching normal, roughness, linear Z
             float sampleMaterialID;
