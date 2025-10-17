@@ -117,8 +117,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             }
 
             // "uv" to "pos"
-            int2 pos = int2( uv * gRectSize );
-            pos = min( pos, gRectSizeMinusOne ); // handle almost impossible "uv == 1.0" case
+            int2 pos = uv * gRectSize; // "uv" can't be "1"
 
             // Move to a "valid" pixel in checkerboard mode
             int checkerboardX = pos.x;

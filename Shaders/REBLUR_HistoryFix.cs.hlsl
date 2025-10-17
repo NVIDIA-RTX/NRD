@@ -161,8 +161,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     uv = MirrorUv( uv );
 
                     // "uv" to "pos"
-                    int2 pos = uv * gRectSize;
-                    pos = min( pos, gRectSizeMinusOne ); // handle almost impossible "uv == 1.0" case
+                    int2 pos = uv * gRectSize; // "uv" can't be "1"
 
                     // Fetch data
                     float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
@@ -369,8 +368,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     uv = MirrorUv( uv );
 
                     // "uv" to "pos"
-                    int2 pos = uv * gRectSize;
-                    pos = min( pos, gRectSizeMinusOne ); // handle almost impossible "uv == 1.0" case
+                    int2 pos = uv * gRectSize; // "uv" can't be "1"
 
                     // Fetch data
                     float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
