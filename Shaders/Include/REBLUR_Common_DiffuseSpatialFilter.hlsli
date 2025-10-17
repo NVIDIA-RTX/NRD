@@ -107,12 +107,12 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             float2 uv = GetKernelSampleCoordinates( gViewToClip, offset, Xv, TvBv[ 0 ], TvBv[ 1 ], rotator );
         #endif
 
-            // Apply "mirror once" to not waste taps going outside of the screen
+            // Apply "mirror" to not waste taps going outside of the screen
             float2 uv01 = saturate( uv );
             float w = GetGaussianWeight( offset.z );
-            if( any( uv != uv01 ) ) // TODO: this saves a lot of perf! but why?
+            if( any( uv != uv01 ) ) // TODO: this branch saves a bit of perf
             {
-                uv = uv01 - sign( uv - uv01 ) * frac( uv );
+                uv = MirrorUv( uv );
                 w = 1.0; // offset.z is not valid after mirroring
             }
 

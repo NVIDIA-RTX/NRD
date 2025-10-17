@@ -157,9 +157,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     // Sample uv ( at the pixel center )
                     float2 uv = pixelUv + float2( i, j ) * diffStride * gRectSizeInv;
 
-                    // Apply "mirror once" to not waste taps going outside of the screen
-                    float2 uv01 = saturate( uv );
-                    uv = uv01 - sign( uv - uv01 ) * frac( uv );
+                    // Apply "mirror" to not waste taps going outside of the screen
+                    uv = MirrorUv( uv );
 
                     // "uv" to "pos"
                     int2 pos = uv * gRectSize;
@@ -366,9 +365,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     // Sample uv ( at the pixel center )
                     float2 uv = pixelUv + float2( i, j ) * specStride * gRectSizeInv;
 
-                    // Apply "mirror once" to not waste taps going outside of the screen
-                    float2 uv01 = saturate( uv );
-                    uv = uv01 - sign( uv - uv01 ) * frac( uv );
+                    // Apply "mirror" to not waste taps going outside of the screen
+                    uv = MirrorUv( uv );
 
                     // "uv" to "pos"
                     int2 pos = uv * gRectSize;

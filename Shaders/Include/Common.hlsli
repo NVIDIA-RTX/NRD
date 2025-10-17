@@ -303,6 +303,12 @@ float IsInScreenNearest( float2 uv )
     return float( all( uv > 0.0 ) && all( uv < 1.0 ) );
 }
 
+float2 MirrorUv( float2 uv )
+{
+    // https://www.desmos.com/calculator/vreqlhocsm
+    return 1.0 - abs( 1.0 - frac( uv * 0.5 ) * 2.0 );
+}
+
 // x y
 // z w
 float4 IsInScreenBilinear( float2 footprintOrigin, float2 rectSize )
