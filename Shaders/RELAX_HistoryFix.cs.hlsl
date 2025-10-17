@@ -75,7 +75,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Running sparse cross-bilateral filter
     float baseStride = centerMaterialID == gHistoryFixAlternatePixelStrideMaterialID ? gHistoryFixAlternatePixelStride : gHistoryFixBasePixelStride;
     float r = baseStride / ( 1.0 + historyLength );
-    r = floor( r + 0.5 );
+    r = round( r );
 
     [unroll]
     for (int j = -2; j <= 2; j++)
@@ -83,31 +83,29 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         [unroll]
         for (int i = -2; i <= 2; i++)
         {
-            int dx = (int)(i * r);
-            int dy = (int)(j * r);
-
-            int2 samplePosInt = pixelPos + int2(dx, dy);
-
-            bool isInside = all(samplePosInt >= int2(0, 0)) && all(samplePosInt < gRectSize);
-            if ((i == 0) && (j == 0))
+            if (i == 0 && j == 0)
                 continue;
+
+            int2 samplePosInt = pixelPos + int2(i, j) * r;
+
+            // Apply "mirror" to not waste taps going outside of the screen
+            float2 uv = float2( samplePosInt + 0.5 ) * gRectSizeInv;
+            uv = MirrorUv( uv );
+            samplePosInt = uv * gRectSize; // "uv" can't be "1"
 
             float sampleMaterialID;
             float3 sampleNormal = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[samplePosInt], sampleMaterialID).rgb;
 
             float sampleViewZ = UnpackViewZ(gIn_ViewZ[samplePosInt]);
             float3 sampleWorldPos = GetCurrentWorldPosFromPixelPos(samplePosInt, sampleViewZ);
-            float geometryWeight = GetPlaneDistanceWeight_Atrous(
-                centerWorldPos,
-                centerNormal,
-                sampleWorldPos,
-                depthThreshold);
+
+            float geometryWeight = GetPlaneDistanceWeight_Atrous(centerWorldPos, centerNormal, sampleWorldPos, depthThreshold);
+            geometryWeight = sampleViewZ < gDenoisingRange ? geometryWeight : 0.0;
 
 #if( NRD_DIFF )
             // Summing up diffuse result
             float diffuseW = geometryWeight;
             diffuseW *= getDiffuseNormalWeight(centerNormal, sampleNormal);
-            diffuseW = isInside ? diffuseW : 0;
             diffuseW *= CompareMaterials(sampleMaterialID, centerMaterialID, gDiffMinMaterial);
 
             if (diffuseW > 1e-4)
@@ -130,7 +128,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // Summing up specular result
             float specularW = geometryWeight;
             specularW *= GetSpecularNormalWeight_ATrous(specularNormalWeightParams, centerNormal, sampleNormal, centerV, sampleV);
-            specularW = isInside ? specularW : 0;
             specularW *= CompareMaterials(sampleMaterialID, centerMaterialID, gSpecMinMaterial);
 
             if (specularW > 1e-4)
