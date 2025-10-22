@@ -19,7 +19,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "ml.h"
 #include "ml.hlsli"
 
-#include <array>
 #include <cassert> // assert
 #include <cstdlib> // malloc
 #include <cstring> // memset

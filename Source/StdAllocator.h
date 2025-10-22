@@ -10,6 +10,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #pragma once
 
+#include <array>
 #include <vector>
 
 template <typename T>
@@ -68,11 +69,6 @@ bool operator!=(const StdAllocator<T>& left, const StdAllocator<T>& right) {
 }
 
 template <typename T>
-inline T GetAlignedSize(const T& x, uint32_t alignment) {
-    return ((x + alignment - 1) / alignment) * alignment;
-}
-
-template <typename T>
 inline T* Align(T* x, size_t alignment) {
     return (T*)(((size_t)x + alignment - 1) / alignment * alignment);
 }
@@ -93,29 +89,12 @@ constexpr uint32_t GetCountOf(const std::array<T, N>& v) {
 }
 
 template <typename T, typename... Args>
-constexpr void Construct(T* objects, size_t number, Args&&... args) {
-    for (size_t i = 0; i < number; i++)
-        new (objects + i) T(std::forward<Args>(args)...);
-}
-
-template <typename T, typename... Args>
 inline T* Allocate(StdAllocator<uint8_t>& allocator, Args&&... args) {
     const auto& lowLevelAllocator = allocator.GetInterface();
     T* object = (T*)lowLevelAllocator.Allocate(lowLevelAllocator.userArg, sizeof(T), alignof(T));
 
     new (object) T(std::forward<Args>(args)...);
     return object;
-}
-
-template <typename T, typename... Args>
-inline T* AllocateArray(StdAllocator<uint8_t>& allocator, size_t arraySize, Args&&... args) {
-    const auto& lowLevelAllocator = allocator.GetInterface();
-    T* array = (T*)lowLevelAllocator.Allocate(lowLevelAllocator.userArg, arraySize * sizeof(T), alignof(T));
-
-    for (size_t i = 0; i < arraySize; i++)
-        new (array + i) T(std::forward<Args>(args)...);
-
-    return array;
 }
 
 template <typename T>
@@ -127,18 +106,6 @@ inline void Deallocate(StdAllocator<uint8_t>& allocator, T* object) {
 
     const auto& lowLevelAllocator = allocator.GetInterface();
     lowLevelAllocator.Free(lowLevelAllocator.userArg, object);
-}
-
-template <typename T>
-inline void DeallocateArray(StdAllocator<uint8_t>& allocator, T* array, size_t arraySize) {
-    if (array == nullptr)
-        return;
-
-    for (size_t i = 0; i < arraySize; i++)
-        (array + i)->~T();
-
-    const auto& lowLevelAllocator = allocator.GetInterface();
-    lowLevelAllocator.Free(lowLevelAllocator.userArg, array);
 }
 
 template <typename T>
