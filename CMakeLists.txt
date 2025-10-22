@@ -154,7 +154,7 @@ if(NOT TARGET NRI AND NRD_NRI)
     FetchContent_Declare(
         nri
         GIT_REPOSITORY https://github.com/NVIDIA-RTX/NRI.git
-        GIT_TAG v175
+        GIT_TAG v176
         GIT_SHALLOW 1
     )
     list(APPEND DEPS nri)
