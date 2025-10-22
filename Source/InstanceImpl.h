@@ -12,7 +12,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "NRD.h"
 
-typedef nrd::AllocationCallbacks AllocationCallbacks;
 #include "StdAllocator.h"
 
 #include "ShaderMake/ShaderBlob.h"
@@ -22,6 +21,7 @@ typedef nrd::AllocationCallbacks AllocationCallbacks;
 
 #include <array>
 #include <cassert> // assert
+#include <cstdlib> // malloc
 #include <cstring> // memset
 
 // See "Shaders.cfg" and "NRD.hlsli"

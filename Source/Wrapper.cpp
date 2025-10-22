@@ -13,8 +13,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include "InstanceImpl.h"
 #include "NRD.h"
 
-#include <array>
-
 static_assert(VERSION_MAJOR == NRD_VERSION_MAJOR, "VERSION_MAJOR & NRD_VERSION_MAJOR don't match!");
 static_assert(VERSION_MINOR == NRD_VERSION_MINOR, "VERSION_MINOR & NRD_VERSION_MINOR don't match!");
 static_assert(VERSION_BUILD == NRD_VERSION_BUILD, "VERSION_BUILD & NRD_VERSION_BUILD don't match!");
@@ -118,25 +116,93 @@ const char* g_NrdDenoiserNames[] = {
 };
 static_assert(GetCountOf(g_NrdDenoiserNames) == (uint32_t)nrd::Denoiser::MAX_NUM);
 
+#if _WIN32
+
+static void* NRD_CALL AlignedMalloc(void*, size_t size, size_t alignment) {
+    return _aligned_malloc(size, alignment);
+}
+
+static void* NRD_CALL AlignedRealloc(void*, void* memory, size_t size, size_t alignment) {
+    return _aligned_realloc(memory, size, alignment);
+}
+
+static void NRD_CALL AlignedFree(void*, void* memory) {
+    _aligned_free(memory);
+}
+
+#else
+
+static uint8_t* NRD_CALL AlignMemory(uint8_t* memory, size_t alignment) {
+    return (uint8_t*)((size_t(memory) + alignment - 1) & ~(alignment - 1));
+}
+
+static void* NRD_CALL AlignedMalloc(void*, size_t size, size_t alignment) {
+    uint8_t* memory = (uint8_t*)malloc(size + sizeof(uint8_t*) + alignment - 1);
+
+    if (memory == nullptr)
+        return nullptr;
+
+    uint8_t* alignedMemory = AlignMemory(memory + sizeof(uint8_t*), alignment);
+    uint8_t** memoryHeader = (uint8_t**)alignedMemory - 1;
+    *memoryHeader = memory;
+
+    return alignedMemory;
+}
+
+static void* NRD_CALL AlignedRealloc(void* userArg, void* memory, size_t size, size_t alignment) {
+    if (memory == nullptr)
+        return AlignedMalloc(userArg, size, alignment);
+
+    uint8_t** memoryHeader = (uint8_t**)memory - 1;
+    uint8_t* oldMemory = *memoryHeader;
+    uint8_t* newMemory = (uint8_t*)realloc(oldMemory, size + sizeof(uint8_t*) + alignment - 1);
+
+    if (newMemory == nullptr)
+        return nullptr;
+
+    if (newMemory == oldMemory)
+        return memory;
+
+    uint8_t* alignedMemory = AlignMemory(newMemory + sizeof(uint8_t*), alignment);
+    memoryHeader = (uint8_t**)alignedMemory - 1;
+    *memoryHeader = newMemory;
+
+    return alignedMemory;
+}
+
+static void NRD_CALL AlignedFree(void*, void* memory) {
+    if (memory == nullptr)
+        return;
+
+    uint8_t** memoryHeader = (uint8_t**)memory - 1;
+    uint8_t* oldMemory = *memoryHeader;
+    free(oldMemory);
+}
+
+#endif
+
 NRD_API const nrd::LibraryDesc* NRD_CALL nrd::GetLibraryDesc() {
     return &g_NrdLibraryDesc;
 }
 
 NRD_API nrd::Result NRD_CALL nrd::CreateInstance(const InstanceCreationDesc& instanceCreationDesc, Instance*& instance) {
     InstanceCreationDesc modifiedInstanceCreationDesc = instanceCreationDesc;
-    CheckAndSetDefaultAllocator(modifiedInstanceCreationDesc.allocationCallbacks);
+    if (!modifiedInstanceCreationDesc.allocationCallbacks.Allocate || !modifiedInstanceCreationDesc.allocationCallbacks.Reallocate || !modifiedInstanceCreationDesc.allocationCallbacks.Free) {
+        modifiedInstanceCreationDesc.allocationCallbacks.Allocate = AlignedMalloc;
+        modifiedInstanceCreationDesc.allocationCallbacks.Reallocate = AlignedRealloc;
+        modifiedInstanceCreationDesc.allocationCallbacks.Free = AlignedFree;
+    }
 
     StdAllocator<uint8_t> memoryAllocator(modifiedInstanceCreationDesc.allocationCallbacks);
 
-    InstanceImpl* implementation = Allocate<InstanceImpl>(memoryAllocator, memoryAllocator);
-    Result result = implementation->Create(modifiedInstanceCreationDesc);
+    InstanceImpl* impl = Allocate<InstanceImpl>(memoryAllocator, memoryAllocator);
+    Result result = impl->Create(modifiedInstanceCreationDesc);
 
-    if (result == Result::SUCCESS) {
-        instance = (Instance*)implementation;
-        return Result::SUCCESS;
-    }
-
-    Deallocate(memoryAllocator, implementation);
+    if (result != Result::SUCCESS) {
+        Deallocate(memoryAllocator, impl);
+        instance = nullptr;
+    } else
+        instance = (Instance*)impl;
 
     return result;
 }
