@@ -127,7 +127,7 @@ Commons inputs for primary hits (if *PSR* is not used, common use case) or for s
 
   Modes:
   - *2D screen-space motion* - 2D motion doesn't provide information about movement along the view direction. *NRD* can reject history on dynamic objects in this case
-  - *2.5D screen-space motion (recommended)* - similar to the 2D screen-space motion, but `.z = viewZprev - viewZ`
+  - *2.5D screen-space motion (recommended)* - similar to the 2D screen-space motion, but `.z = viewZprev - viewZ` (see [NRD sample/GetMotion](https://github.com/NVIDIA-RTX/NRD-Sample/blob/9deb12a5408c4e2e07a6ff261f0a1051dd22f5d6/Shaders/Include/Shared.hlsli#L358))
   - *3D world-space motion* - camera motion should not be included (it's already in the matrices). In other words, if there are no moving objects, all motion vectors must be `0` even if the camera is moving
 
   Motion vector scaling can be provided via `CommonSettings::motionVectorScale`. *NRD* expectations:
