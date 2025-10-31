@@ -469,11 +469,11 @@ namespace nrd
     //====================================================================================================================================================
 
     const uint32_t REFERENCE_MAX_HISTORY_FRAME_NUM = 4095;
-    const float REFERENCE_DEFAULT_ACCUMULATION_TIME = 17.0f; // sec
+    const float REFERENCE_DEFAULT_ACCUMULATION_TIME = 2.0f; // sec
 
     struct ReferenceSettings
     {
         // (>= 0) - maximum number of linearly accumulated frames
-        uint32_t maxAccumulatedFrameNum = 1020;
+        uint32_t maxAccumulatedFrameNum = 120;
     };
 }
