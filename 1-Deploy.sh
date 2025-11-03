@@ -6,5 +6,5 @@ git submodule update --init --recursive
 mkdir -p "_Build"
 
 cd "_Build"
-cmake -DNRD_NRI=ON ..
+cmake -DNRD_NRI=ON .. "$@"
 cd ..

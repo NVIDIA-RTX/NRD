@@ -23,7 +23,7 @@ jobs:
         run: .\2-Build.bat
 
   Build-Ubuntu:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name : Checkout
         uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
       - name: Setup CMake
         uses: jwlawson/actions-setup-cmake@v2
         with:
-          cmake-version: '3.30.x'
+          cmake-version: 'latest'
 
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
