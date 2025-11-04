@@ -330,7 +330,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float responsiveFactor = RemapRoughnessToResponsiveFactor( roughness );
         float smc = GetSpecMagicCurve( roughness );
         float acceleration = lerp( smc, 1.0, 0.5 + responsiveFactor * 0.5 );
-        specHistoryWeight *= materialID == gStrandMaterialID ? 0.5 : acceleration;
+        if( materialID == gStrandMaterialID )
+            acceleration = min( acceleration, 0.5 );
+
+        specHistoryWeight *= acceleration;
 
         specLumaHistory = Color::Clamp( specLumaM1, specLumaSigma * specTemporalAccumulationParams.y, specLumaHistory );
 

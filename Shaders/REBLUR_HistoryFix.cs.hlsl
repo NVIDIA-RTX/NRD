@@ -486,7 +486,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         specM1 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
         specM2 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
 
-        float specSigma = GetStdDev( specM1, specM2 ) * gFastHistoryClampingSigmaScale;
+        float fastHistoryClampingSigmaScale = gFastHistoryClampingSigmaScale;
+        if( materialID == gStrandMaterialID )
+            fastHistoryClampingSigmaScale = max( fastHistoryClampingSigmaScale, 3.0 );
+
+        float specSigma = GetStdDev( specM1, specM2 ) * fastHistoryClampingSigmaScale;
         float specMin = specM1 - specSigma;
         float specMax = specM1 + specSigma;
 

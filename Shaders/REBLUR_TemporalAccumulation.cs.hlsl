@@ -800,8 +800,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         // Fast history
-        float smbSpecFastNonLinearAccumSpeed = GetNonLinearAccumSpeed( smbSpecAccumSpeed, gMaxFastAccumulatedFrameNum, surfaceHistoryConfidence, specHasData );
-        float vmbSpecFastNonLinearAccumSpeed = GetNonLinearAccumSpeed( vmbSpecAccumSpeed, gMaxFastAccumulatedFrameNum, virtualHistoryConfidence, specHasData );
+        float maxFastAccumulatedFrameNum = gMaxFastAccumulatedFrameNum;
+        if( materialID == gStrandMaterialID )
+            maxFastAccumulatedFrameNum = max( maxFastAccumulatedFrameNum, gMaxAccumulatedFrameNum / 5 );
+
+        float smbSpecFastNonLinearAccumSpeed = GetNonLinearAccumSpeed( smbSpecAccumSpeed, maxFastAccumulatedFrameNum, surfaceHistoryConfidence, specHasData );
+        float vmbSpecFastNonLinearAccumSpeed = GetNonLinearAccumSpeed( vmbSpecAccumSpeed, maxFastAccumulatedFrameNum, virtualHistoryConfidence, specHasData );
 
         float smbSpecFast = lerp( smbSpecFastHistory, GetLuma( spec ), smbSpecFastNonLinearAccumSpeed );
         float vmbSpecFast = lerp( vmbSpecFastHistory, GetLuma( spec ), vmbSpecFastNonLinearAccumSpeed );
