@@ -58,18 +58,24 @@ float2 UnpackData1( float2 p )
     return p * REBLUR_MAX_ACCUM_FRAME_NUM;
 }
 
+#if( NRD_SPEC == 0 )
+    #define smbAllowCatRomBit 4 // 8-bits storage
+#else
+    #define smbAllowCatRomBit 15 // 32-bits storage
+#endif
+
 uint PackData2( float fbits, float curvature, float virtualHistoryAmount, bool smbAllowCatRom )
 {
     // BITS:
-    // 0-3 - smbOcclusion 2x2
-    // 4-7 - vmbOcclusion 2x2
-    // 8-14 - virtualHistoryAmount
-    // 15 - smbAllowCatRom
-    // 16-31 - curvature
+    // 0-3     - smbOcclusion 2x2
+    // 4-7     - vmbOcclusion 2x2 ( all 0 in diffuse-only mode )
+    // 8-14    - virtualHistoryAmount
+    // 4 or 15 - smbAllowCatRom
+    // 16-31   - curvature
 
     uint p = uint( fbits + 0.5 );
     p |= uint( saturate( virtualHistoryAmount ) * 127.0 + 0.5 ) << 8;
-    p |= smbAllowCatRom ? ( 1 << 15 ) : 0;
+    p |= smbAllowCatRom ? ( 1 << smbAllowCatRomBit ) : 0;
     p |= f32tof16( curvature ) << 16;
 
     return p;
@@ -78,7 +84,7 @@ uint PackData2( float fbits, float curvature, float virtualHistoryAmount, bool s
 float2 UnpackData2( uint p, out uint bits, out bool smbAllowCatRom )
 {
     bits = p & 0xFF;
-    smbAllowCatRom = ( p & ( 1 << 15 ) ) != 0;
+    smbAllowCatRom = ( p & ( 1 << smbAllowCatRomBit ) ) != 0;
 
     float virtualHistoryAmount = float( ( p >> 8 ) & 127 ) / 127.0;
     float curvature = f16tof32( p >> 16 );
