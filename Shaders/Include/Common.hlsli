@@ -101,7 +101,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #define NRD_NORMAL_ENCODING_ERROR                           ( 0.75 / 255.0 )
     #define STOCHASTIC_BILINEAR_FILTER                          gNearestClamp
 #else
-    #define NRD_NORMAL_ENCODING_ERROR                           ( 0.50 / 255.0 )
+    #define NRD_NORMAL_ENCODING_ERROR                           ( 0.40 / 255.0 )
     #define STOCHASTIC_BILINEAR_FILTER                          gLinearClamp
 #endif
 
@@ -505,8 +505,7 @@ float GetNormalWeightParam( float nonLinearAccumSpeed, float lobeAngleFraction, 
     //float tanHalfAngle = ImportanceSampling::GetSpecularLobeTanHalfAngle( roughness, NRD_MAX_PERCENT_OF_LOBE_VOLUME );
     //tanHalfAngle *= lerp( gLobeAngleFraction, 1.0, nonLinearAccumSpeed );
 
-    float angle = atan( tanHalfAngle );
-    angle = max( angle, NRD_NORMAL_ENCODING_ERROR );
+    float angle = max( atan( tanHalfAngle ), NRD_NORMAL_ENCODING_ERROR );
 
     return 1.0 / angle;
 }
@@ -588,15 +587,14 @@ float GetGaussianWeight( float r )
 
 // Encoding precision aware weight functions ( for reprojection )
 
-float GetEncodingAwareNormalWeight( float3 Ncurr, float3 Nprev, float maxAngle, float curvatureAngle, float thresholdAngle, bool remap = false )
+float GetEncodingAwareNormalWeight( float3 Ncurr, float3 Nprev, float maxAngle, float curvatureAngle, float thresholdAngle )
 {
     float cosa = dot( Ncurr, Nprev );
     float angle = Math::AcosApprox( cosa );
     float w = Math::SmoothStep01( 1.0 - ( angle - curvatureAngle - thresholdAngle ) / maxAngle );
 
-    // Needed to mitigate imprecision issues because prev normals are RGBA8 ( test 3, 43 if roughness is low )
-    if( remap ) // TODO: needed only for RELAX
-        w = Math::SmoothStep( 0.05, 0.95, w );
+    // Needed to mitigate potential issues due to encoding mismatch, small "maxAngle" or imprecise "acos" ( test 3, 43 if roughness is low )
+    w = Math::SmoothStep( 0.05, 0.95, w );
 
     return w;
 }

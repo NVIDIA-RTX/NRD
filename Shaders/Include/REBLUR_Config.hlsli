@@ -79,7 +79,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_POST_BLUR_FRACTION_SCALE                         0.5 // TODO: adjust based on sum of non-noisy data based weights...
 #define REBLUR_POST_BLUR_RADIUS_SCALE                           2.0 // ... ( normalized to number of taps ) from the blur pass?
 
-#define REBLUR_NORMAL_ULP                                       NRD_NORMAL_ENCODING_ERROR // was 1.5 / 255.0 ( too much for 0 roughness )
+#define REBLUR_NORMAL_ULP                                       0.0 // was "NRD_NORMAL_ENCODING_ERROR"
 #define REBLUR_ALMOST_ZERO_ANGLE                                cos( Math::DegToRad( 89.0 ) )
 #define REBLUR_VIRTUAL_MOTION_PREV_PREV_WEIGHT_ITERATION_NUM    1
 #define REBLUR_FIREFLY_SUPPRESSOR_MAX_RELATIVE_INTENSITY        38.0

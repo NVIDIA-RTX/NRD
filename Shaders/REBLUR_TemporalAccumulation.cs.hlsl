@@ -562,7 +562,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // angle is PI ( most left and most right points on a hemisphere ), it can be achieved by using "tan" instead of angle.
         float curvatureAngleTan = pixelSize * abs( curvature ); // tana = pixelSize / curvatureRadius = pixelSize * curvature
         curvatureAngleTan *= max( vmbPixelsTraveled / max( NoV, 0.01 ), 1.0 ); // path length
-        curvatureAngleTan *= 2.0; // TODO: why it's here? it's needed to allow REBLUR_NORMAL_ULP values < "1.5 / 255.0"
+        curvatureAngleTan *= 2.0; // TODO: why it's here? but works well
         float curvatureAngle = atan( curvatureAngleTan );
 
         // Copied from "GetNormalWeightParam" but doesn't use "lobeAngleFraction"
@@ -573,8 +573,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         //float lobeTanHalfAngle = ImportanceSampling::GetSpecularLobeTanHalfAngle( roughnessModified, NRD_MAX_PERCENT_OF_LOBE_VOLUME );
         //lobeTanHalfAngle /= 1.0 + vmbSpecAccumSpeed;
 
-        float lobeHalfAngle = atan( lobeTanHalfAngle );
-        lobeHalfAngle = max( lobeHalfAngle, NRD_NORMAL_ENCODING_ERROR );
+        float lobeHalfAngle = max( atan( lobeTanHalfAngle ), NRD_NORMAL_ENCODING_ERROR );
 
         // Virtual motion - normal: lobe overlapping ( test 107 )
         float normalWeight = GetEncodingAwareNormalWeight( N, vmbN, lobeHalfAngle, curvatureAngle, REBLUR_NORMAL_ULP );
@@ -674,8 +673,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             tana0 *= nonLinearAccumSpeed; // make more strict if history is long
             tana0 /= GetHitDistFactor( h, frustumSize ) + NRD_EPS; // make relaxed "in corners", where reflection is close to the surface
 
-            float a0 = atan( tana0 );
-            a0 = max( a0, NRD_NORMAL_ENCODING_ERROR );
+            float a0 = max( atan( tana0 ), NRD_NORMAL_ENCODING_ERROR );
 
             float f = Math::LinearStep( a0, 0.0, a );
             surfaceHistoryConfidence = Math::Pow01( f, 4.0 );

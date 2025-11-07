@@ -791,7 +791,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Normal weight for virtual motion based reprojection
     float lobeHalfAngle = max(atan(GetSpecLobeTanHalfAngle(currentRoughnessModified)), RELAX_NORMAL_ULP);
-    float normalWeight = GetEncodingAwareNormalWeight(currentNormal, prevNormalVMB, lobeHalfAngle, curvatureAngle, RELAX_NORMAL_ULP, true);
+    float normalWeight = GetEncodingAwareNormalWeight(currentNormal, prevNormalVMB, lobeHalfAngle, curvatureAngle, RELAX_NORMAL_ULP);
     virtualHistoryAmount *= lerp(1.0 - saturate(uvDiffLengthInPixels), 1.0, normalWeight); // jitter friendly
 
     // Roughness weight for virtual motion based reprojection
@@ -811,8 +811,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float4 backNormalRoughness2 = UnpackPrevNormalRoughness(gPrev_Normal_Roughness.SampleLevel(gLinearClamp, backUV2 * gResolutionScalePrev, 0));
     backNormalRoughness1.rgb = Geometry::RotateVector(gWorldPrevToWorld, backNormalRoughness1.rgb);
     backNormalRoughness2.rgb = Geometry::RotateVector(gWorldPrevToWorld, backNormalRoughness2.rgb);
-    float prevPrevNormalWeight = IsInScreenNearest(backUV1) ? GetEncodingAwareNormalWeight(prevNormalVMB, backNormalRoughness1.rgb, lobeHalfAngle, curvatureAngle * 2.0, RELAX_NORMAL_ULP, true) : 1.0;
-    prevPrevNormalWeight *= IsInScreenNearest(backUV2) ? GetEncodingAwareNormalWeight(prevNormalVMB, backNormalRoughness2.rgb, lobeHalfAngle, curvatureAngle * 3.0, RELAX_NORMAL_ULP, true) : 1.0;
+    float prevPrevNormalWeight = IsInScreenNearest(backUV1) ? GetEncodingAwareNormalWeight(prevNormalVMB, backNormalRoughness1.rgb, lobeHalfAngle, curvatureAngle * 2.0, RELAX_NORMAL_ULP) : 1.0;
+    prevPrevNormalWeight *= IsInScreenNearest(backUV2) ? GetEncodingAwareNormalWeight(prevNormalVMB, backNormalRoughness2.rgb, lobeHalfAngle, curvatureAngle * 3.0, RELAX_NORMAL_ULP) : 1.0;
     virtualHistoryAmount *= 0.33 + 0.67 * prevPrevNormalWeight;
     specVMBConfidence *= 0.33 + 0.67 * prevPrevNormalWeight;
     // Taking in account roughness 1 and 2 frames back helps cleaning up surfaces wigh varying roughness
@@ -852,7 +852,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Current specular signal ( surface motion )
     float specSMBConfidence = (SMBReprojectionFound > 0 ? 1.0 : 0.0) *
-        GetEncodingAwareNormalWeight(V, Vprev, lobeHalfAngle * NoV / gFramerateScale, 0.0, 0.0, false);
+        GetEncodingAwareNormalWeight(V, Vprev, lobeHalfAngle * NoV / gFramerateScale, 0.0, 0.0);
 
     float specSMBAlpha = 1.0 - specSMBConfidence;
     float specSMBResponsiveAlpha = 1.0 - specSMBConfidence;
