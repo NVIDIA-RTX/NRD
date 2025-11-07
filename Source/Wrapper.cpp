@@ -9,7 +9,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
 #include "../Resources/Version.h"
-#include "../Shaders/Include/NRDConfig.hlsli"
 #include "InstanceImpl.h"
 #include "NRD.h"
 

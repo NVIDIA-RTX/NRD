@@ -23,6 +23,9 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include <cstdlib> // malloc
 #include <cstring> // memset
 
+// Make encoding visible in all files!
+#include "../Shaders/Include/NRDConfig.hlsli"
+
 // See "Shaders.cfg" and "NRD.hlsli"
 #define NRD_DIFFUSE          "DIFF"
 #define NRD_SPECULAR         "SPEC"
