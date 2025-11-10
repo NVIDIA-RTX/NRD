@@ -246,6 +246,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         disocclusionThresholdMix = gIn_DisocclusionThresholdMix[ WithRectOrigin( pixelPos ) ];
 
     float disocclusionThreshold = lerp( gDisocclusionThreshold, gDisocclusionThresholdAlternate, disocclusionThresholdMix );
+    if( materialID == gStrandMaterialID )
+    {
+        // Further relax "disocclusionThreshold" if parallax is relatively small
+        float mediumParallax = Math::SmoothStep01( smbParallaxInPixelsMax );
+        disocclusionThreshold = lerp( NRD_STRAND_RELAXED_DISOCCLUSION_THRESHOLD, disocclusionThreshold, mediumParallax );
+    }
 
     // TODO: small parallax ( very slow motion ) could be used to increase disocclusion threshold, but:
     // - MVs should be dilated first

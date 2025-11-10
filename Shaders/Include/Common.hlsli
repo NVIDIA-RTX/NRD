@@ -93,6 +93,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define NRD_CURVATURE_Z_THRESHOLD                               0.1 // normalized %
 #define NRD_MAX_ALLOWED_VIRTUAL_MOTION_ACCELERATION             15.0 // keep relatively high to avoid ruining concave mirrors
 #define NRD_MAX_PERCENT_OF_LOBE_VOLUME                          0.75 // normalized % // TODO: have a gut feeling that it's too much...
+#define NRD_STRAND_RELAXED_DISOCCLUSION_THRESHOLD               0.25
 
 #if( NRD_NORMAL_ENCODING < NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
     #define NRD_NORMAL_ENCODING_ERROR                           ( 1.50 / 255.0 )

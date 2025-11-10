@@ -1200,7 +1200,7 @@ float REBLUR_GetHitDist( float normHitDist, float viewZ, float4 hitDistParams, f
 // pixelSize = gUnproject * ( isOrtho ? 1.0 : abs( viewZ ) )
 float NRD_GetNormalizedStrandThickness( float strandThickness, float pixelSize )
 {
-    return pixelSize / ( pixelSize + strandThickness );
+    return saturate( 0.5 * pixelSize / ( strandThickness + NRD_EPS ) );
 }
 
 #endif // __cplusplus
