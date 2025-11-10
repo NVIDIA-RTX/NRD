@@ -518,9 +518,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             float4 vmbViewZ = UnpackViewZ( gPrev_ViewZ.GatherRed( gNearestClamp, vmbBilinearGatherUv ).wzxy );
             float3 vmbVv = Geometry::ReconstructViewPosition( vmbPixelUv, gFrustumPrev, 1.0 ); // unnormalized, orthoMode = 0
-            float3 vmbV = Geometry::RotateVectorInverse( gWorldToViewPrev, vmbVv );
+            float3 Nv = Geometry::RotateVector( gWorldToViewPrev, N );
             float NoXcurr = dot( N, Xprev - gCameraDelta.xyz );
-            float4 NoXprev = ( N.x * vmbV.x + N.y * vmbV.y ) * ( gOrthoMode == 0 ? vmbViewZ : gOrthoMode ) + N.z * vmbV.z * vmbViewZ;
+            float4 NoXprev = ( Nv.x * vmbVv.x + Nv.y * vmbVv.y ) * ( gOrthoMode == 0 ? vmbViewZ : gOrthoMode ) + Nv.z * vmbVv.z * vmbViewZ;
             float4 vmbPlaneDist = abs( NoXprev - NoXcurr );
 
             vmbOcclusion = step( vmbPlaneDist, vmbOcclusionThreshold );
