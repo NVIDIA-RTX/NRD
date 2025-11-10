@@ -348,8 +348,8 @@ namespace nrd
         RGBA8_UNORM,
         RGBA8_SNORM,
 
-        // Moderate IQ on curved (not bumpy) surfaces, but offers optional materialID support (normals are oct-packed, 2 bits for material ID)
-        R10_G10_B10_A2_UNORM,
+        // Close to best IQ on curved (not bumpy) surfaces, but offers optional materialID support (normals are oct-packed, 2 bits for material ID)
+        R10_G10_B10_A2_UNORM, // RECOMMENDED
 
         // Best IQ on curved (not bumpy) surfaces
         RGBA16_UNORM,
@@ -364,8 +364,8 @@ namespace nrd
         // Alpha (m)
         SQ_LINEAR,
 
-        // Linear roughness (best choice)
-        LINEAR,
+        // Linear roughness
+        LINEAR, // RECOMMENDED
 
         // Sqrt(linear roughness)
         SQRT_LINEAR,

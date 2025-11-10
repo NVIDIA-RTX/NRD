@@ -70,14 +70,10 @@ namespace nrd
         // Probabilistic split at primary hit is not used, hence hit distance is always valid (reconstruction is not needed)
         OFF,
 
-        // If hit distance is invalid due to probabilistic sampling, reconstruct using 3x3 neighbors.
-        // Probability at primary hit must be clamped to [1/4; 3/4] range to guarantee a sample in this area.
+        // If hit distance is invalid due to probabilistic sampling, it's reconstructed using 3x3 (or 5x5) neighbors.
+        // Probability at primary hit must be clamped to [1/4; 3/4] (or [1/16; 15/16) range to guarantee a sample in this area.
         // White noise must be replaced with Bayer dithering to gurantee a sample in this area (see NRD sample)
-        AREA_3X3,
-
-        // If hit distance is invalid due to probabilistic sampling, reconstruct using 5x5 neighbors.
-        // Probability at primary hit must be clamped to [1/16; 15/16] range to guarantee a sample in this area.
-        // White noise must be replaced with Bayer dithering to gurantee a sample in this area (see NRD sample)
+        AREA_3X3, // RECOMMENDED
         AREA_5X5,
 
         MAX_NUM

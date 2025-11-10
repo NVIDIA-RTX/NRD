@@ -1,10 +1,12 @@
-# NVIDIA REAL-TIME DENOISERS v4.16.0 (NRD)
+# NVIDIA REAL-TIME DENOISERS v4.16.1 (NRD)
 
 [![Build NRD SDK](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml/badge.svg)](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml)
 
 ![Title](Images/Title.jpg)
 
-For quick starting see *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* project.
+For quick starting see *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* project:
+- `main` branch - contains everything needed for NRD development, testing aand maintaining, all variants of NRD usage are here
+- `simplex` branch - focuses on path tracing and NRD best practices (less code, less preprocessor, easier to follow)
 
 # OVERVIEW
 
@@ -185,7 +187,7 @@ Hit distance (*REBLUR* and *RELAX*):
 - In case of probabilistic diffuse / specular selection at the primary hit, provided `hitT` must follow the following rules:
   - Should not be divided by `PDF`
   - If diffuse or specular sampling is skipped, `hitT` must be set to `0` for corresponding signal type
-  - `hitDistanceReconstructionMode` must be set to something other than `OFF`, but bear in mind that the search area is limited to 3x3 or 5x5. In other words, it's the application's responsibility to guarantee a valid sample in this area. It can be achieved by clamping probabilities and using Bayer-like dithering (see the sample for more details and read comments for `HitDistanceReconstructionMode` fields)
+  - `hitDistanceReconstructionMode` must be set to something other than `OFF`, but bear in mind that the search area is limited to 3x3 (or 5x5). In other words, it's the application's responsibility to guarantee a valid sample in this area. It can be achieved by clamping probabilities and using Bayer-like dithering (see the sample for more details and read comments for `HitDistanceReconstructionMode` fields)
   - Pre-pass must be enabled (i.e. `diffusePrepassBlurRadius` and `specularPrepassBlurRadius` must be set to 20-70 pixels) to compensate entropy increase, since radiance in valid samples is divided by probability to compensate 0 values in some neighbors
 - Probabilistic split for 2nd+ bounces is absolutely acceptable
 - In case of many paths per pixel `hitT` for specular must be "averaged" by `NRD.hlsli/NRD_FrontEnd_SpecHitDistAveraging_*` functions
