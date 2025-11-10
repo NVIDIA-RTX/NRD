@@ -53,6 +53,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #    define REBLUR_FORMAT_PREV_NORMAL_ROUGHNESS Format::RGBA16_UNORM
 #elif (NRD_NORMAL_ENCODING == 4)
 #    define REBLUR_FORMAT_PREV_NORMAL_ROUGHNESS Format::RGBA16_SFLOAT
+#else
+#    error "'NRDConfig.h' not included"
 #endif
 
 #define REBLUR_FORMAT_HITDIST_FOR_TRACKING Format::R16_SFLOAT
