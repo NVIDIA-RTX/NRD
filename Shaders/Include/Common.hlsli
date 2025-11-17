@@ -488,8 +488,9 @@ float GetNormalWeightParam( float nonLinearAccumSpeed, float lobeAngleFraction, 
     return 1.0 / angle;
 }
 
-float2 GetGeometryWeightParams( float planeDistSensitivity, float frustumSize, float3 Xv, float3 Nv, float nonLinearAccumSpeed )
+float2 GetGeometryWeightParams( float planeDistSensitivity, float frustumSize, float3 Xv, float3 Nv )
 {
+    // TODO: should depend on "nonLinearAccumSpeed"? Probably, not...
     float norm = planeDistSensitivity * frustumSize;
     float a = 1.0 / norm;
     float b = dot( Nv, Xv ) * a;

@@ -101,7 +101,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float frustumSize = GetFrustumSize( gMinRectDimMulUnproject, gOrthoMode, viewZ );
     float3 Vv = GetViewVector( Xv, true );
     float NoV = abs( dot( Nv, Vv ) );
-    float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv, 0.0 );
+    float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv );
 
     // Estimate penumbra size and filter shadow ( dense )
     float2 sum = 0;

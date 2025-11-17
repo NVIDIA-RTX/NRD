@@ -81,7 +81,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     float frustumSize = GetFrustumSize( gMinRectDimMulUnproject, gOrthoMode, center.z );
 
-    float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv, 1.0 );
+    float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv );
     float2 relaxedRoughnessWeightParams = GetRelaxedRoughnessWeightParams( roughness * roughness );
     float diffNormalWeightParam = GetNormalWeightParam( 1.0, 1.0 );
     float specNormalWeightParam = GetNormalWeightParam( 1.0, 1.0, roughness );

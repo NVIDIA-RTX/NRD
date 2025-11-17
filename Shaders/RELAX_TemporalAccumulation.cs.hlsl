@@ -710,7 +710,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             // Replace if same surface
             float frustumSize = min( gRectSize.x, gRectSize.y ) * pixelSize;
-            float2 geometryWeightParams = GetGeometryWeightParams( NRD_CURVATURE_HIGH_PARALLAX_DISOCCLUSION_THRESHOLD, frustumSize, currentWorldPos, currentNormal, 1.0 );
+            float2 geometryWeightParams = GetGeometryWeightParams( NRD_CURVATURE_HIGH_PARALLAX_DISOCCLUSION_THRESHOLD, frustumSize, currentWorldPos, currentNormal );
             float NoX = dot( currentNormal, xHigh );
 
             float w = ComputeWeight( NoX, geometryWeightParams.x, geometryWeightParams.y );

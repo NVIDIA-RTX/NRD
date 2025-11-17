@@ -83,7 +83,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
         // Weights
         float roughnessFractionScaled = saturate( gRoughnessFraction * fractionScale );
-        float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv, specNonLinearAccumSpeed );
+        float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv );
         float normalWeightParam = GetNormalWeightParam( specNonLinearAccumSpeed, gLobeAngleFraction, roughness ) / fractionScale;
         float2 roughnessWeightParams = GetRoughnessWeightParams( roughness, roughnessFractionScaled );
 

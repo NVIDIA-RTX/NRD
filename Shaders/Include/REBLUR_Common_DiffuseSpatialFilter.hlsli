@@ -63,7 +63,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         blurRadius = max( blurRadius, gMinBlurRadius );
 
         // Weights
-        float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv, diffNonLinearAccumSpeed );
+        float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv );
         float normalWeightParam = GetNormalWeightParam( diffNonLinearAccumSpeed, gLobeAngleFraction ) / fractionScale;
 
         float2 hitDistanceWeightParams = GetHitDistanceWeightParams( ExtractHitDist( diff ), diffNonLinearAccumSpeed ); // TODO: what if hitT == 0?
