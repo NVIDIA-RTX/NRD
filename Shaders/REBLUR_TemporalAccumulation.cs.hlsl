@@ -430,21 +430,23 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             // Mix
             float2 w = abs( deltaUv ) + 1.0 / 256.0;
-            w /= w.x + w.y;
+            w /= w.x + w.y; // TODO: perspective correction?
 
             float3 x = x10 * w.x + x01 * w.y;
             float3 n = normalize( n10 * w.x + n01 * w.y );
 
             // High parallax - flattens surface on high motion ( test 132, 172, 173, 174, 190, 201, 202, 203, e9 )
             // IMPORTANT: a must for 8-bit and 10-bit normals ( tests b7, b10, b33, 202 )
+            float dither = Sequence::Bayer4x4( pixelPos, gFrameIndex ); // dithering is needed to avoid a hard-border
+            float edgeFix = 1.0 - BRDF::Pow5( NoV );
+
             float deltaUvLenFixed = smbParallaxInPixelsMin; // "min" because not needed for objects attached to the camera!
-            deltaUvLenFixed *= NRD_USE_HIGH_PARALLAX_CURVATURE_SILHOUETTE_FIX ? NoV : 1.0; // it fixes silhouettes, but leads to less flattening
-            deltaUvLenFixed *= 1.0 + gFramerateScale * Sequence::Bayer4x4( pixelPos, gFrameIndex ); // improves behavior if FPS is high, dithering is needed to avoid artefacts in test 1
+            deltaUvLenFixed *= 1.0 + edgeFix * ( 1.0 + gFramerateScale * dither );
 
             float2 motionUvHigh = pixelUv + deltaUvLenFixed * deltaUv * gRectSizeInv;
             motionUvHigh = ( floor( motionUvHigh * gRectSize ) + 0.5 ) * gRectSizeInv; // Snap to the pixel center!
 
-            if( NRD_USE_HIGH_PARALLAX_CURVATURE && deltaUvLenFixed > 1.0 && IsInScreenNearest( motionUvHigh ) )
+            if( deltaUvLenFixed > 1.0 && IsInScreenNearest( motionUvHigh ) )
             {
                 float2 uvScaled = WithRectOffset( ClampUvToViewport( motionUvHigh ) );
 
@@ -455,8 +457,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float3 nHigh = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness.SampleLevel( gNearestClamp, uvScaled, 0 ) ).xyz;
 
                 // Replace if same surface
-                float zError = abs( zHigh - viewZ ) * rcp( max( zHigh, viewZ ) );
-                bool cmp = zError < NRD_CURVATURE_Z_THRESHOLD; // TODO: use common disocclusion logic?
+                float2 geometryWeightParams = GetGeometryWeightParams( NRD_CURVATURE_HIGH_PARALLAX_DISOCCLUSION_THRESHOLD, frustumSize, X, N, 1.0 );
+                float NoX = dot( N, xHigh );
+
+                float w = ComputeWeight( NoX, geometryWeightParams.x, geometryWeightParams.y );
+                bool cmp = w > 0.5;
 
                 n = cmp ? nHigh : n;
                 x = cmp ? xHigh : x;
@@ -465,19 +470,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // Estimate curvature for the edge { x; X }
             float3 edge = x - X;
             float edgeLenSq = Math::LengthSquared( edge );
-            curvature = dot( n - N, edge ) * Math::PositiveRcp( edgeLenSq );
+            curvature = dot( n - N, edge ) / edgeLenSq;
 
-        #if( NRD_USE_SPECULAR_MOTION_V2 == 0 ) // needed only for the old version
-            // Correction #1 - this is needed if camera is "inside" a concave mirror ( tests 133, 164, 171 - 176 )
-            if( length( X ) < -1.0 / curvature ) // TODO: test 78
-                curvature *= NoV;
-
-            // Correction #2 - very negative inconsistent with previous frame curvature blows up reprojection ( tests 164, 171 - 176 )
-            float2 uv1 = Geometry::GetScreenUv( gWorldToClipPrev, X - V * ApplyThinLensEquation( hitDistForTracking, curvature ) );
-            float2 uv2 = Geometry::GetScreenUv( gWorldToClipPrev, X );
-            float a = length( ( uv1 - uv2 ) * gRectSize );
-            curvature *= float( a < NRD_MAX_ALLOWED_VIRTUAL_MOTION_ACCELERATION * smbParallaxInPixelsMax + gRectSizeInv.x );
-        #endif
+            // Correction - very negative inconsistent with previous frame curvature blows up reprojection ( tests 164, 171 - 176 )
+            if( curvature < 0 )
+            {
+                float2 uv1 = Geometry::GetScreenUv( gWorldToClipPrev, GetXvirtual( hitDistForTracking, curvature, X, X, N, V, roughness ) );
+                float2 uv2 = Geometry::GetScreenUv( gWorldToClipPrev, X );
+                float a = length( ( uv1 - uv2 ) * gRectSize );
+                curvature *= float( a < NRD_MAX_ALLOWED_VIRTUAL_MOTION_ACCELERATION * smbParallaxInPixelsMax + gRectSizeInv.x );
+            }
         }
 
         // Virtual motion - coordinates

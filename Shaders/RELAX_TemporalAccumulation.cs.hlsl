@@ -20,6 +20,13 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 groupshared float4 sharedNormalSpecHitT[BUFFER_Y][BUFFER_X];
 
+float ApplyThinLensEquation( float O, float curvature ) // TODO: delete and use code from REBLUR?
+{
+    float I = O / ( 2.0 * curvature * O + 1.0 );
+
+    return I;
+}
+
 float isReprojectionTapValid(float3 currentWorldPos, float3 previousWorldPos, float3 currentNormal, float disocclusionThreshold)
 {
     // Check if plane distance is acceptable
@@ -231,15 +238,10 @@ float loadVirtualMotionBasedPrevData(
     float3 currentWorldPos,
     float3 currentNormal,
     float currentLinearZ,
-    float hitDistFocused,
-    float hitDistOriginal,
-    float3 currentViewVector,
-    float3 prevWorldPos,
+    float3 virtualWorldPos,
     bool surfaceBicubicValid,
     float currentMaterialID,
     float2 prevUVSMB,
-    float smbParallaxInPixelsMax,
-    float NoV,
     float disocclusionThreshold,
     out float4 prevSpecularIllumAnd2ndMoment,
     out float4 prevSpecularResponsiveIllum,
@@ -254,13 +256,7 @@ float loadVirtualMotionBasedPrevData(
     )
 {
     // Calculating previous worldspace virtual position based on reflection hitT
-    float3 virtualViewVector = normalize(currentViewVector) * hitDistFocused;
-    float3 prevVirtualWorldPos = prevWorldPos + virtualViewVector;
-
-    float currentViewVectorLength = length(currentViewVector);
-    float accumulatedSpecularVMBZ = currentViewVectorLength + hitDistFocused;
-
-    float4 prevVirtualClipPos = mul(gWorldToClipPrev, float4(prevVirtualWorldPos, 1.0));
+    float4 prevVirtualClipPos = mul(gWorldToClipPrev, float4(virtualWorldPos, 1.0));
     prevVirtualClipPos.xy /= prevVirtualClipPos.w;
     prevUVVMB = prevVirtualClipPos.xy * float2(0.5, -0.5) + float2(0.5, 0.5);
     prevUVVMB = currentMaterialID == gCameraAttachedReflectionMaterialID ? prevUVSMB : prevUVVMB;
@@ -687,21 +683,23 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Mix
         float2 w = abs( deltaUv ) + 1.0 / 256.0;
-        w /= w.x + w.y;
+        w /= w.x + w.y; // TODO: perspective correction?
 
         float3 x = x10 * w.x + x01 * w.y;
         float3 n = normalize( n10 * w.x + n01 * w.y );
 
         // High parallax - flattens surface on high motion ( test 132, 172, 173, 174, 190, 201, 202, 203, e9 )
         // IMPORTANT: a must for 8-bit and 10-bit normals ( tests b7, b10, b33, 202 )
+        float dither = Sequence::Bayer4x4( pixelPos, gFrameIndex ); // dithering is needed to avoid a hard-border
+        float edgeFix = 1.0 - BRDF::Pow5( NoV );
+
         float deltaUvLenFixed = smbParallaxInPixelsMin; // "min" because not needed for objects attached to the camera!
-        deltaUvLenFixed *= NRD_USE_HIGH_PARALLAX_CURVATURE_SILHOUETTE_FIX ? NoV : 1.0; // it fixes silhouettes, but leads to less flattening
-        deltaUvLenFixed *= 1.0 + gFramerateScale * Sequence::Bayer4x4( pixelPos, gFrameIndex ); // improves behavior if FPS is high, dithering is needed to avoid artefacts in test 1
+        deltaUvLenFixed *= 1.0 + edgeFix * ( 1.0 + gFramerateScale * dither );
 
         float2 motionUvHigh = pixelUv + deltaUvLenFixed * deltaUv * gRectSizeInv;
         motionUvHigh = ( floor( motionUvHigh * gRectSize ) + 0.5 ) * gRectSizeInv; // Snap to the pixel center!
 
-        if( NRD_USE_HIGH_PARALLAX_CURVATURE && deltaUvLenFixed > 1.0 && IsInScreenNearest( motionUvHigh ) )
+        if( deltaUvLenFixed > 1.0 && IsInScreenNearest( motionUvHigh ) )
         {
             float2 uvScaled = WithRectOffset( ClampUvToViewport( motionUvHigh ) );
 
@@ -711,33 +709,33 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float3 nHigh = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness.SampleLevel( gNearestClamp, uvScaled, 0 ) ).xyz;
 
             // Replace if same surface
-            float zError = abs( zHigh - currentLinearZ ) * rcp( max( zHigh, currentLinearZ ) );
-            bool cmp = zError < NRD_CURVATURE_Z_THRESHOLD; // TODO: use common disocclusion logic?
+            float frustumSize = min( gRectSize.x, gRectSize.y ) * pixelSize;
+            float2 geometryWeightParams = GetGeometryWeightParams( NRD_CURVATURE_HIGH_PARALLAX_DISOCCLUSION_THRESHOLD, frustumSize, currentWorldPos, currentNormal, 1.0 );
+            float NoX = dot( currentNormal, xHigh );
+
+            float w = ComputeWeight( NoX, geometryWeightParams.x, geometryWeightParams.y );
+            bool cmp = w > 0.5;
 
             n = cmp ? nHigh : n;
             x = cmp ? xHigh : x;
         }
 
-        // Estimate curvature for the edge { x; currentWorldPos }
+        // Estimate curvature for the edge { x; X }
         float3 edge = x - currentWorldPos;
         float edgeLenSq = Math::LengthSquared( edge );
-        curvature = dot( n - currentNormal, edge ) * Math::PositiveRcp( edgeLenSq );
+        curvature = dot( n - currentNormal, edge ) / edgeLenSq;
 
-    #if( NRD_USE_SPECULAR_MOTION_V2 == 0 ) // needed only for the old version
-        // Correction #1 - this is needed if camera is "inside" a concave mirror ( tests 133, 164, 171 - 176 )
-        if( length( currentWorldPos ) < -1.0 / curvature ) // TODO: test 78
-            curvature *= NoV;
-
-        // Correction #2 - very negative inconsistent with previous frame curvature blows up reprojection ( tests 164, 171 - 176 )
-        float2 uv1 = Geometry::GetScreenUv( gWorldToClipPrev, currentWorldPos - V * ApplyThinLensEquation( hitDist, curvature ) );
-        float2 uv2 = Geometry::GetScreenUv( gWorldToClipPrev, currentWorldPos );
-        float a = length( ( uv1 - uv2 ) * gRectSize );
-        curvature *= float( a < NRD_MAX_ALLOWED_VIRTUAL_MOTION_ACCELERATION * smbParallaxInPixelsMax + gRectSizeInv.x );
-    #endif
+        // Correction - very negative inconsistent with previous frame curvature blows up reprojection ( tests 164, 171 - 176 )
+        if( curvature < 0 ) // it's needed if negative curvature is allowed
+        {
+            float2 uv1 = Geometry::GetScreenUv( gWorldToClipPrev, GetXvirtual( hitDist, curvature, currentWorldPos, currentWorldPos, currentNormal, V, currentRoughness ) );
+            float2 uv2 = Geometry::GetScreenUv( gWorldToClipPrev, currentWorldPos );
+            float a = length( ( uv1 - uv2 ) * gRectSize );
+            curvature *= float( a < NRD_MAX_ALLOWED_VIRTUAL_MOTION_ACCELERATION * smbParallaxInPixelsMax + gRectSizeInv.x );
+        }
     }
 
-    // Thin lens equation for adjusting reflection HitT
-    float hitDistFocused = ApplyThinLensEquation(hitDist, curvature);
+    float3 virtualWorldPos = GetXvirtual( hitDist, curvature, currentWorldPos, prevWorldPos, currentNormal, V, currentRoughness );
 
     // Loading specular data based on virtual motion
     float4 prevSpecularIlluminationAnd2ndMomentVMB;
@@ -755,15 +753,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         currentWorldPos,
         currentNormal,
         currentLinearZ,
-        hitDistFocused,
-        hitDist,
-        currentViewVector,
-        prevWorldPos,
+        virtualWorldPos,
         SMBReprojectionFound == 2.0 ? true : false,
         currentMaterialID,
         prevUVSMB,
-        smbParallaxInPixelsMax,
-        NoV,
         disocclusionThreshold,
         prevSpecularIlluminationAnd2ndMomentVMB,
         prevSpecularIlluminationAnd2ndMomentVMBResponsive,
@@ -838,7 +831,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     virtualHistoryHitDistConfidence = lerp(virtualHistoryHitDistConfidence, 1.0, SMC);
 
     // Virtual history confidence - virtual UV discrepancy
-    float3 virtualWorldPos = GetXvirtual(hitDist, curvature, currentWorldPos, prevWorldPos, currentNormal, V, currentRoughness);
     float virtualWorldPosLength = length(virtualWorldPos);
     float hitDistForTrackingPrev = prevSpecularIlluminationAnd2ndMomentVMBResponsive.a;
     float3 prevVirtualWorldPos = GetXvirtual(hitDistForTrackingPrev, curvature, currentWorldPos, prevWorldPos, currentNormal, V, currentRoughness);

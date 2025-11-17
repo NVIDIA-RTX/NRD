@@ -75,23 +75,20 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 // Switches ( default 1 )
 #define NRD_USE_TILE_CHECK                                      1 // significantly improves performance by skipping computations in "empty" regions
-#define NRD_USE_HIGH_PARALLAX_CURVATURE                         1 // flattens surface on high motion
 #define NRD_USE_DENANIFICATION                                  1 // needed only if inputs have NAN / INF outside of viewport or denoising range
-#define NRD_USE_SPECULAR_MOTION_V2                              1 // this method offers better IQ on bumpy and wavy surfaces, but it doesn't work on concave mirrors ( no motion acceleration )
 
 // Switches ( default 0 )
 #define NRD_USE_QUADRATIC_DISTRIBUTION                          0
 #define NRD_USE_EXPONENTIAL_WEIGHTS                             0
-#define NRD_USE_HIGH_PARALLAX_CURVATURE_SILHOUETTE_FIX          0 // it fixes silhouettes, but leads to less flattening on bumpy surfaces ( worse for bumpy surfaces ) and shorter arcs on smooth curved surfaces ( worse for low bit normals )
 
 // Settings
 #define NRD_DISOCCLUSION_THRESHOLD                              0.02 // normalized % // TODO: use CommonSettings::disocclusionThreshold?
-#define NRD_CATROM_SHARPNESS                                    0.5 // [ 0; 1 ], 0.5 matches Catmull-Rom // TODO: use 0.6?
-#define NRD_RADIANCE_COMPRESSION_MODE                           3 // 0-4, specular color compression for spatial passes
+#define NRD_CATROM_SHARPNESS                                    0.5  // [ 0; 1 ], 0.5 matches Catmull-Rom // TODO: use 0.6?
+#define NRD_RADIANCE_COMPRESSION_MODE                           3    // 0-4, specular color compression for spatial passes
 #define NRD_EXP_WEIGHT_DEFAULT_SCALE                            3.0
 #define NRD_ROUGHNESS_SENSITIVITY                               0.01 // smaller => more sensitive
-#define NRD_CURVATURE_Z_THRESHOLD                               0.1 // normalized %
-#define NRD_MAX_ALLOWED_VIRTUAL_MOTION_ACCELERATION             15.0 // keep relatively high to avoid ruining concave mirrors
+#define NRD_CURVATURE_HIGH_PARALLAX_DISOCCLUSION_THRESHOLD      0.04 // normalized %
+#define NRD_MAX_ALLOWED_VIRTUAL_MOTION_ACCELERATION             5.0  // TODO: keep relatively high to avoid ruining concave mirrors ( was 15 )
 #define NRD_MAX_PERCENT_OF_LOBE_VOLUME                          0.75 // normalized % // TODO: have a gut feeling that it's too much...
 #define NRD_STRAND_RELAXED_DISOCCLUSION_THRESHOLD               0.25
 
@@ -102,7 +99,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #define NRD_NORMAL_ENCODING_ERROR                           ( 0.75 / 255.0 )
     #define STOCHASTIC_BILINEAR_FILTER                          gNearestClamp
 #else
-    #define NRD_NORMAL_ENCODING_ERROR                           ( 0.40 / 255.0 )
+    #define NRD_NORMAL_ENCODING_ERROR                           ( 0.40 / 255.0 ) // TODO: tweak!
     #define STOCHASTIC_BILINEAR_FILTER                          gLinearClamp
 #endif
 
@@ -414,64 +411,44 @@ Interactive graph:
     https://www.desmos.com/calculator/dn9spdgwiz
 */
 
-float ApplyThinLensEquation( float O, float curvature )
-{
-    float I = O / ( 2.0 * curvature * O + 1.0 );
-
-    return I;
-}
-
 float3 GetXvirtual( float hitDist, float curvature, float3 X, float3 Xprev, float3 N, float3 V, float roughness )
 {
     // GGX dominant direction
     float4 D = ImportanceSampling::GetSpecularDominantDirection( N, V, roughness, ML_SPECULAR_DOMINANT_DIRECTION_G2 );
 
-    // It will be image position in world space relative to the primary hit
-    float3 Iw = V;
+    // Specular ray direction can be used instead of GGX dominant direction
+    float3 reflectionRay = D.xyz * hitDist;
 
-    #if( NRD_USE_SPECULAR_MOTION_V2 == 0 )
-        float hitDistFocused = ApplyThinLensEquation( hitDist, curvature );
+    // Construct a basis for the reflector
+    float3x3 reflectorBasis = Geometry::GetBasis( N );
 
-        Iw *= hitDistFocused;
-    #else
-        // Specular ray direction can be used instead of GGX dominant direction
-        float3 reflectionRay = D.xyz * hitDist;
+    // Object position
+    float3 O = Geometry::RotateVector( reflectorBasis, reflectionRay );
+    O.z = -O.z; // O.z is always negative due to sign convention ( assuming no self intersection rays )
 
-        // Construct a basis for the reflector
-        float3 principalAxis = N;
-        float3x3 reflectorBasis = Geometry::GetBasis( principalAxis );
+    // Magnification ( negative sign is responsible for  motion acceleration )
+    float mag = 1.0 / ( 2.0 * curvature * O.z - 1.0 );
 
-        // Object position
-        float3 O = Geometry::RotateVector( reflectorBasis, reflectionRay );
+    // Avoid smearing on silhouettes ( tests b7, b10 )
+    float NoV = abs( dot( N, V ) );
+    float f = length( X ); // if close to...
+    f *= saturate( 1.0 - NoV ); // a silhouette...
+    f *= max( curvature, 0.0 ); // of a convex hull... ( works badly with negative curvature )
+    f = 1.0 / ( 1.0 + f ); // reduce magnification
+    mag *= f;
 
-        // O.z is always negative due to sign convention ( assuming no self intersection rays )
-        O.z = -O.z;
+    // Image position
+    float3 I = O * mag;
 
-        // Image position
-        float mag = 1.0 / ( 2.0 * curvature * O.z - 1.0 );
-
-        // Workaround: avoid smearing on silhouettes
-        float f = length( X ); // if close to...
-        f *= 1.0 - abs( dot( N, V ) ); // a silhouette...
-        f *= max( curvature, 0.0 ); // of a convex hull...
-        mag *= 1.0 / ( 1.0 + f ); // reduce magnification
-
-        float3 I = O * mag;
-
-        Iw *= length( I );
-
-        // TODO: to fix bahavior on concave mirrors, signed world position is needed. But the code below can't be used "as is"
-        // because motion can become inconsistent in some cases ( tests 133, 164, 171 - 176 ) leading to reprojection artefacts
-        //Iw = Geometry::RotateVectorInverse( reflectorBasis, I ); // no
-        //Iw *= -Math::Sign( mag ); // closer
-    #endif
+    // Elongation
+    D.w *= length( I );
 
     // Only hit distance is provided, not real motion in the virtual world. If the virtual position is close to the
     // surface due to focusing, better to replace current position with previous position because surface motion is known
-    float closenessToSurface = saturate( length( Iw ) / ( hitDist + NRD_EPS ) );
-    float3 origin = lerp( Xprev, X, closenessToSurface * D.w );
+    float closenessToSurface = saturate( D.w / ( hitDist + NRD_EPS ) );
+    float3 x = lerp( Xprev, X, closenessToSurface );
 
-    return origin - Iw * D.w;
+    return x + V * D.w * Math::Sign( mag );
 }
 
 // Kernel
