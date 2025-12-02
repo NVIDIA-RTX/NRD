@@ -123,9 +123,9 @@ if(NOT TARGET ShaderMake)
 
     FetchContent_Declare(
         shadermake
-        GIT_REPOSITORY https://github.com/NVIDIA-RTX/ShaderMake.git
-        GIT_TAG main
-        GIT_SHALLOW 1
+        DOWNLOAD_EXTRACT_TIMESTAMP 1
+        DOWNLOAD_NO_PROGRESS 1
+        URL https://github.com/NVIDIA-RTX/ShaderMake/archive/18f5a344e7ca8fa65daaf079d07bc8ce38453e05.zip
     )
     list(APPEND DEPS shadermake)
 endif()
@@ -134,9 +134,9 @@ if(NOT TARGET MathLib)
     # MathLib
     FetchContent_Declare(
         mathlib
-        GIT_REPOSITORY https://github.com/NVIDIA-RTX/MathLib.git
-        GIT_TAG v9
-        GIT_SHALLOW 1
+        DOWNLOAD_EXTRACT_TIMESTAMP 1
+        DOWNLOAD_NO_PROGRESS 1
+        URL https://github.com/NVIDIA-RTX/MathLib/archive/refs/tags/v9.zip
     )
     list(APPEND DEPS mathlib)
 endif()
@@ -153,9 +153,9 @@ if(NOT TARGET NRI AND NRD_NRI)
 
     FetchContent_Declare(
         nri
-        GIT_REPOSITORY https://github.com/NVIDIA-RTX/NRI.git
-        GIT_TAG v176
-        GIT_SHALLOW 1
+        DOWNLOAD_EXTRACT_TIMESTAMP 1
+        DOWNLOAD_NO_PROGRESS 1
+        URL https://github.com/NVIDIA-RTX/NRI/archive/refs/tags/v176.zip
     )
     list(APPEND DEPS nri)
 endif()
