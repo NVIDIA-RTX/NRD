@@ -13,16 +13,16 @@ mkdir -p "Lib/Debug"
 mkdir -p "Lib/Release"
 mkdir -p "Shaders"
 
-cp -r "$(SELF)/Include/." "Include"
-cp -r "$(SELF)/Integration/." "Integration"
-cp -r "$(SELF)/Shaders/Include/NRD.hlsli" "Shaders"
-cp -r "$(SELF)/Shaders/Include/NRDConfig.hlsli" "Shaders"
-cp "$(SELF)/LICENSE.txt" "."
-cp "$(SELF)/README.md" "."
-cp "$(SELF)/UPDATE.md" "."
+cp -r "${SELF}/Include/." "Include"
+cp -r "${SELF}/Integration/." "Integration"
+cp -r "${SELF}/Shaders/Include/NRD.hlsli" "Shaders"
+cp -r "${SELF}/Shaders/Include/NRDConfig.hlsli" "Shaders"
+cp "${SELF}/LICENSE.txt" "."
+cp "${SELF}/README.md" "."
+cp "${SELF}/UPDATE.md" "."
 
-cp -H "$(ROOT)/_Bin/Debug/libNRD.so" "Lib/Debug"
-cp -H "$(ROOT)/_Bin/Release/libNRD.so" "Lib/Release"
+cp -H "${ROOT}/_Bin/Debug/libNRD.so" "Lib/Debug"
+cp -H "${ROOT}/_Bin/Release/libNRD.so" "Lib/Release"
 
 cd ..
 
