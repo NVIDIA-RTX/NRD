@@ -2,34 +2,29 @@
 
 set ROOT=%cd%
 set SELF=%~dp0
+set SDK=_NRD_SDK
 
-rd /q /s "_NRD_SDK"
-mkdir "_NRD_SDK"
-cd "_NRD_SDK"
+echo %SDK%: ROOT=%ROOT%, SELF=%SELF%
 
-mkdir "Include"
-mkdir "Integration"
-mkdir "Lib\Debug"
-mkdir "Lib\Release"
-mkdir "Shaders"
+rd /q /s "%SDK%"
 
-copy "%SELF%\Include\*" "Include"
-copy "%SELF%\Integration\*" "Integration"
-copy "%SELF%\Shaders\Include\NRD.hlsli" "Shaders"
-copy "%SELF%\Shaders\Include\NRDConfig.hlsli" "Shaders"
-copy "%SELF%\LICENSE.txt" "."
-copy "%SELF%\README.md" "."
-copy "%SELF%\UPDATE.md" "."
+mkdir "%SDK%\Include"
+mkdir "%SDK%\Integration"
+mkdir "%SDK%\Lib\Debug"
+mkdir "%SDK%\Lib\Release"
+mkdir "%SDK%\Shaders"
 
-copy "%ROOT%\_Bin\Debug\NRD.dll" "Lib\Debug"
-copy "%ROOT%\_Bin\Debug\NRD.lib" "Lib\Debug"
-copy "%ROOT%\_Bin\Debug\NRD.pdb" "Lib\Debug"
-copy "%ROOT%\_Bin\Release\NRD.dll" "Lib\Release"
-copy "%ROOT%\_Bin\Release\NRD.lib" "Lib\Release"
-copy "%ROOT%\_Bin\Release\NRD.pdb" "Lib\Release"
+copy "%SELF%\Include\*" "%SDK%\Include"
+copy "%SELF%\Integration\*" "%SDK%\Integration"
+copy "%SELF%\Shaders\Include\NRD.hlsli" "%SDK%\Shaders"
+copy "%SELF%\Shaders\Include\NRDConfig.hlsli" "%SDK%\Shaders"
+copy "%SELF%\LICENSE.txt" "%SDK%\"
+copy "%SELF%\README.md" "%SDK%\"
+copy "%SELF%\UPDATE.md" "%SDK%\"
 
-cd ..
-
-if exist "_Build\_deps\nri-src\3-PrepareSDK.bat" (
-    call "_Build\_deps\nri-src\3-PrepareSDK.bat"
-)
+copy "%ROOT%\_Bin\Debug\NRD.dll" "%SDK%\Lib\Debug"
+copy "%ROOT%\_Bin\Debug\NRD.lib" "%SDK%\Lib\Debug"
+copy "%ROOT%\_Bin\Debug\NRD.pdb" "%SDK%\Lib\Debug"
+copy "%ROOT%\_Bin\Release\NRD.dll" "%SDK%\Lib\Release"
+copy "%ROOT%\_Bin\Release\NRD.lib" "%SDK%\Lib\Release"
+copy "%ROOT%\_Bin\Release\NRD.pdb" "%SDK%\Lib\Release"

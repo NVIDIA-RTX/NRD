@@ -1,27 +1,26 @@
 #!/bin/bash
 
 ROOT=$(pwd)
-SELF=$(cd "$(dirname "$0")" && pwd)
+SELF=$(dirname "$0")
+SDK=_NRD_SDK
 
-rm -rf "_NRD_SDK"
+echo ${SDK}: ROOT=${ROOT}, SELF=${SELF}
 
-mkdir -p "_NRD_SDK/Include"
-mkdir -p "_NRD_SDK/Integration"
-mkdir -p "_NRD_SDK/Lib/Debug"
-mkdir -p "_NRD_SDK/Lib/Release"
-mkdir -p "_NRD_SDK/Shaders"
+rm -rf "${SDK}"
 
-cp -r "${SELF}/Include/." "_NRD_SDK/Include"
-cp -r "${SELF}/Integration/." "_NRD_SDK/Integration"
-cp "${SELF}/Shaders/Include/NRD.hlsli" "_NRD_SDK/Shaders"
-cp "${SELF}/Shaders/Include/NRDConfig.hlsli" "_NRD_SDK/Shaders"
-cp "${SELF}/LICENSE.txt" "_NRD_SDK/"
-cp "${SELF}/README.md" "_NRD_SDK/"
-cp "${SELF}/UPDATE.md" "_NRD_SDK/"
+mkdir -p "${SDK}/Include"
+mkdir -p "${SDK}/Integration"
+mkdir -p "${SDK}/Lib/Debug"
+mkdir -p "${SDK}/Lib/Release"
+mkdir -p "${SDK}/Shaders"
 
-cp -H "${ROOT}/_Bin/Debug/libNRD.so" "_NRD_SDK/Lib/Debug"
-cp -H "${ROOT}/_Bin/Release/libNRD.so" "_NRD_SDK/Lib/Release"
+cp -r "${SELF}/Include/." "${SDK}/Include"
+cp -r "${SELF}/Integration/." "${SDK}/Integration"
+cp "${SELF}/Shaders/Include/NRD.hlsli" "${SDK}/Shaders"
+cp "${SELF}/Shaders/Include/NRDConfig.hlsli" "${SDK}/Shaders"
+cp "${SELF}/LICENSE.txt" "${SDK}/"
+cp "${SELF}/README.md" "${SDK}/"
+cp "${SELF}/UPDATE.md" "${SDK}/"
 
-if [ -f "_Build/_deps/nri-src/3-PrepareSDK.sh" ]; then
-    bash "_Build/_deps/nri-src/3-PrepareSDK.sh"
-fi
+cp -H "${ROOT}/_Bin/Debug/libNRD.so" "${SDK}/Lib/Debug"
+cp -H "${ROOT}/_Bin/Release/libNRD.so" "${SDK}/Lib/Release"
