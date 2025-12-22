@@ -35,9 +35,12 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR}) # if not submodule
 
     if(IS_MULTI_CONFIG)
         set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "")
+        set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/_Bin")
+    else()
+        set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/_Bin/${CMAKE_BUILD_TYPE}")
     endif()
 
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/_Bin" CACHE STRING "")
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}" CACHE STRING "")
 endif()
 
 # Create project
