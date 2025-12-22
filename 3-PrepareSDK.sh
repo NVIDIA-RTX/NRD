@@ -10,8 +10,7 @@ rm -rf "${SDK}"
 
 mkdir -p "${SDK}/Include"
 mkdir -p "${SDK}/Integration"
-mkdir -p "${SDK}/Lib/Debug"
-mkdir -p "${SDK}/Lib/Release"
+mkdir -p "${SDK}/Lib"
 mkdir -p "${SDK}/Shaders"
 
 cp -r "${SELF}/Include/." "${SDK}/Include"
@@ -22,5 +21,4 @@ cp "${SELF}/LICENSE.txt" "${SDK}/"
 cp "${SELF}/README.md" "${SDK}/"
 cp "${SELF}/UPDATE.md" "${SDK}/"
 
-cp -H "${ROOT}/_Bin/Debug/libNRD.so" "${SDK}/Lib/Debug"
-cp -H "${ROOT}/_Bin/Release/libNRD.so" "${SDK}/Lib/Release"
+cp -H "${ROOT}/_Bin/libNRD.so" "${SDK}/Lib"
