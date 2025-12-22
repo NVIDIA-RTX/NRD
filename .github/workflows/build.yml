@@ -11,7 +11,7 @@ jobs:
   Build-Windows:
     runs-on: windows-latest
     steps:
-      - name : Checkout
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: true
@@ -20,12 +20,20 @@ jobs:
         run: .\1-Deploy.bat
 
       - name: Build
-        run: .\2-Build.bat
+        run: |
+          .\2-Build.bat
+          .\3-PrepareSDK.bat
+
+      - name: Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: NRD SDK (Windows x64)
+          path: _NRD_SDK
 
   Build-Ubuntu:
     runs-on: ubuntu-latest
     steps:
-      - name : Checkout
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: true
@@ -42,4 +50,12 @@ jobs:
         run: bash 1-Deploy.sh
 
       - name: Build
-        run: bash 2-Build.sh
+        run: |
+          bash 2-Build.sh
+          bash 3-PrepareSDK.sh
+
+      - name: Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: NRD SDK (Linux x64)
+          path: _NRD_SDK
