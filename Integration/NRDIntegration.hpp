@@ -17,7 +17,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #endif
 
 static_assert(NRD_VERSION_MAJOR >= 4 && NRD_VERSION_MINOR >= 16, "Unsupported NRD version!");
-static_assert(NRI_VERSION >= 176, "Unsupported NRI version!");
+static_assert(NRI_VERSION >= 177, "Unsupported NRI version!");
 
 #define NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(expr) \
     if ((expr) != nri::Result::SUCCESS) \
@@ -786,7 +786,7 @@ void Integration::_Dispatch(nri::CommandBuffer& commandBuffer, nri::DescriptorPo
 
                     nri::Texture2DViewDesc desc = {
                         resource->nri.texture,
-                        isStorage ? nri::Texture2DViewType::SHADER_RESOURCE_STORAGE_2D : nri::Texture2DViewType::SHADER_RESOURCE_2D,
+                        isStorage ? nri::Texture2DViewType::SHADER_RESOURCE_STORAGE : nri::Texture2DViewType::SHADER_RESOURCE,
                         textureDesc.format,
                         0,
                         1,
