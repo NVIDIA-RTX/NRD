@@ -22,5 +22,5 @@ cp "${SELF}/LICENSE.txt" "${SDK}/"
 cp "${SELF}/README.md" "${SDK}/"
 cp "${SELF}/UPDATE.md" "${SDK}/"
 
-cp -H "${ROOT}/_Bin/." "${SDK}/Lib/Debug"
-cp -H "${ROOT}/_Bin/." "${SDK}/Lib/Release"
+cp -r "${ROOT}/_Bin/." "${SDK}/Lib/Debug"
+cp -r "${ROOT}/_Bin/." "${SDK}/Lib/Release"
