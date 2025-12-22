@@ -22,5 +22,14 @@ cp "${SELF}/LICENSE.txt" "${SDK}/"
 cp "${SELF}/README.md" "${SDK}/"
 cp "${SELF}/UPDATE.md" "${SDK}/"
 
-cp -r "${ROOT}/_Bin/." "${SDK}/Lib/Debug"
-cp -r "${ROOT}/_Bin/." "${SDK}/Lib/Release"
+# Find the _Bin directory regardless of where we are
+BIN_DIR=$(find $(pwd) -type d -name "_Bin" | head -n 1)
+
+if [ -z "$BIN_DIR" ]; then
+    echo "ERROR: _Bin directory not found anywhere!"
+    # List files to see what happened
+    ls -R
+    exit 1
+fi
+
+echo "Found _Bin at: $BIN_DIR"
