@@ -22,5 +22,5 @@ cp "${SELF}/LICENSE.txt" "${SDK}/"
 cp "${SELF}/README.md" "${SDK}/"
 cp "${SELF}/UPDATE.md" "${SDK}/"
 
-cp -H "${ROOT}/_Bin/Debug/libNRD.so" "${SDK}/Lib/Debug"
-cp -H "${ROOT}/_Bin/Release/libNRD.so" "${SDK}/Lib/Release"
+cp -H "${ROOT}/_Bin/." "${SDK}/Lib/Debug"
+cp -H "${ROOT}/_Bin/." "${SDK}/Lib/Release"
