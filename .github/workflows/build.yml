@@ -25,7 +25,7 @@ jobs:
       - name: Prepare SDK
         run: .\3-PrepareSDK.bat
 
-      - name: Package
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: NRD SDK (Windows x64)
@@ -56,7 +56,7 @@ jobs:
       - name: Prepare SDK
         run: bash 3-PrepareSDK.sh
 
-      - name: Package
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: NRD SDK (Linux x64)
