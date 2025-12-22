@@ -13,8 +13,8 @@ mkdir -p "Lib/Debug"
 mkdir -p "Lib/Release"
 mkdir -p "Shaders"
 
-cp -r "$(SELF)/Include/" "Include"
-cp -r "$(SELF)/Integration/" "Integration"
+cp -r "$(SELF)/Include/." "Include"
+cp -r "$(SELF)/Integration/." "Integration"
 cp -r "$(SELF)/Shaders/Include/NRD.hlsli" "Shaders"
 cp -r "$(SELF)/Shaders/Include/NRDConfig.hlsli" "Shaders"
 cp "$(SELF)/LICENSE.txt" "."
@@ -26,4 +26,6 @@ cp -H "$(ROOT)/_Bin/Release/libNRD.so" "Lib/Release"
 
 cd ..
 
-source "_Build\_deps\nri-src\3-PrepareSDK.sh"
+if [ -f "_Build/_deps/nri-src/3-PrepareSDK.sh" ]; then
+    source "_Build/_deps/nri-src/3-PrepareSDK.sh"
+fi

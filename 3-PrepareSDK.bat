@@ -30,4 +30,6 @@ copy "%ROOT%\_Bin\Release\NRD.pdb" "Lib\Release"
 
 cd ..
 
-call "_Build\_deps\nri-src\3-PrepareSDK.bat"
+if exist "_Build\_deps\nri-src\3-PrepareSDK.bat" (
+    call "_Build\_deps\nri-src\3-PrepareSDK.bat"
+)
