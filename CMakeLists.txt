@@ -29,23 +29,6 @@ set(NRD_SHADERS_PATH "" CACHE STRING "Shader output path override")
 set(NRD_NORMAL_ENCODING "2" CACHE STRING "Normal encoding variant (0-4, matches nrd::NormalEncoding)")
 set(NRD_ROUGHNESS_ENCODING "1" CACHE STRING "Roughness encoding variant (0-2, matches nrd::RoughnessEncoding)")
 
-# Self-build?
-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR}) # if not submodule
-    get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-
-    if(IS_MULTI_CONFIG)
-        set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "")
-        set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/_Bin")
-        message("MULTI")
-    else()
-        set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/_Bin/${CMAKE_BUILD_TYPE}")
-        message("SINGLE '${CMAKE_BUILD_TYPE}'")
-    endif()
-
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}" CACHE STRING "") # .dll
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIR}" CACHE STRING "") # .so
-endif()
-
 # Create project
 file(READ "Include/NRD.h" ver_h)
 string(REGEX MATCH "NRD_VERSION_MAJOR ([0-9]*)" _ ${ver_h})
@@ -57,6 +40,23 @@ set(NRD_VERSION_BUILD ${CMAKE_MATCH_1})
 message("NRD: v${NRD_VERSION_MAJOR}.${NRD_VERSION_MINOR}.${NRD_VERSION_BUILD}")
 
 project(NRD VERSION ${NRD_VERSION_MAJOR}.${NRD_VERSION_MINOR}.${NRD_VERSION_BUILD} LANGUAGES CXX)
+
+# Self-build?
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR}) # if not submodule
+    get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+
+    if(IS_MULTI_CONFIG)
+        set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "")
+        set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/_Bin")
+        message("MULTI '${CMAKE_CONFIGURATION_TYPES}'")
+    else()
+        set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/_Bin/${CMAKE_BUILD_TYPE}")
+        message("SINGLE '${CMAKE_BUILD_TYPE}'")
+    endif()
+
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}" CACHE STRING "") # .dll
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIR}" CACHE STRING "") # .so
+endif()
 
 # Enable grouping of source files into folders in IDEs
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
