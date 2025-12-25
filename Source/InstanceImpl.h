@@ -255,7 +255,7 @@ public:
 
     // Internal
 public:
-    inline InstanceImpl(const StdAllocator<uint8_t>& stdAllocator)
+    inline InstanceImpl(const NrdStdAllocator<uint8_t>& stdAllocator)
         : m_StdAllocator(stdAllocator)
         , m_DenoiserData(GetStdAllocator())
         , m_PermanentPool(GetStdAllocator())
@@ -295,7 +295,7 @@ public:
         return m_Desc;
     }
 
-    inline StdAllocator<uint8_t>& GetStdAllocator() {
+    inline NrdStdAllocator<uint8_t>& GetStdAllocator() {
         return m_StdAllocator;
     }
 
@@ -333,7 +333,7 @@ private:
     }
 
 private:
-    StdAllocator<uint8_t> m_StdAllocator;
+    NrdStdAllocator<uint8_t> m_StdAllocator;
     Vector<DenoiserData> m_DenoiserData;
     Vector<TextureDesc> m_PermanentPool;
     Vector<TextureDesc> m_TransientPool;

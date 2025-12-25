@@ -192,7 +192,7 @@ NRD_API nrd::Result NRD_CALL nrd::CreateInstance(const InstanceCreationDesc& ins
         modifiedInstanceCreationDesc.allocationCallbacks.Free = AlignedFree;
     }
 
-    StdAllocator<uint8_t> memoryAllocator(modifiedInstanceCreationDesc.allocationCallbacks);
+    NrdStdAllocator<uint8_t> memoryAllocator(modifiedInstanceCreationDesc.allocationCallbacks);
 
     InstanceImpl* impl = Allocate<InstanceImpl>(memoryAllocator, memoryAllocator);
     Result result = impl->Create(modifiedInstanceCreationDesc);
@@ -223,7 +223,7 @@ NRD_API nrd::Result NRD_CALL nrd::GetComputeDispatches(Instance& instance, const
 }
 
 NRD_API void NRD_CALL nrd::DestroyInstance(Instance& instance) {
-    StdAllocator<uint8_t> memoryAllocator = ((InstanceImpl&)instance).GetStdAllocator();
+    NrdStdAllocator<uint8_t> memoryAllocator = ((InstanceImpl&)instance).GetStdAllocator();
     Deallocate(memoryAllocator, (InstanceImpl*)&instance);
 }
 

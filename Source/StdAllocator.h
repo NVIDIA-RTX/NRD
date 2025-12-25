@@ -14,27 +14,27 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include <vector>
 
 template <typename T>
-struct StdAllocator {
+struct NrdStdAllocator {
     typedef T value_type;
     typedef size_t size_type;
     typedef ptrdiff_t difference_type;
     typedef std::true_type propagate_on_container_move_assignment;
     typedef std::false_type is_always_equal;
 
-    StdAllocator(const nrd::AllocationCallbacks& allocationCallbacks)
+    NrdStdAllocator(const nrd::AllocationCallbacks& allocationCallbacks)
         : m_Interface(allocationCallbacks) {
     }
 
-    StdAllocator(const StdAllocator<T>& allocator)
+    NrdStdAllocator(const NrdStdAllocator<T>& allocator)
         : m_Interface(allocator.GetInterface()) {
     }
 
     template <class U>
-    StdAllocator(const StdAllocator<U>& allocator)
+    NrdStdAllocator(const NrdStdAllocator<U>& allocator)
         : m_Interface(allocator.GetInterface()) {
     }
 
-    StdAllocator<T>& operator=(const StdAllocator<T>& allocator) {
+    NrdStdAllocator<T>& operator=(const NrdStdAllocator<T>& allocator) {
         m_Interface = allocator.GetInterface();
         return *this;
     }
@@ -52,19 +52,19 @@ struct StdAllocator {
     }
 
     template <typename U>
-    using other = StdAllocator<U>;
+    using other = NrdStdAllocator<U>;
 
 private:
     nrd::AllocationCallbacks m_Interface = {};
 };
 
 template <typename T>
-bool operator==(const StdAllocator<T>& left, const StdAllocator<T>& right) {
+bool operator==(const NrdStdAllocator<T>& left, const NrdStdAllocator<T>& right) {
     return left.GetInterface() == right.GetInterface();
 }
 
 template <typename T>
-bool operator!=(const StdAllocator<T>& left, const StdAllocator<T>& right) {
+bool operator!=(const NrdStdAllocator<T>& left, const NrdStdAllocator<T>& right) {
     return !operator==(left, right);
 }
 
@@ -89,7 +89,7 @@ constexpr uint32_t GetCountOf(const std::array<T, N>& v) {
 }
 
 template <typename T, typename... Args>
-inline T* Allocate(StdAllocator<uint8_t>& allocator, Args&&... args) {
+inline T* Allocate(NrdStdAllocator<uint8_t>& allocator, Args&&... args) {
     const auto& lowLevelAllocator = allocator.GetInterface();
     T* object = (T*)lowLevelAllocator.Allocate(lowLevelAllocator.userArg, sizeof(T), alignof(T));
 
@@ -98,7 +98,7 @@ inline T* Allocate(StdAllocator<uint8_t>& allocator, Args&&... args) {
 }
 
 template <typename T>
-inline void Deallocate(StdAllocator<uint8_t>& allocator, T* object) {
+inline void Deallocate(NrdStdAllocator<uint8_t>& allocator, T* object) {
     if (object == nullptr)
         return;
 
@@ -109,4 +109,4 @@ inline void Deallocate(StdAllocator<uint8_t>& allocator, T* object) {
 }
 
 template <typename T>
-using Vector = std::vector<T, StdAllocator<T>>;
+using Vector = std::vector<T, NrdStdAllocator<T>>;
