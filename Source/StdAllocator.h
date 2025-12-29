@@ -13,6 +13,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #include <array>
 #include <vector>
 
+namespace nrd {
+
 template <typename T>
 struct StdAllocator {
     typedef T value_type;
@@ -110,3 +112,5 @@ inline void Deallocate(StdAllocator<uint8_t>& allocator, T* object) {
 
 template <typename T>
 using Vector = std::vector<T, StdAllocator<T>>;
+
+} // namespace nrd
