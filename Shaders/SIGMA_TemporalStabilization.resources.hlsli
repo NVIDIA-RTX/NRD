@@ -37,7 +37,7 @@ NRD_OUTPUTS_END
 #define SIGMA_TemporalStabilizationGroupY 16
 
 #if( SIGMA_5X5_TEMPORAL_KERNEL == 1 )
-    #define NRD_USE_BORDER_2
+    #define NRD_BORDER 2
 #endif
 
 // Redirection

@@ -73,7 +73,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Early out
-    uint2 sharedMemoryIndex = threadPos.xy + int2(BORDER, BORDER);
+    uint2 sharedMemoryIndex = threadPos.xy + int2(NRD_BORDER, NRD_BORDER);
 #if( NRD_SPEC )
     if (s_SpecNoisy_IsValid[sharedMemoryIndex.y][sharedMemoryIndex.x].w == 0.0)
         return;

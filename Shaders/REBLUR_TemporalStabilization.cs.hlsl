@@ -99,7 +99,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float smbFootprintQuality = Filtering::ApplyBilinearFilter( smbOcclusion.x, smbOcclusion.y, smbOcclusion.z, smbOcclusion.w, smbBilinearFilter );
     smbFootprintQuality = Math::Sqrt01( smbFootprintQuality );
 
-    int2 smemPos = threadPos + BORDER;
+    int2 smemPos = threadPos + NRD_BORDER;
 
     // Diffuse
     #if( NRD_DIFF )
@@ -108,12 +108,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float diffLumaM2 = diffLuma * diffLuma;
 
         [unroll]
-        for( j = 0; j <= BORDER * 2; j++ )
+        for( j = 0; j <= NRD_BORDER * 2; j++ )
         {
             [unroll]
-            for( i = 0; i <= BORDER * 2; i++ )
+            for( i = 0; i <= NRD_BORDER * 2; i++ )
             {
-                if( i == BORDER && j == BORDER )
+                if( i == NRD_BORDER && j == NRD_BORDER )
                     continue;
 
                 int2 pos = threadPos + int2( i, j );
@@ -126,8 +126,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         // Compute sigma
-        diffLumaM1 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
-        diffLumaM2 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
+        diffLumaM1 /= ( NRD_BORDER * 2 + 1 ) * ( NRD_BORDER * 2 + 1 );
+        diffLumaM2 /= ( NRD_BORDER * 2 + 1 ) * ( NRD_BORDER * 2 + 1 );
 
         float diffLumaSigma = GetStdDev( diffLumaM1, diffLumaM2 );
 
@@ -193,12 +193,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float specLumaM2 = specLuma * specLuma;
 
         [unroll]
-        for( j = 0; j <= BORDER * 2; j++ )
+        for( j = 0; j <= NRD_BORDER * 2; j++ )
         {
             [unroll]
-            for( i = 0; i <= BORDER * 2; i++ )
+            for( i = 0; i <= NRD_BORDER * 2; i++ )
             {
-                if( i == BORDER && j == BORDER )
+                if( i == NRD_BORDER && j == NRD_BORDER )
                     continue;
 
                 int2 pos = threadPos + int2( i, j );
@@ -211,8 +211,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         // Compute sigma
-        specLumaM1 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
-        specLumaM2 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
+        specLumaM1 /= ( NRD_BORDER * 2 + 1 ) * ( NRD_BORDER * 2 + 1 );
+        specLumaM2 /= ( NRD_BORDER * 2 + 1 ) * ( NRD_BORDER * 2 + 1 );
 
         float specLumaSigma = GetStdDev( specLumaM1, specLumaM2 );
 

@@ -39,12 +39,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float k = 1.01 / ( center.y + 0.01 );
 
     [unroll]
-    for( j = 0; j <= BORDER * 2; j++ )
+    for( j = 0; j <= NRD_BORDER * 2; j++ )
     {
         [unroll]
-        for( i = 0; i <= BORDER * 2; i++ )
+        for( i = 0; i <= NRD_BORDER * 2; i++ )
         {
-            float d = length( float2( i, j ) - BORDER );
+            float d = length( float2( i, j ) - NRD_BORDER );
             float w = exp2( -k * d * d );
 
             blurry += s_Tile[ threadPos.y + j ][ threadPos.x + i ] * w;

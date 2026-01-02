@@ -34,6 +34,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
         s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = gIn_SpecFast[ globalPos ];
     #endif
 
+    // TODO: this is needed only for 1-pixel border, but adding a conditional will break texture batching. Only a minor/zero gain expected...
     s_FrameNum[ sharedPos.y ][ sharedPos.x ] = UnpackData1( gIn_Data1[ globalPos ] );
 }
 
@@ -71,7 +72,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 Vv = GetViewVector( Xv, true );
     float NoV = abs( dot( Nv, Vv ) );
 
-    int2 smemPos = threadPos + BORDER;
+    int2 smemPos = threadPos + NRD_BORDER;
     float2 frameNum = s_FrameNum[ smemPos.y ][ smemPos.x ];
 
     float invHistoryFixFrameNum = 1.0 / max( gHistoryFixFrameNum, NRD_EPS );
@@ -213,76 +214,71 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         // Local variance
-        float diffCenter = s_DiffLuma[ threadPos.y + BORDER ][ threadPos.x + BORDER ];
-        float diffM1 = diffCenter;
-        float diffM2 = diffM1 * diffM1;
-
-        float f = frameNumAvgNorm.x;
-        diffCenter = lerp( GetLuma( diff ), diffCenter, f );
-        gOut_DiffFast[ pixelPos ] = diffCenter;
+        float diffCenter = 0;
+        float diffM1 = 0;
+        float diffM2 = 0;
+        float diffSpecialM1 = 0;
+        float diffSpecialM2 = 0;
 
         [unroll]
-        for( j = 0; j <= BORDER * 2; j++ )
+        for( j = -NRD_BORDER; j <= NRD_BORDER; j++ )
         {
             [unroll]
-            for( i = 0; i <= BORDER * 2; i++ )
+            for( i = -NRD_BORDER; i <= NRD_BORDER; i++ )
             {
-                // Skip center
-                if( i == BORDER && j == BORDER )
-                    continue;
-
-                int2 pos = threadPos + int2( i, j );
-
+                int2 pos = smemPos + int2( i, j );
                 float d = s_DiffLuma[ pos.y ][ pos.x ];
-                diffM1 += d;
-                diffM2 += d * d;
-            }
-        }
 
-        float diffLuma = GetLuma( diff );
+                // Center
+                if( i == 0 && j == 0 )
+                    diffCenter = d;
 
-        // Anti-firefly
-        if( gAntiFirefly && NRD_SUPPORTS_ANTIFIREFLY == 1 )
-        {
-            float m1 = 0;
-            float m2 = 0;
-
-            [unroll]
-            for( j = -REBLUR_ANTI_FIREFLY_FILTER_RADIUS; j <= REBLUR_ANTI_FIREFLY_FILTER_RADIUS; j++ )
-            {
-                [unroll]
-                for( i = -REBLUR_ANTI_FIREFLY_FILTER_RADIUS; i <= REBLUR_ANTI_FIREFLY_FILTER_RADIUS; i++ )
+                // Variance in 5x5 for fast history
+                if( abs( i ) <= REBLUR_FAST_HISTORY_CLAMPING_RADIUS && abs( j ) <= REBLUR_FAST_HISTORY_CLAMPING_RADIUS )
                 {
-                    // Skip central 3x3 area
-                    if( abs( i ) <= 1 && abs( j ) <= 1 )
-                        continue;
+                    diffM1 += d;
+                    diffM2 += d * d;
+                }
 
-                    int2 pos = clamp( pixelPos + int2( i, j ), 0, gRectSizeMinusOne );
-                    float d = gIn_DiffFast[ pos ].x;
-
-                    m1 += d;
-                    m2 += d * d;
+                // Variance in "NRD_BORDER x NRD_BORDER" skipping central 3x3 for anti-firefly
+                if( NRD_SUPPORTS_ANTIFIREFLY && !( abs( i ) <= 1 && abs( j ) <= 1 ) )
+                {
+                    diffSpecialM1 += d;
+                    diffSpecialM2 += d * d;
                 }
             }
-
-            float invNorm = 1.0 / ( ( REBLUR_ANTI_FIREFLY_FILTER_RADIUS * 2 + 1 ) * ( REBLUR_ANTI_FIREFLY_FILTER_RADIUS * 2 + 1 ) - 3 * 3 );
-            m1 *= invNorm;
-            m2 *= invNorm;
-
-            float sigma = GetStdDev( m1, m2 ) * REBLUR_ANTI_FIREFLY_SIGMA_SCALE;
-            diffLuma = clamp( diffLuma, m1 - sigma, m1 + sigma );
         }
 
-        // Fast history
-        diffM1 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
-        diffM2 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
+        // Anti-firefly
+        float diffLuma = GetLuma( diff );
 
-        float diffSigma = GetStdDev( diffM1, diffM2 ) * gFastHistoryClampingSigmaScale;
-        float diffMin = diffM1 - diffSigma;
-        float diffMax = diffM1 + diffSigma;
+        if( NRD_SUPPORTS_ANTIFIREFLY && gAntiFirefly )
+        {
+            float invNorm = 1.0 / ( ( NRD_BORDER * 2 + 1 ) * ( NRD_BORDER * 2 + 1 ) - 3 * 3 ); // -9 samples
+            diffSpecialM1 *= invNorm;
+            diffSpecialM2 *= invNorm;
 
-        float diffLumaClamped = clamp( diffLuma, diffMin, diffMax );
-        diffLuma = lerp( diffLumaClamped, diffLuma, 1.0 / ( 1.0 + float( gMaxFastAccumulatedFrameNum < gMaxAccumulatedFrameNum ) * frameNum.x * 2.0 ) );
+            float diffSigma = GetStdDev( diffSpecialM1, diffSpecialM2 ) * REBLUR_ANTI_FIREFLY_SIGMA_SCALE;
+
+            diffLuma = clamp( diffLuma, diffSpecialM1 - diffSigma, diffSpecialM1 + diffSigma );
+        }
+
+        // Fix fast history
+        float f = frameNumAvgNorm.x;
+        diffCenter = lerp( diffLuma, diffCenter, f );
+        gOut_DiffFast[ pixelPos ] = diffCenter;
+
+        // Clamp to fast history
+        {
+            float invNorm = 1.0 / ( ( REBLUR_FAST_HISTORY_CLAMPING_RADIUS * 2 + 1 ) * ( REBLUR_FAST_HISTORY_CLAMPING_RADIUS * 2 + 1 ) );
+            diffM1 *= invNorm;
+            diffM2 *= invNorm;
+
+            float diffSigma = GetStdDev( diffM1, diffM2 ) * gFastHistoryClampingSigmaScale;
+            float diffLumaClamped = clamp( diffLuma, diffM1 - diffSigma, diffM1 + diffSigma );
+
+            diffLuma = lerp( diffLumaClamped, diffLuma, 1.0 / ( 1.0 + float( gMaxFastAccumulatedFrameNum < gMaxAccumulatedFrameNum ) * frameNum.x * 2.0 ) );
+        }
 
         // Change luma
         #if( REBLUR_SHOW == REBLUR_SHOW_FAST_HISTORY )
@@ -421,81 +417,77 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         // Local variance
-        float specCenter = s_SpecLuma[ threadPos.y + BORDER ][ threadPos.x + BORDER ];
-        float specM1 = specCenter;
-        float specM2 = specM1 * specM1;
-
-        float f = frameNumAvgNorm.y;
-        f = lerp( 1.0, f, smc ); // HistoryFix-ed data is undesired in fast history for low roughness ( test 115 )
-        specCenter = lerp( GetLuma( spec ), specCenter, f );
-        gOut_SpecFast[ pixelPos ] = specCenter;
+        float specCenter = 0;
+        float specM1 = 0;
+        float specM2 = 0;
+        float specSpecialM1 = 0;
+        float specSpecialM2 = 0;
 
         [unroll]
-        for( j = 0; j <= BORDER * 2; j++ )
+        for( j = -NRD_BORDER; j <= NRD_BORDER; j++ )
         {
             [unroll]
-            for( i = 0; i <= BORDER * 2; i++ )
+            for( i = -NRD_BORDER; i <= NRD_BORDER; i++ )
             {
-                // Skip center
-                if( i == BORDER && j == BORDER )
-                    continue;
-
-                int2 pos = threadPos + int2( i, j );
-
+                int2 pos = smemPos + int2( i, j );
                 float s = s_SpecLuma[ pos.y ][ pos.x ];
-                specM1 += s;
-                specM2 += s * s;
-            }
-        }
 
-        float specLuma = GetLuma( spec );
+                // Center
+                if( i == 0 && j == 0 )
+                    specCenter = s;
 
-        // Anti-firefly
-        if( gAntiFirefly && NRD_SUPPORTS_ANTIFIREFLY == 1 )
-        {
-            float m1 = 0;
-            float m2 = 0;
-
-            [unroll]
-            for( j = -REBLUR_ANTI_FIREFLY_FILTER_RADIUS; j <= REBLUR_ANTI_FIREFLY_FILTER_RADIUS; j++ )
-            {
-                [unroll]
-                for( i = -REBLUR_ANTI_FIREFLY_FILTER_RADIUS; i <= REBLUR_ANTI_FIREFLY_FILTER_RADIUS; i++ )
+                // Variance in 5x5 for fast history
+                if( abs( i ) <= 2 && abs( j ) <= 2 )
                 {
-                    // Skip central 3x3 area
-                    if( abs( i ) <= 1 && abs( j ) <= 1 )
-                        continue;
+                    specM1 += s;
+                    specM2 += s * s;
+                }
 
-                    int2 pos = clamp( pixelPos + int2( i, j ), 0, gRectSizeMinusOne );
-                    float s = gIn_SpecFast[ pos ].x;
-
-                    m1 += s;
-                    m2 += s * s;
+                // Variance in "NRD_BORDER x NRD_BORDER" skipping central 3x3 for anti-firefly
+                if( NRD_SUPPORTS_ANTIFIREFLY && !( abs( i ) <= 1 && abs( j ) <= 1 ) )
+                {
+                    specSpecialM1 += s;
+                    specSpecialM2 += s * s;
                 }
             }
-
-            float invNorm = 1.0 / ( ( REBLUR_ANTI_FIREFLY_FILTER_RADIUS * 2 + 1 ) * ( REBLUR_ANTI_FIREFLY_FILTER_RADIUS * 2 + 1 ) - 3 * 3 );
-            m1 *= invNorm;
-            m2 *= invNorm;
-
-            float sigma = GetStdDev( m1, m2 ) * REBLUR_ANTI_FIREFLY_SIGMA_SCALE;
-            specLuma = clamp( specLuma, m1 - sigma, m1 + sigma );
         }
 
-        // Fast history
-        specM1 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
-        specM2 /= ( BORDER * 2 + 1 ) * ( BORDER * 2 + 1 );
+        // Anti-firefly
+        float specLuma = GetLuma( spec );
 
-        float fastHistoryClampingSigmaScale = gFastHistoryClampingSigmaScale;
-        if( materialID == gStrandMaterialID )
-            fastHistoryClampingSigmaScale = max( fastHistoryClampingSigmaScale, 3.0 );
+        if( NRD_SUPPORTS_ANTIFIREFLY && gAntiFirefly )
+        {
+            float invNorm = 1.0 / ( ( NRD_BORDER * 2 + 1 ) * ( NRD_BORDER * 2 + 1 ) - 3 * 3 ); // -9 samples
+            specSpecialM1 *= invNorm;
+            specSpecialM2 *= invNorm;
 
-        float specSigma = GetStdDev( specM1, specM2 ) * fastHistoryClampingSigmaScale;
-        float specMin = specM1 - specSigma;
-        float specMax = specM1 + specSigma;
+            float specSigma = GetStdDev( specSpecialM1, specSpecialM2 ) * REBLUR_ANTI_FIREFLY_SIGMA_SCALE;
 
-        float specLumaClamped = clamp( specLuma, specMin, specMax );
-        specLuma = lerp( specLumaClamped, specLuma, 1.0 / ( 1.0 + float( gMaxFastAccumulatedFrameNum < gMaxAccumulatedFrameNum ) * frameNum.y * 2.0 ) );
+            specLuma = clamp( specLuma, specSpecialM1 - specSigma, specSpecialM1 + specSigma );
+        }
+
+        // Fix fast history
+        float f = frameNumAvgNorm.y;
+        f = lerp( 1.0, f, smc ); // HistoryFix-ed data is undesired in fast history for low roughness ( test 115 )
+        specCenter = lerp( specLuma, specCenter, f );
+
+        gOut_SpecFast[ pixelPos ] = specCenter;
+
+        // Clamp to fast history
+        {
+            float invNorm = 1.0 / ( ( REBLUR_FAST_HISTORY_CLAMPING_RADIUS * 2 + 1 ) * ( REBLUR_FAST_HISTORY_CLAMPING_RADIUS * 2 + 1 ) );
+            specM1 *= invNorm;
+            specM2 *= invNorm;
+
+            float fastHistoryClampingSigmaScale = gFastHistoryClampingSigmaScale;
+            if( materialID == gStrandMaterialID )
+                fastHistoryClampingSigmaScale = max( fastHistoryClampingSigmaScale, 3.0 );
+
+            float specSigma = GetStdDev( specM1, specM2 ) * fastHistoryClampingSigmaScale;
+            float specLumaClamped = clamp( specLuma, specM1 - specSigma, specM1 + specSigma );
+
+            specLuma = lerp( specLumaClamped, specLuma, 1.0 / ( 1.0 + float( gMaxFastAccumulatedFrameNum < gMaxAccumulatedFrameNum ) * frameNum.y * 2.0 ) );
+        }
 
         // Change luma
         #if( REBLUR_SHOW == REBLUR_SHOW_FAST_HISTORY )

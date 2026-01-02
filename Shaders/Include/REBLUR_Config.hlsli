@@ -85,7 +85,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_FIREFLY_SUPPRESSOR_MAX_RELATIVE_INTENSITY        38.0
 #define REBLUR_FIREFLY_SUPPRESSOR_RADIUS_SCALE                  0.1
 #define REBLUR_FIREFLY_SUPPRESSOR_FAST_RELATIVE_INTENSITY       4.0 // TODO: needed only for high FPS. Why?
-#define REBLUR_ANTI_FIREFLY_FILTER_RADIUS                       4 // pixels
+#define REBLUR_ANTI_FIREFLY_FILTER_RADIUS                       4 // pixels, must be >= REBLUR_FAST_HISTORY_CLAMPING_RADIUS
+#define REBLUR_FAST_HISTORY_CLAMPING_RADIUS                     2 // pixels, must be >= 1
 #define REBLUR_ANTI_FIREFLY_SIGMA_SCALE                         2.0
 #define REBLUR_HISTORY_FIX_FILTER_RADIUS                        2 // pixels
 #define REBLUR_ROUGHNESS_SENSITIVITY_IN_TA                      ( NRD_ROUGHNESS_SENSITIVITY * 0.3 )

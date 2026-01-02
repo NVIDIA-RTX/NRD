@@ -125,20 +125,18 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     const int2 pixelPos = _pixelPos
 
 // Preloading in SMEM
-#ifdef NRD_USE_BORDER_2
-    #define BORDER                                              2
-#else
-    #define BORDER                                              1
+#ifndef NRD_BORDER
+    #define NRD_BORDER                                          1 // TODO: should be 0, but all shaders using SMEM use 1- or 2- pixel wide border
 #endif
 
-#define BUFFER_X                                                ( GROUP_X + BORDER * 2 )
-#define BUFFER_Y                                                ( GROUP_Y + BORDER * 2 )
+#define BUFFER_X                                                ( GROUP_X + NRD_BORDER * 2 )
+#define BUFFER_Y                                                ( GROUP_Y + NRD_BORDER * 2 )
 
 #define PRELOAD_INTO_SMEM_WITH_TILE_CHECK \
     isSky *= NRD_USE_TILE_CHECK; \
     if( isSky == 0.0 ) \
     { \
-        int2 groupBase = pixelPos - threadPos - BORDER; \
+        int2 groupBase = pixelPos - threadPos - NRD_BORDER; \
         uint stageNum = ( BUFFER_X * BUFFER_Y + GROUP_X * GROUP_Y - 1 ) / ( GROUP_X * GROUP_Y ); \
         [unroll] \
         for( uint stage = 0; stage < stageNum; stage++ ) \
@@ -154,7 +152,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     int i, j
 
 #define PRELOAD_INTO_SMEM \
-    int2 groupBase = pixelPos - threadPos - BORDER; \
+    int2 groupBase = pixelPos - threadPos - NRD_BORDER; \
     uint stageNum = ( BUFFER_X * BUFFER_Y + GROUP_X * GROUP_Y - 1 ) / ( GROUP_X * GROUP_Y ); \
     [unroll] \
     for( uint stage = 0; stage < stageNum; stage++ ) \

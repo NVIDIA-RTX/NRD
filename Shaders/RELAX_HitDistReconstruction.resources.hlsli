@@ -47,7 +47,7 @@ NRD_OUTPUTS_END
 #define RELAX_HitDistReconstructionGroupY 8
 
 #if( MODE_5X5 == 1 )
-    #define NRD_USE_BORDER_2
+    #define NRD_BORDER 2
 #endif
 
 // Redirection

@@ -64,7 +64,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Early out
-    int2 smemPos = threadPos + BORDER;
+    int2 smemPos = threadPos + NRD_BORDER;
     float3 center = s_HitDist_ViewZ[ smemPos.y ][ smemPos.x ];
     if( center.z > gDenoisingRange )
         return;
@@ -91,12 +91,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     center.xy *= sum;
 
     [unroll]
-    for( j = 0; j <= BORDER * 2; j++ )
+    for( j = 0; j <= NRD_BORDER * 2; j++ )
     {
         [unroll]
-        for( i = 0; i <= BORDER * 2; i++ )
+        for( i = 0; i <= NRD_BORDER * 2; i++ )
         {
-            float2 o = float2( i, j ) - BORDER;
+            float2 o = float2( i, j ) - NRD_BORDER;
             if( o.x == 0.0 && o.y == 0.0 )
                 continue;
 

@@ -385,7 +385,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if (currentLinearZ > gDenoisingRange)
         return;
 
-    int2 sharedMemoryIndex = threadPos.xy + int2(BORDER, BORDER);
+    int2 sharedMemoryIndex = threadPos.xy + int2(NRD_BORDER, NRD_BORDER);
 
     // Reading current GBuffer data
     float currentMaterialID;
@@ -667,7 +667,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float3 o = gOrthoMode == 0.0 ? 0 : x;
 
             x10 = o + v * dot( currentWorldPos - o, currentNormal ) / dot( currentNormal, v ); // line-plane intersection
-            n10 = sharedNormalSpecHitT[ threadPos.y + BORDER ][ threadPos.x + BORDER + 1 ].xyz;
+            n10 = sharedNormalSpecHitT[ threadPos.y + NRD_BORDER ][ threadPos.x + NRD_BORDER + 1 ].xyz;
         }
 
         // 01 edge
@@ -678,7 +678,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float3 o = gOrthoMode == 0.0 ? 0 : x;
 
             x01 = o + v * dot( currentWorldPos - o, currentNormal ) / dot( currentNormal, v ); // line-plane intersection
-            n01 = sharedNormalSpecHitT[ threadPos.y + BORDER + 1 ][ threadPos.x + BORDER ].xyz;
+            n01 = sharedNormalSpecHitT[ threadPos.y + NRD_BORDER + 1 ][ threadPos.x + NRD_BORDER ].xyz;
         }
 
         // Mix

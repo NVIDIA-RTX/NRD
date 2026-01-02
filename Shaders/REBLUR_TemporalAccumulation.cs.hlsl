@@ -93,10 +93,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #endif
 
     [unroll]
-    for( j = 0; j <= BORDER * 2; j++ )
+    for( j = 0; j <= NRD_BORDER * 2; j++ )
     {
         [unroll]
-        for( i = 0; i <= BORDER * 2; i++ )
+        for( i = 0; i <= NRD_BORDER * 2; i++ )
         {
             int2 pos = threadPos + int2( i, j );
             float4 normalAndRoughness = s_Normal_Roughness[ pos.y ][ pos.x ];
@@ -130,8 +130,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #if( NRD_SPEC )
         float roughnessModified = Filtering::GetModifiedRoughnessFromNormalVariance( roughness, Navg ); // TODO: needed?
 
-        roughnessM1 /= ( 1 + BORDER * 2 ) * ( 1 + BORDER * 2 );
-        roughnessM2 /= ( 1 + BORDER * 2 ) * ( 1 + BORDER * 2 );
+        roughnessM1 /= ( 1 + NRD_BORDER * 2 ) * ( 1 + NRD_BORDER * 2 );
+        roughnessM2 /= ( 1 + NRD_BORDER * 2 ) * ( 1 + NRD_BORDER * 2 );
         float roughnessSigma = GetStdDev( roughnessM1, roughnessM2 );
     #endif
 
@@ -413,7 +413,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float3 o = gOrthoMode == 0.0 ? 0 : x;
 
                 x10 = o + v * dot( X - o, N ) / dot( N, v ); // line-plane intersection
-                n10 = s_Normal_Roughness[ threadPos.y + BORDER ][ threadPos.x + BORDER + 1 ].xyz;
+                n10 = s_Normal_Roughness[ threadPos.y + NRD_BORDER ][ threadPos.x + NRD_BORDER + 1 ].xyz;
             }
 
             // 01 edge
@@ -425,7 +425,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float3 o = gOrthoMode == 0.0 ? 0 : x;
 
                 x01 = o + v * dot( X - o, N ) / dot( N, v ); // line-plane intersection
-                n01 = s_Normal_Roughness[ threadPos.y + BORDER + 1 ][ threadPos.x + BORDER ].xyz;
+                n01 = s_Normal_Roughness[ threadPos.y + NRD_BORDER + 1 ][ threadPos.x + NRD_BORDER ].xyz;
             }
 
             // Mix

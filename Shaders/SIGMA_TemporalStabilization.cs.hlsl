@@ -59,7 +59,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     PRELOAD_INTO_SMEM_WITH_TILE_CHECK;
 
     // Center data
-    int2 smemPos = threadPos + BORDER;
+    int2 smemPos = threadPos + NRD_BORDER;
     float centerPenumbra = s_Penumbra[ smemPos.y ][ smemPos.x ];
     float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pixelPos ) ] );
 
@@ -87,23 +87,23 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     SIGMA_TYPE input = 0;
 
     [unroll]
-    for( j = 0; j <= BORDER * 2; j++ )
+    for( j = 0; j <= NRD_BORDER * 2; j++ )
     {
         [unroll]
-        for( i = 0; i <= BORDER * 2; i++ )
+        for( i = 0; i <= NRD_BORDER * 2; i++ )
         {
             int2 pos = threadPos + int2( i, j );
             SIGMA_TYPE s = s_Shadow_Translucency[ pos.y ][ pos.x ];
 
             float w = 1.0;
-            if( i == BORDER && j == BORDER )
+            if( i == NRD_BORDER && j == NRD_BORDER )
                 input = s;
             else
             {
                 float penum = s_Penumbra[ pos.y ][ pos.x ];
 
                 w = AreBothLitOrUnlit( centerPenumbra, penum );
-                w *= GetGaussianWeight( length( float2( i - BORDER, j - BORDER ) / BORDER ) );
+                w *= GetGaussianWeight( length( float2( i - NRD_BORDER, j - NRD_BORDER ) / NRD_BORDER ) );
             }
 
             m1 += s * w;

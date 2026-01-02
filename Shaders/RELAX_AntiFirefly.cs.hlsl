@@ -59,7 +59,7 @@ void runRCRS(
     )
 {
     // Fetching center data
-    uint2 sharedMemoryIndex = threadPos + int2(BORDER, BORDER);
+    uint2 sharedMemoryIndex = threadPos + int2(NRD_BORDER, NRD_BORDER);
     float centerMaterialID = s_MaterialID[sharedMemoryIndex.y][sharedMemoryIndex.x];
 
 #if( NRD_SPEC )
@@ -93,7 +93,7 @@ void runRCRS(
         for (int xx = -1; xx <= 1; xx++)
         {
             int2 p = pixelPos + int2(xx, yy);
-            int2 sharedMemoryIndexSample = threadPos + int2(BORDER, BORDER) + int2(xx,yy);
+            int2 sharedMemoryIndexSample = threadPos + int2(NRD_BORDER, NRD_BORDER) + int2(xx,yy);
 
             if ((xx == 0) && (yy == 0))
                 continue;

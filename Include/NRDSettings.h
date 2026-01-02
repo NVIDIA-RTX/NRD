@@ -308,8 +308,8 @@ namespace nrd
         // Must be used only in case of probabilistic sampling (not checkerboarding), when a pixel can be skipped and have "0" (invalid) hit distance
         HitDistanceReconstructionMode hitDistanceReconstructionMode = HitDistanceReconstructionMode::OFF;
 
-        // Adds bias in case of badly defined signals, but tries to fight with fireflies
-        bool enableAntiFirefly = false;
+        // Helps to mitigate fireflies emphasized by DLSS. Very cheap and unbiased in most of the cases, better keep in enabled to maximize quality
+        bool enableAntiFirefly = true;
 
         // In rare cases, when bright samples are so sparse that any other bright neighbor can't
         // be reached, pre-pass transforms a standalone bright pixel into a standalone bright blob,

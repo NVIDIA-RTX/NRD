@@ -84,7 +84,7 @@ NRD_OUTPUTS_END
 #define RELAX_AtrousSmemGroupX 8
 #define RELAX_AtrousSmemGroupY 8
 
-#define NRD_USE_BORDER_2
+#define NRD_BORDER 2
 
 // Redirection
 #undef GROUP_X

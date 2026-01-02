@@ -63,7 +63,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Center data
-    int2 smemPos = threadPos + BORDER;
+    int2 smemPos = threadPos + NRD_BORDER;
     float2 centerData = s_Penumbra_ViewZ[ smemPos.y ][ smemPos.x ];
     float centerPenumbra = centerData.x;
     float viewZ = centerData.y;
@@ -110,10 +110,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     SIGMA_TYPE centerTap;
 
     [unroll]
-    for( j = 0; j <= BORDER * 2; j++ )
+    for( j = 0; j <= NRD_BORDER * 2; j++ )
     {
         [unroll]
-        for( i = 0; i <= BORDER * 2; i++ )
+        for( i = 0; i <= NRD_BORDER * 2; i++ )
         {
             int2 pos = threadPos + int2( i, j );
 
@@ -126,17 +126,17 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             // Sample weight
             float w = 1.0;
-            if( i == BORDER && j == BORDER )
+            if( i == NRD_BORDER && j == NRD_BORDER )
                 centerTap = s;
             else
             {
-                float2 uv = pixelUv + float2( i - BORDER, j - BORDER ) * gRectSizeInv;
+                float2 uv = pixelUv + float2( i - NRD_BORDER, j - NRD_BORDER ) * gRectSizeInv;
                 float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
                 float NoX = dot( Nv, Xvs );
 
                 w *= ComputeWeight( NoX, geometryWeightParams.x, geometryWeightParams.y );
                 w *= AreBothLitOrUnlit( centerPenumbra, penum );
-                w *= GetGaussianWeight( length( float2( i - BORDER, j - BORDER ) / BORDER ) );
+                w *= GetGaussianWeight( length( float2( i - NRD_BORDER, j - NRD_BORDER ) / NRD_BORDER ) );
                 w = zs < gDenoisingRange ? w : 0.0; // |NoX| can be ~0 if "zs" is out of range
             }
 
@@ -158,9 +158,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     penumbra /= max( sum.y, NRD_EPS ); // yes, without patching
     sum.y = float( sum.y != 0.0 );
 
-    // Avoid blurry result if penumbra size < BORDER
+    // Avoid blurry result if penumbra size < NRD_BORDER
     float penumbraInPixels = penumbra / pixelSize;
-    float f = Math::SmoothStep( 0.0, BORDER, penumbraInPixels );
+    float f = Math::SmoothStep( 0.0, NRD_BORDER, penumbraInPixels );
     result = lerp( centerTap, result, f ); // TODO: not the best solution
 
 #if( SIGMA_USE_SPARSE_BLUR == 1 )

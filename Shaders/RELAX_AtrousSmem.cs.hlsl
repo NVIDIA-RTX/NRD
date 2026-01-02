@@ -62,7 +62,7 @@ void computeVariance(
         { 1.0 / 8.0, 1.0 / 16.0 }
     };
 
-    int2 sharedMemoryIndex = threadPos.xy + int2(BORDER, BORDER);
+    int2 sharedMemoryIndex = threadPos.xy + int2(NRD_BORDER, NRD_BORDER);
     [unroll]
     for (int dx = -1; dx <= 1; dx++)
     {
@@ -132,7 +132,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     gOut_ViewZ[pixelPos] = viewZpacked;
 
     // Prev normal and roughness
-    int2 sharedMemoryIndex = threadPos.xy + int2(BORDER, BORDER);
+    int2 sharedMemoryIndex = threadPos.xy + int2(NRD_BORDER, NRD_BORDER);
     float4 normalRoughness = s_Normal_Roughness[sharedMemoryIndex.y][sharedMemoryIndex.x];
     float centerViewZ = UnpackViewZ(viewZpacked);
     if (centerViewZ > gDenoisingRange)

@@ -87,7 +87,7 @@ NRD_OUTPUTS_END
 #define RELAX_HistoryClampingGroupX 8
 #define RELAX_HistoryClampingGroupY 8
 
-#define NRD_USE_BORDER_2
+#define NRD_BORDER 2
 
 // Redirection
 #undef GROUP_X

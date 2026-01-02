@@ -37,7 +37,7 @@ NRD_OUTPUTS_END
 #define SIGMA_BlurGroupY 16
 
 #if( SIGMA_5X5_BLUR_RADIUS_ESTIMATION_KERNEL == 1 )
-    #define NRD_USE_BORDER_2
+    #define NRD_BORDER 2
 #endif
 
 // Redirection
