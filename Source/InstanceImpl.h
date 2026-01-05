@@ -39,19 +39,19 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define NRD_STRINGIFY(s)  _NRD_STRINGIFY(s)
 
 #if NRD_EMBEDS_DXBC_SHADERS
-#    define FillDXBC(blobName, defines, computeShader) ShaderMake::FindPermutationInBlob(g_##blobName##_cs_dxbc, GetCountOf(g_##blobName##_cs_dxbc), defines.data(), (uint32_t)defines.size(), &computeShader.bytecode, &computeShader.size)
+#    define FillDXBC(blobName, defines, computeShader) ShaderMake::FindPermutationInBlob(g_##blobName##_cs_dxbc, GetCountOf(g_##blobName##_cs_dxbc), defines.data(), (uint32_t)defines.size(), &computeShader.bytecode, (size_t*)&computeShader.size)
 #else
 #    define FillDXBC(blobName, defines, computeShader)
 #endif
 
 #if NRD_EMBEDS_DXIL_SHADERS
-#    define FillDXIL(blobName, defines, computeShader) ShaderMake::FindPermutationInBlob(g_##blobName##_cs_dxil, GetCountOf(g_##blobName##_cs_dxil), defines.data(), (uint32_t)defines.size(), &computeShader.bytecode, &computeShader.size)
+#    define FillDXIL(blobName, defines, computeShader) ShaderMake::FindPermutationInBlob(g_##blobName##_cs_dxil, GetCountOf(g_##blobName##_cs_dxil), defines.data(), (uint32_t)defines.size(), &computeShader.bytecode, (size_t*)&computeShader.size)
 #else
 #    define FillDXIL(blobName, defines, computeShader)
 #endif
 
 #if NRD_EMBEDS_SPIRV_SHADERS
-#    define FillSPIRV(blobName, defines, computeShader) ShaderMake::FindPermutationInBlob(g_##blobName##_cs_spirv, GetCountOf(g_##blobName##_cs_spirv), defines.data(), (uint32_t)defines.size(), &computeShader.bytecode, &computeShader.size)
+#    define FillSPIRV(blobName, defines, computeShader) ShaderMake::FindPermutationInBlob(g_##blobName##_cs_spirv, GetCountOf(g_##blobName##_cs_spirv), defines.data(), (uint32_t)defines.size(), &computeShader.bytecode, (size_t*)&computeShader.size)
 #else
 #    define FillSPIRV(blobName, defines, computeShader)
 #endif
