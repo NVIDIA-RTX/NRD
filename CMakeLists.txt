@@ -137,7 +137,7 @@ if(NOT TARGET MathLib)
         mathlib
         DOWNLOAD_EXTRACT_TIMESTAMP 1
         DOWNLOAD_NO_PROGRESS 1
-        URL https://github.com/NVIDIA-RTX/MathLib/archive/refs/tags/v9.zip
+        URL https://github.com/NVIDIA-RTX/MathLib/archive/refs/tags/v10.zip
     )
     list(APPEND DEPS mathlib)
 endif()
