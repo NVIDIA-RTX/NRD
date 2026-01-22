@@ -12,8 +12,13 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 uint PackInternalData( float diffAccumSpeed, float specAccumSpeed, float materialID )
 {
+    // Increment history length for the nxt frame and clamp to the maximum
+    diffAccumSpeed = min( diffAccumSpeed + 1.0, gMaxAccumulatedFrameNum );
+    specAccumSpeed = min( specAccumSpeed + 1.0, gMaxAccumulatedFrameNum );
+
     float3 t;
-    t.xy = float2( diffAccumSpeed, specAccumSpeed ) / REBLUR_MAX_ACCUM_FRAME_NUM;
+    t.x = round( diffAccumSpeed ) / REBLUR_MAX_ACCUM_FRAME_NUM;
+    t.y = round( specAccumSpeed ) / REBLUR_MAX_ACCUM_FRAME_NUM;
     t.z = materialID / REBLUR_MAX_MATERIALID_NUM;
 
     uint p = Packing::RgbaToUint( t.xyzz, REBLUR_ACCUMSPEED_BITS, REBLUR_ACCUMSPEED_BITS, REBLUR_MATERIALID_BITS, 0 );
@@ -27,6 +32,8 @@ float3 UnpackInternalData( uint p )
     t.xy *= REBLUR_MAX_ACCUM_FRAME_NUM;
     t.z *= REBLUR_MAX_MATERIALID_NUM;
 
+    t.xy = round( t.xy );
+
     return t;
 }
 
@@ -35,17 +42,15 @@ float3 UnpackInternalData( uint p )
 float2 PackData1( float diffAccumSpeed, float specAccumSpeed )
 {
     float2 r;
-    r.x = saturate( diffAccumSpeed / REBLUR_MAX_ACCUM_FRAME_NUM );
-    r.y = saturate( specAccumSpeed / REBLUR_MAX_ACCUM_FRAME_NUM );
+    r.x = saturate( round( diffAccumSpeed ) / REBLUR_MAX_ACCUM_FRAME_NUM );
+    r.y = saturate( round( specAccumSpeed ) / REBLUR_MAX_ACCUM_FRAME_NUM );
 
     // Allow R8_UNORM for specular only denoiser
     #if( NRD_DIFF == 0 )
         r.x = r.y;
     #endif
 
-    // Proper rounding, otherwise for "accumSpeed = 3":
-    //  3 / REBLUR_MAX_ACCUM_FRAME_NUM => "255 * 3 / 63" = 12.142857 => 12 / 255 * 63 = 2.964 frames => invoke HistoryFix
-    return r + 0.5 / 255.0;
+    return r;
 }
 
 float2 UnpackData1( float2 p )
@@ -55,7 +60,10 @@ float2 UnpackData1( float2 p )
         p.y = p.x;
     #endif
 
-    return p * REBLUR_MAX_ACCUM_FRAME_NUM;
+    // "round" is needed, otherwise for "accumSpeed = 3" and "gHistoryFixFrameNum = 3":
+    //  floor( (3.0 / 63.0) * 255 + 0.5 ) = 12.642857  =>  (12 / 255) * 63 = 2.964 frames => "HistoryFix" gets unexpectedly invoked
+
+    return round( p * REBLUR_MAX_ACCUM_FRAME_NUM );
 }
 
 #if( NRD_SPEC == 0 )
@@ -301,10 +309,12 @@ float2x3 GetKernelBasis( float3 D, float3 N )
 
 float2 GetTemporalAccumulationParams( float isInScreenMulFootprintQuality, float accumSpeed )
 {
-    accumSpeed *= REBLUR_SAMPLES_PER_FRAME;
-
     float w = isInScreenMulFootprintQuality;
-    w *= accumSpeed / ( 1.0 + accumSpeed );
+
+    // This formula converges to "N / ( 1 + N )" slower, descreasing stabilization for shorter history.
+    // It's especially important right after disocclusion when there is nothing to stabilize ( less block-like artefacts ).
+    // Also it slightly improves overall response if "history confidence" is in action
+    w *= sqrt( accumSpeed * gMaxAccumulatedFrameNum ) / ( 1.0 + gMaxAccumulatedFrameNum ); // same as "sqrt( a / m ) * m / ( 1 + m )"
     w *= float( REBLUR_SHOW == 0 );
 
     return float2( w, 1.0 + 3.0 * gFramerateScale * w );

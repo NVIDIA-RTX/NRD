@@ -50,6 +50,8 @@ namespace nrd
         IN_VIEWZ,
 
         // (Optional) User-provided history confidence in range 0-1, i.e. antilag (R8+)
+        // It must be computed for the previous frame in the current frame ( the only one trivial solution in any case ).
+        // These textures can be at lower resolution, they are linearly upscaled.
         // Used only if "CommonSettings::isHistoryConfidenceAvailable = true" and "NRD_SUPPORTS_HISTORY_CONFIDENCE = 1"
         IN_DIFF_CONFIDENCE,
         IN_SPEC_CONFIDENCE,

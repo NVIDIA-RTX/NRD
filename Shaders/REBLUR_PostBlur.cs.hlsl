@@ -56,7 +56,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Output
     gOut_Normal_Roughness[ pixelPos ] = normalAndRoughnessPacked;
     #if( TEMPORAL_STABILIZATION == 0 )
-        gOut_InternalData[ pixelPos ] = PackInternalData( data1.x + 1.0, data1.y + 1.0, materialID ); // increment history length
+        gOut_InternalData[ pixelPos ] = PackInternalData( data1.x, data1.y, materialID );
     #endif
 
     // Spatial filtering

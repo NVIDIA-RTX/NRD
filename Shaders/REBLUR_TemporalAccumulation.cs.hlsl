@@ -243,7 +243,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if( materialID == gStrandMaterialID )
         disocclusionThresholdMix = NRD_GetNormalizedStrandThickness( gStrandThickness, pixelSize );
     if( gHasDisocclusionThresholdMix && NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX )
-        disocclusionThresholdMix = gIn_DisocclusionThresholdMix[ WithRectOrigin( pixelPos ) ];
+        disocclusionThresholdMix = gIn_DisocclusionThresholdMix[ pixelPos ];
 
     float disocclusionThreshold = lerp( gDisocclusionThreshold, gDisocclusionThresholdAlternate, disocclusionThresholdMix );
     if( materialID == gStrandMaterialID )
@@ -357,12 +357,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Specular
     #if( NRD_SPEC )
         // Accumulation speed
-        float specHistoryConfidence = smbFootprintQuality;
+        float smbSpecHistoryConfidence = smbFootprintQuality;
         if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
-            specHistoryConfidence *= gIn_SpecConfidence[ WithRectOrigin( pixelPos ) ];
+            smbSpecHistoryConfidence *= gIn_SpecConfidence.SampleLevel( gLinearClamp, smbPixelUv, 0 );
 
-        smbSpecAccumSpeed *= lerp( specHistoryConfidence, 1.0, 1.0 / ( 1.0 + smbSpecAccumSpeed ) );
-        smbSpecAccumSpeed = min( smbSpecAccumSpeed, gMaxAccumulatedFrameNum );
+        smbSpecAccumSpeed *= lerp( smbSpecHistoryConfidence, 1.0, 1.0 / ( 1.0 + smbSpecAccumSpeed ) );
 
         // Current
         bool specHasData = NRD_SUPPORTS_CHECKERBOARD == 0 || gSpecCheckerboard == 2 || checkerboard == gSpecCheckerboard;
@@ -560,7 +559,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float vmbFootprintQuality = Filtering::ApplyBilinearFilter( vmbOcclusion.x, vmbOcclusion.y, vmbOcclusion.z, vmbOcclusion.w, vmbBilinearFilter );
         vmbFootprintQuality = Math::Sqrt01( vmbFootprintQuality );
-        vmbSpecAccumSpeed *= lerp( vmbFootprintQuality, 1.0, 1.0 / ( 1.0 + vmbSpecAccumSpeed ) );
+
+        float vmbSpecHistoryConfidence = vmbFootprintQuality;
+        if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
+            vmbSpecHistoryConfidence *= gIn_SpecConfidence.SampleLevel( gLinearClamp, vmbPixelUv, 0 );
+
+        vmbSpecAccumSpeed *= lerp( vmbSpecHistoryConfidence, 1.0, 1.0 / ( 1.0 + vmbSpecAccumSpeed ) );
 
         bool vmbAllowCatRom = dot( vmbOcclusion, 1.0 ) > 3.5 && REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TA;
         vmbAllowCatRom = vmbAllowCatRom && smbAllowCatRom; // helps to reduce over-sharpening in disoccluded areas
@@ -866,10 +870,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Accumulation speed
         float diffHistoryConfidence = smbFootprintQuality;
         if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
-            diffHistoryConfidence *= gIn_DiffConfidence[ WithRectOrigin( pixelPos ) ];
+            diffHistoryConfidence *= gIn_DiffConfidence.SampleLevel( gLinearClamp, smbPixelUv, 0 );
 
         diffAccumSpeed *= lerp( diffHistoryConfidence, 1.0, 1.0 / ( 1.0 + diffAccumSpeed ) );
-        diffAccumSpeed = min( diffAccumSpeed, gMaxAccumulatedFrameNum );
 
         // Current
         bool diffHasData = NRD_SUPPORTS_CHECKERBOARD == 0 || gDiffCheckerboard == 2 || checkerboard == gDiffCheckerboard;

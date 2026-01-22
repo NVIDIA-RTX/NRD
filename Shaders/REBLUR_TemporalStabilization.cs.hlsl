@@ -178,9 +178,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             gOut_DiffSh[ pixelPos ] = diffSh;
         #endif
 
-        // Increment history length
-        data1.x += 1.0;
-
         // Apply anti-lag
         float diffMinAccumSpeed = min( data1.x, gHistoryFixFrameNum ) * REBLUR_USE_ANTILAG_NOT_INVOKING_HISTORY_FIX;
         data1.x = lerp( diffMinAccumSpeed, data1.x, diffAntilag );
@@ -353,9 +350,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #if( NRD_MODE == SH )
             gOut_SpecSh[ pixelPos ] = specSh;
         #endif
-
-        // Increment history length
-        data1.y += 1.0;
 
         // Apply anti-lag
         float specMinAccumSpeed = min( data1.y, gHistoryFixFrameNum ) * REBLUR_USE_ANTILAG_NOT_INVOKING_HISTORY_FIX;

@@ -164,8 +164,10 @@ namespace nrd
         float debug = 0.0f;
 
         // (Optional) (pixels) - viewport origin
-        // IMPORTANT: gets applied only to non-noisy guides (aka g-buffer), including "IN_DIFF_CONFIDENCE", "IN_SPEC_CONFIDENCE",
-        // "IN_DISOCCLUSION_THRESHOLD_MIX" and "IN_BASECOLOR_METALNESS". Used only if "NRD_SUPPORTS_VIEWPORT_OFFSET = 1"
+        // IMPORTANT: gets applied only to non-noisy guides (aka g-buffer):
+        // - including: "IN_BASECOLOR_METALNESS"
+        // - excluding: "IN_DIFF_CONFIDENCE", "IN_SPEC_CONFIDENCE" and "IN_DISOCCLUSION_THRESHOLD_MIX"
+        // Used only if "NRD_SUPPORTS_VIEWPORT_OFFSET = 1"
         uint32_t rectOrigin[2] = {};
 
         // A consecutively growing number. Valid usage:

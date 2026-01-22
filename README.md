@@ -230,13 +230,15 @@ The resolve process takes place on the application side and has the following mo
 Shader code:
 ```cpp
 // Diffuse
-float4 diff = gIn_Diff.SampleLevel( gLinearSampler, pixelUv, 0 );
-float4 diff1 = gIn_DiffSh.SampleLevel( gLinearSampler, pixelUv, 0 );
+float4 diff = gIn_Diff[ pixelPos ];
+float4 diff1 = gIn_DiffSh[ pixelPos ];
+
 NRD_SG diffSg = REBLUR_BackEnd_UnpackSh( diff, diff1 );
 
 // Specular
-float4 spec = gIn_Spec.SampleLevel( gLinearSampler, pixelUv, 0 );
-float4 spec1 = gIn_SpecSh.SampleLevel( gLinearSampler, pixelUv, 0 );
+float4 spec = gIn_Spec[ pixelPos ];
+float4 spec1 = gIn_SpecSh[ pixelPos ];
+
 NRD_SG specSg = REBLUR_BackEnd_UnpackSh( spec, spec1 );
 
 // ( Optional ) AO / SO ( available only for REBLUR )

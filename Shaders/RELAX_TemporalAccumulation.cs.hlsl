@@ -485,7 +485,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if(currentMaterialID == gStrandMaterialID)
         disocclusionThresholdMix = NRD_GetNormalizedStrandThickness(gStrandThickness, pixelSize);
     if(gHasDisocclusionThresholdMix && NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX)
-        disocclusionThresholdMix = gIn_DisocclusionThresholdMix[WithRectOrigin(pixelPos)];
+        disocclusionThresholdMix = gIn_DisocclusionThresholdMix[pixelPos];
 
     float disocclusionThreshold = lerp(gDisocclusionThreshold, gDisocclusionThresholdAlternate, disocclusionThresholdMix);
     if(currentMaterialID == gStrandMaterialID)
@@ -594,7 +594,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
     {
-        float inDiffConfidence = gIn_DiffConfidence[WithRectOrigin(pixelPos)];
+        float inDiffConfidence = gIn_DiffConfidence.SampleLevel( gLinearClamp, prevUVSMB, 0 );
         diffMaxAccumulatedFrameNum *= inDiffConfidence;
         diffMaxFastAccumulatedFrameNum *= inDiffConfidence;
     }
@@ -637,7 +637,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float specMaxFastAccumulatedFrameNum = gSpecMaxFastAccumulatedFrameNum;
     if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
     {
-        float inSpecConfidence = gIn_SpecConfidence[WithRectOrigin(pixelPos)];
+        float inSpecConfidence = gIn_SpecConfidence.SampleLevel( gLinearClamp, prevUVSMB, 0 );
         specMaxAccumulatedFrameNum *= inSpecConfidence;
         specMaxFastAccumulatedFrameNum *= inSpecConfidence;
     }
