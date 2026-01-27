@@ -5,8 +5,8 @@
 ![Title](Images/Title.jpg)
 
 For quick starting see *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* project:
-- `simplex` branch - focuses on path tracing and NRD best practices (less code, less preprocessor, easier to follow)
-- `main` branch - contains everything needed for NRD development, testing and maintaining, all variants of NRD usage are here
+- `simplex` branch - focuses on path tracing and *NRD* best practices (less code, less preprocessor, easier to follow)
+- `main` branch - contains everything needed for *NRD* development, testing and maintaining, all variants of *NRD* usage are here
 
 # OVERVIEW
 
@@ -673,7 +673,7 @@ Frame generation (FG) techniques boost FPS by interpolating between 2 last avail
 
 **[NRD]** Read all comments in `NRDDescs.h`, `NRDSettings.h` and `NRD.hlsli`.
 
-**[NRD]** The *NRD API* has been designed to support integration into native *Vulkan* apps. If the RHI you work with is D3D11-like, not all provided data will be needed. `NRDIntegration.hpp` can be used as a guide demonstrating how to map NRD API to a *Vulkan*-like RHI.
+**[NRD]** The *NRD API* has been designed to support integration into native *Vulkan* apps. If the RHI you work with is D3D11-like, not all provided data will be needed. `NRDIntegration.hpp` can be used as a guide demonstrating how to map *NRD API* to a *Vulkan*-like RHI.
 
 **[NRD]** *NRD* requires linear roughness and world-space normals. See `NRD.hlsli` for more details and supported customizations.
 
