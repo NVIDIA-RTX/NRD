@@ -42,7 +42,7 @@ For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "
 1. Native implementation of the *NRD* API using engine capabilities
 2. Integration via an abstraction layer. In this case, the engine should expose native GAPI pointers for certain types of objects. The integration layer, provided as a part of SDK, can be used to simplify this integration variant.
 
-# HOW TO BUILD?
+## HOW TO BUILD?
 
 - Install [*Cmake*](https://cmake.org/download/) 3.22+
 - Build (variant 1) - using *Git* and *CMake* explicitly
@@ -79,14 +79,14 @@ SDK packaging:
 - Run `3-PrepareSDK`
 - Grab generated in the root directory `_NRD_SDK` and `_NRI_SDK` (if needed) folders and use them in your project
 
-# HOW TO UPDATE?
+## HOW TO UPDATE?
 
 - Clone latest
 - Run `4-Clean`
 - Run `1-Deploy`
 - Run `2-Build`
 
-# HOW TO REPORT ISSUES?
+## HOW TO REPORT ISSUES?
 
 NRD sample has *TESTS* section in the bottom of the UI, a new test can be added if needed. The following procedure is recommended:
 - Try to reproduce a problem in the *NRD sample* first
@@ -357,7 +357,6 @@ out.diffRadiance /= diffFactor;
 out.specRadiance /= specFactor;
 ```
 </details>
-<br>
 
 Or alternatively, an app-side RHI or a native GAPI can be used explicitly:
 * Create shaders from precompiled binary blobs
