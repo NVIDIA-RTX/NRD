@@ -40,7 +40,7 @@ For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "
 
 *NRD* is distributed as a source as well with a “ready-to-use” library (if used in a precompiled form). It can be integrated into any DX12, VULKAN or DX11 engine using two variants:
 1. Native implementation of the *NRD* API using engine capabilities
-2. Integration via an abstraction layer. In this case, the engine should expose native Graphics API pointers for certain types of objects. The integration layer, provided as a part of SDK, can be used to simplify this integration variant.
+2. Integration via an abstraction layer. In this case, the engine should expose native GAPI pointers for certain types of objects. The integration layer, provided as a part of SDK, can be used to simplify this integration variant.
 
 # HOW TO BUILD?
 
@@ -116,35 +116,26 @@ Flow:
 6. *GetComputeDispatches* - returns per-dispatch data for the list of denoisers (bound subresources with required state, constant buffer data). Returned memory is owned by the instance and gets overwritten by the next *GetComputeDispatches* call
 7. *DestroyInstance* - destroys an instance
 
-*NRD* doesn't make any graphics API calls. The application is supposed to invoke a set of compute *Dispatch* calls to do denoising. Refer to `NRDIntegration.hpp` file as an example of an integration using low level RHI.
+*NRD* doesn't make any GAPI calls. The application is supposed to invoke a set of compute *Dispatch* calls to do denoising. Refer to `NRDIntegration.hpp` file as an example of an integration using low level RHI.
 
-*NRD* doesn’t have a "resize" functionality. On a resolution change the old denoiser needs to be destroyed and a new one needs to be created with new parameters. But *NRD* supports dynamic resolution scaling via `CommonSettings::resourceSize, resourceSizePrev, rectSize, rectSizePrev`.
+*NRD* doesn't have a "resize" functionality. On a resolution change the old denoiser needs to be destroyed and a new one needs to be created with new parameters. But *NRD* supports dynamic resolution scaling via `CommonSettings::resourceSize, resourceSizePrev, rectSize, rectSizePrev`.
 
 Some textures can be requested as inputs or outputs for a method. Required resources are specified near a denoiser declaration inside the `Denoiser` enum class. Also `NRD.hlsli` has a comment near each front-end or back-end function, clarifying which resources this function is for.
 
-## INTEGRATION VARIANT 1: using app-side RHI or native GAPI
+## INTEGRATION
 
-RHI must have the ability to do the following:
-* Create shaders from precompiled binary blobs
-* Create an SRV for a specific range of subresources
-* Create and bind 2 predefined samplers
-* Invoke a Dispatch call (no raster, no VS/PS)
-* Create 2D textures with SRV/UAV access
-
-## INTEGRATION VARIANT 2: using NRI-based NRD integration layer
-
-If Graphics API's native pointers are retrievable from the RHI, the *NRD integration* layer can be used to greatly simplify the integration. In this case, the application should only provide native pointers for the *Device*, *CommandList* and *Textures* into entities, compatible with an API abstraction layer (*[NRI](https://github.com/NVIDIA-RTX/NRI)*), and all work with *NRD* library will be hidden inside the integration layer:
+If GAPI's native pointers are retrievable from the RHI, the [NRDIntegration](https://github.com/NVIDIA-RTX/NRD/blob/master/Integration/NRDIntegration.h) layer can be used to greatly simplify the integration. In this case, the application should only provide native pointers for the *Device*, *CommandList* and *Textures* into entities, compatible with an API abstraction layer (*[NRI](https://github.com/NVIDIA-RTX/NRI)*), and all work with *NRD* library will be hidden inside the integration layer:
 
 *Engine or App → native objects → NRD integration layer → NRI → NRD*
 
-*NRI = NVIDIA Rendering Interface* - an abstraction layer on top of Graphics APIs: DX11, DX12 and VULKAN. *NRI* has been designed to provide low overhead access to the Graphics APIs and simplify development of DX12 and VULKAN applications. *NRI* API has been influenced by VULKAN as the common denominator among these 3 APIs.
+*NRI = NVIDIA Rendering Interface* - an abstraction layer on top of GAPIs: DX11, DX12 and VULKAN. *NRI* has been designed to provide low overhead access to the GAPIs and simplify development of DX12 and VULKAN applications. *NRI* API has been influenced by VULKAN as the common denominator among these 3 APIs.
 
 *NRI* and *NRD* are ready-to-use products. The application must expose native pointers only for Device, Resource and CommandList entities (no SRVs and UAVs - they are not needed, everything will be created internally). Native resource pointers are needed only for the denoiser inputs and outputs (all intermediate textures will be handled internally). Descriptor heap will be changed to an internal one, so the application needs to bind its original descriptor heap after invoking the denoiser.
 
 In rare cases, when the integration via the engine’s RHI is not possible and the integration using native pointers is complicated, a "DoDenoising" call can be added explicitly to the application-side RHI. It helps to avoid increasing code entropy.
 
 <details>
-<summary>An example demonstrating how to use NRD integration (click to unfold):</summary>
+<summary>An example demonstrating how to use "NRDIntegration" layer (click to unfold):</summary>
 
 ```cpp
 //=======================================================================================================
@@ -366,6 +357,14 @@ out.diffRadiance /= diffFactor;
 out.specRadiance /= specFactor;
 ```
 </details>
+<br>
+
+Or alternatively, an app-side RHI or a native GAPI can be used explicitly:
+* Create shaders from precompiled binary blobs
+* Create an SRV for a texture (always `mip0`, no subresources)
+* Create and bind 2 predefined samplers
+* Invoke a Dispatch call (no raster, no VS/PS)
+* Create 2D textures with SRV/UAV access
 
 # INPUTS
 
