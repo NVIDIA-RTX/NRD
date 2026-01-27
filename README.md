@@ -85,6 +85,7 @@ SDK packaging:
 - Run `4-Clean`
 - Run `1-Deploy`
 - Run `2-Build`
+- Run `3-Run`
 
 ## HOW TO REPORT ISSUES?
 
