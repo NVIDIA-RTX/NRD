@@ -38,9 +38,9 @@ Supported signal types:
 
 For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "removed" materials) can be used instead of radiance (see this [section](#material-demodulation)).
 
-*NRD* is distributed as a source as well with a “ready-to-use” library (if used in a precompiled form). It can be integrated into any DX12, VULKAN or DX11 engine using two variants:
-1. Native implementation of the *NRD* API using engine capabilities
-2. Integration via an abstraction layer. In this case, the engine should expose native GAPI pointers for certain types of objects. The integration layer, provided as a part of SDK, can be used to simplify this integration variant.
+*NRD* is distributed as a source as well with a “ready-to-use” library (if used in a precompiled form). It can be integrated into any *D3D12*, *Vulkan* or *D3D11* engine using two variants:
+1. Integration via *NRI*-based `NRDIntegration` layer. In this case, the engine should expose native *GAPI* pointers for certain types of objects. The integration layer is provided as a part of SDK
+2. Native implementation of the *NRD* API using engine capabilities
 
 ## HOW TO BUILD?
 
@@ -53,7 +53,7 @@ For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "
   - Run `1-Deploy`
   - Run `2-Build`
 
-CMake options:
+*CMake* options:
 - Common:
   - `NRD_NRI` - pull, build and include *NRI* into *NRD SDK* package (OFF by default)
   - `NRD_SHADERS_PATH` - shader output path override
@@ -108,7 +108,7 @@ Terminology:
 * *Texture pool (or pool)* - a texture pool that stores permanent or transient resources needed for denoising. Textures from the permanent pool are dedicated to *NRD* and can not be reused by the application (history buffers are stored here). Textures from the transient pool can be reused by the application right after denoising. *NRD* doesn’t allocate anything. *NRD* provides resource descriptions, but resource creations are done on the application side.
 
 Flow:
-1. *GetLibraryDesc* - contains general *NRD* library information (supported denoisers, SPIRV binding offsets). This call can be skipped if this information is known in advance (for example, is diffuse denoiser available?), but it can’t be skipped if SPIRV binding offsets are needed for VULKAN
+1. *GetLibraryDesc* - contains general *NRD* library information (supported denoisers, SPIRV binding offsets). This call can be skipped if this information is known in advance (for example, is diffuse denoiser available?), but it can’t be skipped if SPIRV binding offsets are needed for *Vulkan*
 2. *CreateInstance* - creates an instance for requested denoisers
 3. *GetInstanceDesc* - returns descriptions for pipelines, samplers, texture pools, constant buffer and descriptor set. All this stuff is needed during the initialization step
 4. *SetCommonSettings* - sets common (shared) per frame parameters
@@ -116,19 +116,19 @@ Flow:
 6. *GetComputeDispatches* - returns per-dispatch data for the list of denoisers (bound subresources with required state, constant buffer data). Returned memory is owned by the instance and gets overwritten by the next *GetComputeDispatches* call
 7. *DestroyInstance* - destroys an instance
 
-*NRD* doesn't make any GAPI calls. The application is supposed to invoke a set of compute *Dispatch* calls to do denoising. Refer to `NRDIntegration.hpp` file as an example of an integration using low level RHI.
+*NRD* doesn't make any *GAPI* calls. The application is supposed to invoke a set of compute *Dispatch* calls to do denoising. Refer to [NRDIntegration.hpp](https://github.com/NVIDIA-RTX/NRD/blob/master/Integration/NRDIntegration.hpp) file as an example of an integration using low level RHI.
 
 *NRD* doesn't have a "resize" functionality. On a resolution change the old denoiser needs to be destroyed and a new one needs to be created with new parameters. But *NRD* supports dynamic resolution scaling via `CommonSettings::resourceSize, resourceSizePrev, rectSize, rectSizePrev`.
 
 Some textures can be requested as inputs or outputs for a method. Required resources are specified near a denoiser declaration inside the `Denoiser` enum class. Also `NRD.hlsli` has a comment near each front-end or back-end function, clarifying which resources this function is for.
 
-## INTEGRATION
+# INTEGRATION
 
 If GAPI's native pointers are retrievable from the RHI, the [NRDIntegration](https://github.com/NVIDIA-RTX/NRD/blob/master/Integration/NRDIntegration.h) layer can be used to greatly simplify the integration. In this case, the application should only provide native pointers for the *Device*, *CommandList* and *Textures* into entities, compatible with an API abstraction layer (*[NRI](https://github.com/NVIDIA-RTX/NRI)*), and all work with *NRD* library will be hidden inside the integration layer:
 
 *Engine or App → native objects → NRD integration layer → NRI → NRD*
 
-*NRI = NVIDIA Rendering Interface* - an abstraction layer on top of GAPIs: DX11, DX12 and VULKAN. *NRI* has been designed to provide low overhead access to the GAPIs and simplify development of DX12 and VULKAN applications. *NRI* API has been influenced by VULKAN as the common denominator among these 3 APIs.
+*NRI = NVIDIA Rendering Interface* - an abstraction layer on top of GAPIs: *D3D11*, *D3D12* and *Vulkan*. *NRI* has been designed to provide low overhead access to the GAPIs and simplify development of *D3D12* and *Vulkan* applications. *NRI* API has been influenced by *Vulkan* as the common denominator among these 3 APIs.
 
 *NRI* and *NRD* are ready-to-use products. The application must expose native pointers only for Device, Resource and CommandList entities (no SRVs and UAVs - they are not needed, everything will be created internally). Native resource pointers are needed only for the denoiser inputs and outputs (all intermediate textures will be handled internally). Descriptor heap will be changed to an internal one, so the application needs to bind its original descriptor heap after invoking the denoiser.
 
@@ -358,7 +358,7 @@ out.specRadiance /= specFactor;
 ```
 </details>
 
-Or alternatively, an app-side RHI or a native GAPI can be used explicitly:
+Or alternatively, an app-side RHI or a native *GAPI* can be used explicitly:
 * Create shaders from precompiled binary blobs
 * Create an SRV for a texture (always `mip0`, no subresources)
 * Create and bind 2 predefined samplers
@@ -636,7 +636,7 @@ Sub-pixel thin geometry of strand-based hair transforms "normals guide" into jit
   - in other words, `B` must follow the following rules:
     - `cross( T, B ) != 0`
     - `B` must not follow hair strand "tube"
-- search for `FLAG_HAIR` in [NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample) for more details
+- search for `FLAG_HAIR` in [NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample) for more details (enable `RTXCR_INTEGRATION` in *CMake* and use `Claire` scene)
 
 Hair strands tangent vectors *can't* be used as "normals guide" for *NRD* due to BRDF and curvature related calculations, requiring a vector, which can be considered a "normal" vector.
 
@@ -672,7 +672,7 @@ Frame generation (FG) techniques boost FPS by interpolating between 2 last avail
 
 **[NRD]** Read all comments in `NRDDescs.h`, `NRDSettings.h` and `NRD.hlsli`.
 
-**[NRD]** The *NRD API* has been designed to support integration into native VULKAN apps. If the RHI you work with is DX11-like, not all provided data will be needed. `NRDIntegration.hpp` can be used as a guide demonstrating how to map NRD API to a Vulkan-like RHI.
+**[NRD]** The *NRD API* has been designed to support integration into native *Vulkan* apps. If the RHI you work with is D3D11-like, not all provided data will be needed. `NRDIntegration.hpp` can be used as a guide demonstrating how to map NRD API to a *Vulkan*-like RHI.
 
 **[NRD]** *NRD* requires linear roughness and world-space normals. See `NRD.hlsli` for more details and supported customizations.
 
