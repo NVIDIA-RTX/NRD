@@ -122,7 +122,7 @@ Flow:
 
 Some textures can be requested as inputs or outputs for a method. Required resources are specified near a denoiser declaration inside the `Denoiser` enum class. Also `NRD.hlsli` has a comment near each front-end or back-end function, clarifying which resources this function is for.
 
-## INTEGRATION VARIANT 1: using the application-side Render Hardware Interface (RHI)
+## INTEGRATION VARIANT 1: using app-side RHI or native GAPI
 
 RHI must have the ability to do the following:
 * Create shaders from precompiled binary blobs
