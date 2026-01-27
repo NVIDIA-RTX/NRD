@@ -565,6 +565,9 @@ Re-jittering math with minorly modified inputs can also be used with RESTIR prod
 <summary>Shader code (CLICK):</summary>
 
 ```cpp
+// See https://github.com/NVIDIA-RTX/NRD-Sample/blob/main/Shaders/Include/Shared.hlsli#L13
+// And https://github.com/NVIDIA-RTX/NRD-Sample/blob/main/Shaders/Composition.cs.hlsl#L88
+
 // Diffuse
 float4 diff = gIn_Diff[ pixelPos ];
 float4 diff1 = gIn_DiffSh[ pixelPos ];
