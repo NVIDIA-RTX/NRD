@@ -136,7 +136,7 @@ If GAPI's native pointers are retrievable from the RHI, the [NRDIntegration](htt
 In rare cases, when the integration via the engine’s RHI is not possible and the integration using native pointers is complicated, a "DoDenoising" call can be added explicitly to the application-side RHI. It helps to avoid increasing code entropy.
 
 <details>
-<summary>An example demonstrating how to use "NRDIntegration" layer (CLICK):</summary>
+<summary>(CLICK) An example demonstrating how to use "NRDIntegration" layer:</summary>
 
 ```cpp
 //=======================================================================================================
@@ -563,7 +563,7 @@ The resolve process takes place on the application side and has the following mo
 Re-jittering math with minorly modified inputs can also be used with RESTIR produced sampling without involving SH denoisers. You only need to get light direction in the current pixel from RESTIR. Despite that RESTIR produces noisy light selections, its low variations can be easily handled by DLSS or other upscaling techs.
 
 <details>
-<summary>Shader code (CLICK):</summary>
+<summary>(CLICK) Shader code:</summary>
 
 ```cpp
 // See https://github.com/NVIDIA-RTX/NRD-Sample/blob/main/Shaders/Include/Shared.hlsli#L13
