@@ -366,7 +366,6 @@ out.diffRadiance /= diffFactor;
 out.specRadiance /= specFactor;
 ```
 </details>
-<br>
 
 # INPUTS
 
