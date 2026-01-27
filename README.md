@@ -1,12 +1,12 @@
-# NVIDIA REAL-TIME DENOISERS v4.16.1 (NRD)
+# NVIDIA REAL-TIME DENOISERS v4.17.0 (NRD)
 
 [![Build NRD SDK](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml/badge.svg)](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml)
 
 ![Title](Images/Title.jpg)
 
 For quick starting see *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* project:
-- `main` branch - contains everything needed for NRD development, testing aand maintaining, all variants of NRD usage are here
 - `simplex` branch - focuses on path tracing and NRD best practices (less code, less preprocessor, easier to follow)
+- `main` branch - contains everything needed for NRD development, testing and maintaining, all variants of NRD usage are here
 
 # OVERVIEW
 
@@ -22,6 +22,7 @@ Performance on RTX 4080 @ 1440p (native resolution, default denoiser settings, `
 - `RELAX_DIFFUSE_SPECULAR` - 3.00 ms (4.90 ms in `SH` mode)
 - `SIGMA_SHADOW` - 0.40 ms
 - `SIGMA_SHADOW_TRANSLUCENCY` - 0.45 ms
+- memory usage [table](#memory-usage)
 
 Supported signal types:
 - *RELAX*:
@@ -35,11 +36,11 @@ Supported signal types:
   - Shadows from an infinite light source (sun, moon)
   - Shadows from a local light source (omni, spot)
 
-For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "removed" materials) can be used instead of radiance (see "Recommendations and Best Practices" section).
+For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "removed" materials) can be used instead of radiance (see this [section](#material-demodulation)).
 
 *NRD* is distributed as a source as well with a “ready-to-use” library (if used in a precompiled form). It can be integrated into any DX12, VULKAN or DX11 engine using two variants:
 1. Native implementation of the *NRD* API using engine capabilities
-2. Integration via an abstraction layer. In this case, the engine should expose native Graphics API pointers for certain types of objects. The integration layer, provided as a part of SDK, can be used to simplify this kind of integration.
+2. Integration via an abstraction layer. In this case, the engine should expose native Graphics API pointers for certain types of objects. The integration layer, provided as a part of SDK, can be used to simplify this integration variant.
 
 # HOW TO BUILD?
 
@@ -81,7 +82,7 @@ SDK packaging:
 # HOW TO UPDATE?
 
 - Clone latest
-- Run `4-Clean.bat`
+- Run `4-Clean`
 - Run `1-Deploy`
 - Run `2-Build`
 
@@ -119,280 +120,18 @@ Flow:
 
 *NRD* doesn’t have a "resize" functionality. On a resolution change the old denoiser needs to be destroyed and a new one needs to be created with new parameters. But *NRD* supports dynamic resolution scaling via `CommonSettings::resourceSize, resourceSizePrev, rectSize, rectSizePrev`.
 
-Some textures can be requested as inputs or outputs for a method (see the next section). Required resources are specified near a denoiser declaration inside the `Denoiser` enum class. Also `NRD.hlsli` has a comment near each front-end or back-end function, clarifying which resources this function is for.
+Some textures can be requested as inputs or outputs for a method. Required resources are specified near a denoiser declaration inside the `Denoiser` enum class. Also `NRD.hlsli` has a comment near each front-end or back-end function, clarifying which resources this function is for.
 
-# NON-NOISY INPUTS
-
-Commons inputs for primary hits (if *PSR* is not used, common use case) or for secondary hits (if *PSR* is used, valid only for 0-roughness):
-
-* **IN\_MV** - non-jittered surface motion (`old = new + MV`)
-
-  Modes:
-  - *2D screen-space motion* - 2D motion doesn't provide information about movement along the view direction. *NRD* can reject history on dynamic objects in this case
-  - *2.5D screen-space motion (recommended)* - similar to the 2D screen-space motion, but `.z = viewZprev - viewZ` (see [NRD sample/GetMotion](https://github.com/NVIDIA-RTX/NRD-Sample/blob/9deb12a5408c4e2e07a6ff261f0a1051dd22f5d6/Shaders/Include/Shared.hlsli#L358))
-  - *3D world-space motion* - camera motion should not be included (it's already in the matrices). In other words, if there are no moving objects, all motion vectors must be `0` even if the camera is moving
-
-  Motion vector scaling can be provided via `CommonSettings::motionVectorScale`. *NRD* expectations:
-  - Use `CommonSettings::isMotionVectorInWorldSpace = true` for 3D world-space motion
-  - Use `CommonSettings::isMotionVectorInWorldSpace = false` and `CommonSettings::motionVectorScale[2] == 0` for 2D screen-space motion
-  - Use `CommonSettings::isMotionVectorInWorldSpace = false` and `CommonSettings::motionVectorScale[2] != 0` for 2.5D screen-space motion
-
-* **IN\_NORMAL\_ROUGHNESS** - surface world-space normal and *linear* roughness
-
-  Normal and roughness encoding must be controlled via *Cmake* parameters `NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING`. Encoding settings can be known at runtime by accessing `LibraryDesc::normalEncoding` and `LibraryDesc::roghnessEncoding` respectively. `NormalEncoding` and `RoughnessEncoding` enums briefly describe encoding variants. It's recommended to use `NRD.hlsli/NRD_FrontEnd_PackNormalAndRoughness` to match decoding.
-
-  *NRD* computes local curvature using provided normals. Less accurate normals can lead to banding in curvature and local flatness. `RGBA8` normals is a good baseline, but `R10G10B10A10` oct-packed normals improve curvature calculations and specular tracking as the result.
-
-  If `materialID` is provided and supported by encoding, *NRD* diffuse and specular denoisers won't mix up surfaces with different material IDs.
-
-* **IN\_VIEWZ** - `.x` - view-space Z coordinate of primary hits (linearized g-buffer depth)
-
-  Positive and negative values are supported. Z values in all pixels must be in the same space, matching space defined by matrices passed to NRD. If, for example, the protagonist's hands are rendered using special matrices, Z values should be computed as:
-  - reconstruct world position using special matrices for "hands"
-  - project on screen using matrices passed to NRD
-  - `.w` component is positive view Z (or just transform world-space position to main view space and take `.z` component)
-
-The illustration below shows expected inputs for primary hits:
-
-![Input without PSR](Images/InputsWithoutPsr.png)
-
-```cpp
-hitDistance = length( B - A ); // hitT for 1st bounce (recommended baseline)
-
-IN_VIEWZ = TransformToViewSpace( A ).z;
-IN_NORMAL_ROUGHNESS = GetNormalAndRoughnessAt( A );
-IN_MV = GetMotionAt( A );
-```
-
-See `NRDDescs.h` and `NRD.hlsli` for more details and descriptions of other inputs and outputs.
-
-# NOISY INPUTS
-
-NRD sample is a good start to familiarize yourself with input requirements and best practices, but main requirements can be summarized to:
-
-Radiance:
-- Since *NRD* denoisers accumulate signals for a limited number of frames, the input signal must converge *reasonably* well for this number of frames. `REFERENCE` denoiser can be used to estimate temporal signal quality
-- Since *NRD* denoisers process signals spatially, high-energy fireflies in the input signal should be avoided. Some of them can be removed by enabling anti-firefly filter in *NRD*, but it will only work if the "background" signal is confident. The worst case is having a single pixel with a high energy divided by a very small PDF to represent the lack of energy in neighboring non-representative (black) pixels. Probabilistic diffuse / specular split for the 1st bounce requires special treatment described in `HitDistanceReconstructionMode`. In case of probabilistic split for 2nd+ bounces, it's still recommended to clamp diffuse / specular probabilities to a sane range to avoid division by a very small value, leading to a high energy firefly, difficult to get rid of in a short amount of time. Energy increase should not be more than 20x-30x, what corresponds to around `0.05` min probability. `0` and `1` probabilities are absolutely acceptable (for example, metals don't have diffuse component)
-- Radiance must be separated into diffuse and specular at primary hit (or secondary hit in case of *PSR*)
-
-Hit distance (*REBLUR* and *RELAX*):
-- `hitT` can't be negative
-- `hitT` must not include primary hit distance
-- `hitT` for the first bounce after the primary hit or *PSR* must be provided "as is"
-- `hitT` for subsequent bounces and for bounces before *PSR* must be adjusted by curvature and lobe energy dissipation on the application side
-  - Do not pass *sum of lengths of all segments* as `hitT`. A solid baseline is to use hit distance for the 1st bounce only, it works well for diffuse and specular signals
-  - *NRD sample* uses more complex approach for accumulating `hitT` along the path, which takes into account energy dissipation due to lobe spread and curvature at the current hit
-- For rays pointing inside the surface (VNDF sampling can easily produce those), `hitT` must be set to 0 (but better to not cast such rays)
-- Noise in hit distances must follow a diffuse or specular lobe. It implies that `hitT` for `roughness = 0` must be clean (if probabilistic sampling is not in use)
-- In case of probabilistic diffuse / specular selection at the primary hit, provided `hitT` must follow the following rules:
-  - Should not be divided by `PDF`
-  - If diffuse or specular sampling is skipped, `hitT` must be set to `0` for corresponding signal type
-  - `hitDistanceReconstructionMode` must be set to something other than `OFF`, but bear in mind that the search area is limited to 3x3 (or 5x5). In other words, it's the application's responsibility to guarantee a valid sample in this area. It can be achieved by clamping probabilities and using Bayer-like dithering (see the sample for more details and read comments for `HitDistanceReconstructionMode` fields)
-  - Pre-pass must be enabled (i.e. `diffusePrepassBlurRadius` and `specularPrepassBlurRadius` must be set to 20-70 pixels) to compensate entropy increase, since radiance in valid samples is divided by probability to compensate 0 values in some neighbors
-- Probabilistic split for 2nd+ bounces is absolutely acceptable
-- In case of many paths per pixel `hitT` for specular must be "averaged" by `NRD.hlsli/NRD_FrontEnd_SpecHitDistAveraging_*` functions
-- For *REBLUR* hits distance must be normalized using `NRD.hlsli/REBLUR_FrontEnd_GetNormHitDist`
-
-Distance to occluder (*SIGMA*):
-- visibility ray must be cast from the point of interest to a light source ( i.e. *not* from a light source )
-- `ACCEPT_FIRST_HIT_AND_END_SEARCH` ray flag can't be used to optimize tracing, because it can lead to wrong potentially very long hit distances from random distant occluders
-- `hit` means "occluder is hit"
-- `miss` means "light is hit"
-- `NoL <= 0` - 0 (it's very important!)
-- `NoL > 0, hit` - hit distance
-- `NoL > 0, miss` - >= NRD_FP16_MAX
-
-See `NRDDescs.h` and `NRD.hlsli` for more details and descriptions of other inputs and outputs.
-
-# NOISY & NON-NOISY DATA REQUIREMENTS
-
-Noisy inputs:
- - garbage values are allowed outside of active viewport, i.e. `pixelPos >= CommonSettings::rectSize`
- - garbage values are allowed outside of denoising range, i.e. `abs( viewZ ) >= CommonSettings::denoisingRange`
-
-Non-noisy inputs (guides):
- - must not contain `NAN/INF` values
-
-Where "garbage" is `NAN/INF` or undesired value.
-
-# IMPROVING OUTPUT QUALITY
-
-The temporal part of *NRD* naturally suppresses jitter, which is essential for upscaling techniques. If an *SH* denoiser is in use, a high quality resolve can be applied to the final output to regain back macro details, micro details and per-pixel jittering. As an example, the image below demonstrates the results *after* and *before* resolve with active *DLSS* (quality mode).
-
-![Resolve](Images/Resolve.jpg)
-
-The resolve process takes place on the application side and has the following modular structure:
-- construct an SG (spherical gaussian) light
-- apply diffuse or specular resolve function to reconstruct macro details
-- apply re-jittering to reconstruct micro details
-- (optionally) or just extract unresolved color (fully matches the output of a corresponding non-SH denoiser)
-
-Shader code:
-```cpp
-// Diffuse
-float4 diff = gIn_Diff[ pixelPos ];
-float4 diff1 = gIn_DiffSh[ pixelPos ];
-
-NRD_SG diffSg = REBLUR_BackEnd_UnpackSh( diff, diff1 );
-
-// Specular
-float4 spec = gIn_Spec[ pixelPos ];
-float4 spec1 = gIn_SpecSh[ pixelPos ];
-
-NRD_SG specSg = REBLUR_BackEnd_UnpackSh( spec, spec1 );
-
-// ( Optional ) AO / SO ( available only for REBLUR )
-diff.w = diffSg.normHitDist;
-spec.w = specSg.normHitDist;
-
-if( gResolve )
-{
-    // ( Optional ) replace "roughness" with "roughnessAA"
-    roughness = NRD_SG_ExtractRoughnessAA( specSg );
-
-    // Regain macro-details
-    diff.xyz = NRD_SG_ResolveDiffuse( diffSg, N ); // or NRD_SH_ResolveDiffuse( sg, N )
-    spec.xyz = NRD_SG_ResolveSpecular( specSg, N, V, roughness );
-
-    // Regain micro-details & jittering // TODO: preload N and Z into SMEM
-    float3 Ne = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( 1, 0 ) ] ).xyz;
-    float3 Nw = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( -1, 0 ) ] ).xyz;
-    float3 Nn = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( 0, 1 ) ] ).xyz;
-    float3 Ns = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( 0, -1 ) ] ).xyz;
-
-    float Ze = gIn_ViewZ[ pixelPos + int2( 1, 0 ) ];
-    float Zw = gIn_ViewZ[ pixelPos + int2( -1, 0 ) ];
-    float Zn = gIn_ViewZ[ pixelPos + int2( 0, 1 ) ];
-    float Zs = gIn_ViewZ[ pixelPos + int2( 0, -1 ) ];
-
-    float2 scale = NRD_SG_ReJitter( diffSg, specSg, Rf0, V, roughness, viewZ, Ze, Zw, Zn, Zs, N, Ne, Nw, Nn, Ns );
-
-    diff.xyz *= scale.x;
-    spec.xyz *= scale.y;
-}
-else
-{
-    // ( Optional ) Unresolved color matching the non-SH version of the denoiser
-    diff.xyz = NRD_SG_ExtractColor( diffSg );
-    spec.xyz = NRD_SG_ExtractColor( specSg );
-}
-```
-
-Re-jittering math with minorly modified inputs can also be used with RESTIR produced sampling without involving SH denoisers. You only need to get light direction in the current pixel from RESTIR. Despite that RESTIR produces noisy light selections, its low variations can be easily handled by DLSS or other upscaling techs.
-
-# VALIDATION LAYER
-
-![Validation](Images/Validation.png)
-
-If `CommonSettings::enableValidation = true` *REBLUR* & *RELAX* denoisers render debug information into `OUT_VALIDATION` output. Alpha channel contains layer transparency to allow easy mix with the final image on the application side. Currently the following viewport layout is used on the screen:
-
-| 0 | 1 | 2 | 3 |
-|---|---|---|---|
-| 4 | 5 | 6 | 7 |
-| 8 | 9 | 10| 11|
-| 12| 13| 14| 15|
-
-where:
-
-- Viewport 0 - world-space normals
-- Viewport 1 - linear roughness
-- Viewport 2 - linear viewZ
-  - green = `+`
-  - blue = `-`
-  - red = `out of denoising range`
-- Viewport 3 - difference between MVs, coming from `IN_MV`, and expected MVs, assuming that the scene is static
-  - blue = `out of screen`
-  - pixels with moving objects have non-0 values
-- Viewport 4 - world-space grid & camera jitter:
-  - 1 cube = `1 unit`
-  - the square in the bottom-right corner represents a pixel with accumulated samples
-  - the red boundary of the square marks jittering outside of the pixel area
-
-*REBLUR* specific:
-- Viewport 7 - amount of virtual history
-- Viewport 8 - number of accumulated frames for diffuse signal (red = `history reset`)
-- Viewport 11 - number of accumulated frames for specular signal (red = `history reset`)
-- Viewport 12 - input normalized `hitT` for diffuse signal (ambient occlusion, AO)
-- Viewport 15 - input normalized `hitT` for specular signal (specular occlusion, SO)
-
-# MEMORY REQUIREMENTS
-
-The *Persistent* column (matches *NRD Permanent pool*) indicates how much of the *Working set* is required to be left intact for subsequent frames of the application. This memory stores the history resources consumed by NRD. The *Aliasable* column (matches *NRD Transient pool*) shows how much of the *Working set* may be aliased by textures or other resources used by the application outside of the operating boundaries of NRD.
-
-| Resolution |                             Denoiser | Working set (Mb) |  Persistent (Mb) |   Aliasable (Mb) |
-|------------|--------------------------------------|------------------|------------------|------------------|
-|      1080p |                       REBLUR_DIFFUSE |            76.19 |            50.75 |            25.44 |
-|            |             REBLUR_DIFFUSE_OCCLUSION |            36.06 |            27.50 |             8.56 |
-|            |                    REBLUR_DIFFUSE_SH |           109.94 |            67.62 |            42.31 |
-|            |                      REBLUR_SPECULAR |            95.25 |            59.25 |            36.00 |
-|            |            REBLUR_SPECULAR_OCCLUSION |            44.56 |            36.00 |             8.56 |
-|            |                   REBLUR_SPECULAR_SH |           129.00 |            76.12 |            52.88 |
-|            |              REBLUR_DIFFUSE_SPECULAR |           148.12 |            88.88 |            59.25 |
-|            |    REBLUR_DIFFUSE_SPECULAR_OCCLUSION |            59.44 |            42.38 |            17.06 |
-|            |           REBLUR_DIFFUSE_SPECULAR_SH |           232.50 |           122.62 |           109.88 |
-|            | REBLUR_DIFFUSE_DIRECTIONAL_OCCLUSION |            71.94 |            48.62 |            23.31 |
-|            |                        RELAX_DIFFUSE |            90.81 |            54.88 |            35.94 |
-|            |                     RELAX_DIFFUSE_SH |           158.31 |            88.62 |            69.69 |
-|            |                       RELAX_SPECULAR |           101.44 |            63.38 |            38.06 |
-|            |                    RELAX_SPECULAR_SH |           168.94 |            97.12 |            71.81 |
-|            |               RELAX_DIFFUSE_SPECULAR |           168.94 |            97.12 |            71.81 |
-|            |            RELAX_DIFFUSE_SPECULAR_SH |           303.94 |           164.62 |           139.31 |
-|            |                         SIGMA_SHADOW |            31.88 |             8.44 |            23.44 |
-|            |            SIGMA_SHADOW_TRANSLUCENCY |            50.81 |             8.44 |            42.38 |
-|            |                            REFERENCE |            33.75 |            33.75 |             0.00 |
-|            |                                      |                  |                  |                  |
-|      1440p |                       REBLUR_DIFFUSE |           135.06 |            90.00 |            45.06 |
-|            |             REBLUR_DIFFUSE_OCCLUSION |            63.81 |            48.75 |            15.06 |
-|            |                    REBLUR_DIFFUSE_SH |           195.06 |           120.00 |            75.06 |
-|            |                      REBLUR_SPECULAR |           168.81 |           105.00 |            63.81 |
-|            |            REBLUR_SPECULAR_OCCLUSION |            78.81 |            63.75 |            15.06 |
-|            |                   REBLUR_SPECULAR_SH |           228.81 |           135.00 |            93.81 |
-|            |              REBLUR_DIFFUSE_SPECULAR |           262.56 |           157.50 |           105.06 |
-|            |    REBLUR_DIFFUSE_SPECULAR_OCCLUSION |           105.06 |            75.00 |            30.06 |
-|            |           REBLUR_DIFFUSE_SPECULAR_SH |           412.56 |           217.50 |           195.06 |
-|            | REBLUR_DIFFUSE_DIRECTIONAL_OCCLUSION |           127.56 |            86.25 |            41.31 |
-|            |                        RELAX_DIFFUSE |           161.31 |            97.50 |            63.81 |
-|            |                     RELAX_DIFFUSE_SH |           281.31 |           157.50 |           123.81 |
-|            |                       RELAX_SPECULAR |           180.06 |           112.50 |            67.56 |
-|            |                    RELAX_SPECULAR_SH |           300.06 |           172.50 |           127.56 |
-|            |               RELAX_DIFFUSE_SPECULAR |           300.06 |           172.50 |           127.56 |
-|            |            RELAX_DIFFUSE_SPECULAR_SH |           540.06 |           292.50 |           247.56 |
-|            |                         SIGMA_SHADOW |            56.38 |            15.00 |            41.38 |
-|            |            SIGMA_SHADOW_TRANSLUCENCY |            90.12 |            15.00 |            75.12 |
-|            |                            REFERENCE |            60.00 |            60.00 |             0.00 |
-|            |                                      |                  |                  |                  |
-|      2160p |                       REBLUR_DIFFUSE |           287.00 |           191.25 |            95.75 |
-|            |             REBLUR_DIFFUSE_OCCLUSION |           135.62 |           103.62 |            32.00 |
-|            |                    REBLUR_DIFFUSE_SH |           414.50 |           255.00 |           159.50 |
-|            |                      REBLUR_SPECULAR |           358.69 |           223.12 |           135.56 |
-|            |            REBLUR_SPECULAR_OCCLUSION |           167.50 |           135.50 |            32.00 |
-|            |                   REBLUR_SPECULAR_SH |           486.19 |           286.88 |           199.31 |
-|            |              REBLUR_DIFFUSE_SPECULAR |           557.88 |           334.69 |           223.19 |
-|            |    REBLUR_DIFFUSE_SPECULAR_OCCLUSION |           223.31 |           159.44 |            63.88 |
-|            |           REBLUR_DIFFUSE_SPECULAR_SH |           876.62 |           462.19 |           414.44 |
-|            | REBLUR_DIFFUSE_DIRECTIONAL_OCCLUSION |           271.12 |           183.31 |            87.81 |
-|            |                        RELAX_DIFFUSE |           342.81 |           207.25 |           135.56 |
-|            |                     RELAX_DIFFUSE_SH |           597.81 |           334.75 |           263.06 |
-|            |                       RELAX_SPECULAR |           382.69 |           239.12 |           143.56 |
-|            |                    RELAX_SPECULAR_SH |           637.69 |           366.62 |           271.06 |
-|            |               RELAX_DIFFUSE_SPECULAR |           637.69 |           366.62 |           271.06 |
-|            |            RELAX_DIFFUSE_SPECULAR_SH |          1147.69 |           621.62 |           526.06 |
-|            |                         SIGMA_SHADOW |           119.94 |            31.88 |            88.06 |
-|            |            SIGMA_SHADOW_TRANSLUCENCY |           191.56 |            31.88 |           159.69 |
-|            |                            REFERENCE |           127.50 |           127.50 |             0.00 |
-
-# INTEGRATION VARIANTS
-
-## Using the application-side Render Hardware Interface (RHI)
+## INTEGRATION VARIANT 1: using the application-side Render Hardware Interface (RHI)
 
 RHI must have the ability to do the following:
 * Create shaders from precompiled binary blobs
 * Create an SRV for a specific range of subresources
 * Create and bind 2 predefined samplers
 * Invoke a Dispatch call (no raster, no VS/PS)
-* Create 2D textures with SRV / UAV access
+* Create 2D textures with SRV/UAV access
 
-## Using NRI-based NRD integration layer
+## INTEGRATION VARIANT 2: using NRI-based NRD integration layer
 
 If Graphics API's native pointers are retrievable from the RHI, the *NRD integration* layer can be used to greatly simplify the integration. In this case, the application should only provide native pointers for the *Device*, *CommandList* and *Textures* into entities, compatible with an API abstraction layer (*[NRI](https://github.com/NVIDIA-RTX/NRI)*), and all work with *NRD* library will be hidden inside the integration layer:
 
@@ -404,7 +143,8 @@ If Graphics API's native pointers are retrievable from the RHI, the *NRD integra
 
 In rare cases, when the integration via the engine’s RHI is not possible and the integration using native pointers is complicated, a "DoDenoising" call can be added explicitly to the application-side RHI. It helps to avoid increasing code entropy.
 
-The example below shows how to use *NRD integration*:
+<details>
+<summary>An example demonstrating how to use NRD integration (click to unfold):</summary>
 
 ```cpp
 //=======================================================================================================
@@ -543,7 +283,7 @@ Shader part:
 ```cpp
 #include "NRD.hlsli"
 
-// Pseudo code
+// Pseudo code (this can be simplified for 1 path per pixel, see "NRD sample/simplex" branch)
 Hit primaryHit; // aka 0 bounce, or PSR
 Out out = (Out)0;
 
@@ -571,7 +311,7 @@ for (int path = 0; path < pathNum; path++)
     // Normalize hit distances for REBLUR
     float normHitDist = accumulatedHitDist;
     if (REBLUR)
-        normHitDist = REBLUR_FrontEnd_GetNormHitDist(accumulatedHitDist, primaryHit.viewZ, gHitDistParams, isDiffusePath ? 1.0 : primaryHit.roughness);
+        normHitDist = REBLUR_FrontEnd_GetNormHitDist(accumulatedHitDist, primaryHit.viewZ, gHitDistSettings, isDiffusePath ? 1.0 : primaryHit.roughness);
 
     // Accumulate diffuse and specular separately for denoising
     if (isDiffusePath)
@@ -625,12 +365,143 @@ NRD_MaterialFactors(primaryHit.N, primaryHit.V, primaryHit.albedo, primaryHit.Rf
 out.diffRadiance /= diffFactor;
 out.specRadiance /= specFactor;
 ```
+</details>
+<br>
 
-# RECOMMENDATIONS AND BEST PRACTICES: GREATER TIPS
+# INPUTS
+
+[Non-noisy](#non-noisy-inputs) inputs (guides):
+ - must not contain `NAN/INF` values
+
+[Noisy](#noisy-inputs) inputs (signal to be denoised):
+ - `NAN/INF` values are allowed outside of active viewport, i.e. `pixelPos >= CommonSettings::rectSize`
+ - `NAN/INF` values are allowed outside of denoising range, i.e. `abs( viewZ ) >= CommonSettings::denoisingRange`
+
+## NON-NOISY INPUTS
+
+Commons inputs for primary hits (if *PSR* is not used, common use case) or for secondary hits (if *PSR* is used, valid only for 0-roughness):
+
+* **IN\_MV** - non-jittered surface motion (`old = new + MV`)
+
+  Modes:
+  - *2D screen-space motion* - 2D motion doesn't provide information about movement along the view direction. *NRD* can reject history on dynamic objects in this case
+  - *2.5D screen-space motion (recommended)* - similar to the 2D screen-space motion, but `.z = viewZprev - viewZ` (see [NRD sample/GetMotion](https://github.com/NVIDIA-RTX/NRD-Sample/blob/9deb12a5408c4e2e07a6ff261f0a1051dd22f5d6/Shaders/Include/Shared.hlsli#L358))
+  - *3D world-space motion* - camera motion should not be included (it's already in the matrices). In other words, if there are no moving objects, all motion vectors must be `0` even if the camera is moving
+
+  Motion vector scaling can be provided via `CommonSettings::motionVectorScale`. *NRD* expectations:
+  - Use `CommonSettings::isMotionVectorInWorldSpace = true` for 3D world-space motion
+  - Use `CommonSettings::isMotionVectorInWorldSpace = false` and `CommonSettings::motionVectorScale[2] == 0` for 2D screen-space motion
+  - Use `CommonSettings::isMotionVectorInWorldSpace = false` and `CommonSettings::motionVectorScale[2] != 0` for 2.5D screen-space motion
+
+* **IN\_NORMAL\_ROUGHNESS** - surface world-space normal and *linear* roughness
+
+  Normal and roughness encoding must be controlled via *Cmake* parameters `NRD_NORMAL_ENCODING` and `NRD_ROUGHNESS_ENCODING`. Encoding settings can be known at runtime by accessing `LibraryDesc::normalEncoding` and `LibraryDesc::roghnessEncoding` respectively. `NormalEncoding` and `RoughnessEncoding` enums briefly describe encoding variants. It's recommended to use `NRD.hlsli/NRD_FrontEnd_PackNormalAndRoughness` to match decoding.
+
+  *NRD* computes local curvature using provided normals. Less accurate normals can lead to banding in curvature and local flatness. `RGBA8` normals is a good baseline, but `R10G10B10A10` oct-packed normals improve curvature calculations and specular tracking as the result.
+
+  If `materialID` is provided and supported by encoding, *NRD* diffuse and specular denoisers won't mix up surfaces with different material IDs.
+
+* **IN\_VIEWZ** - view-space Z coordinate of primary hits (linearized g-buffer depth)
+
+  Positive and negative values are supported. Z values in all pixels must be in the same space, matching space defined by matrices passed to NRD. If, for example, the protagonist's hands are rendered using special matrices, Z values should be computed as:
+  - reconstruct world position using special matrices for "hands"
+  - project on screen using matrices passed to NRD
+  - `.w` component is positive view Z (or just transform world-space position to main view space and take `.z` component)
+
+* **IN\_DIFF/SPEC\_CONFIDENCE** - convidence in the accumulated history represented in `[0; 1]` range
+
+  These inputs are optional and are used only if `CommonSettings::isHistoryConfidenceAvailable = true`. *REBLUR* and *RELAX* have embedded anti-lag techniques, but if properly computed, using confidence inputs is the best way to mitigate temporal lags. They are easy and cheap to compute. See this [section](#history-confidence) for more details.
+
+The illustration below shows expected inputs for a primary hit `A`:
+
+![Input without PSR](Images/InputsWithoutPsr.png)
+
+```cpp
+hitDistance = length( B - A ); // hitT for 1st bounce (recommended baseline)
+
+IN_VIEWZ = TransformToViewSpace( A ).z;
+IN_NORMAL_ROUGHNESS = GetNormalAndRoughnessAt( A );
+IN_MV = GetMotionAt( A );
+```
+
+See `NRDDescs.h` and `NRD.hlsli` for more details and descriptions of other inputs and outputs. See this [section](#interaction-with-primary-surface-replacements) for interaction with Primary Surface Replacements (PSRs).
+
+## NOISY INPUTS
+
+NRD sample is a good start to familiarize yourself with input requirements and best practices, but main requirements can be summarized to:
+
+Radiance:
+- Since *NRD* denoisers accumulate signals for a limited number of frames, the input signal must converge *reasonably* well for this number of frames. `REFERENCE` denoiser can be used to estimate temporal signal quality
+- Since *NRD* denoisers process signals spatially, high-energy fireflies in the input signal should be avoided. Some of them can be removed by enabling anti-firefly filter in *NRD*, but it will only work if the "background" signal is confident. The worst case is having a single pixel with a high energy divided by a very small PDF to represent the lack of energy in neighboring non-representative (black) pixels. Probabilistic diffuse / specular split for the 1st bounce requires special treatment described in `HitDistanceReconstructionMode`. In case of probabilistic split for 2nd+ bounces, it's still recommended to clamp diffuse / specular probabilities to a sane range to avoid division by a very small value, leading to a high energy firefly, difficult to get rid of in a short amount of time. Energy increase should not be more than 20x-30x, what corresponds to around `0.05` min probability. `0` and `1` probabilities are absolutely acceptable (for example, metals don't have diffuse component)
+- Radiance must be separated into diffuse and specular at primary hit (or secondary hit in case of *PSR*)
+
+Hit distance (*REBLUR* and *RELAX*):
+- `hitT` can't be negative
+- `hitT` must not include primary hit distance
+- `hitT` for the first bounce after the primary hit or *PSR* must be provided "as is"
+- `hitT` for subsequent bounces and for bounces before *PSR* must be adjusted by curvature and lobe energy dissipation on the application side
+  - Do not pass *sum of lengths of all segments* as `hitT`. A solid baseline is to use hit distance for the 1st bounce only, it works well for diffuse and specular signals
+  - *NRD sample* uses more complex approach for accumulating `hitT` along the path, which takes into account energy dissipation due to lobe spread and curvature at the current hit
+- For rays pointing inside the surface (VNDF sampling can easily produce those), `hitT` must be set to 0 (but better to not cast such rays)
+- Noise in hit distances must follow a diffuse or specular lobe. It implies that `hitT` for `roughness = 0` must be clean (if probabilistic sampling is not in use)
+- In case of probabilistic diffuse / specular selection at the primary hit, provided `hitT` must follow the following rules:
+  - Should not be divided by `PDF`
+  - If diffuse or specular sampling is skipped, `hitT` must be set to `0` for corresponding signal type
+  - `hitDistanceReconstructionMode` must be set to something other than `OFF`, but bear in mind that the search area is limited to 3x3 (or 5x5). In other words, it's the application's responsibility to guarantee a valid sample in this area. It can be achieved by clamping probabilities and using Bayer-like dithering (see [NRD sample/clamping lobe selection probability](https://github.com/NVIDIA-RTX/NRD-Sample/blob/6f1a294333dd32dd5ea404845354d76315824add/Shaders/TraceOpaque.cs.hlsl#L223))
+  - Pre-pass must be enabled (i.e. `diffusePrepassBlurRadius` and `specularPrepassBlurRadius` must be set to 20-70 pixels) to compensate entropy increase, since radiance in valid samples is divided by probability to compensate 0 values in some neighbors
+- Probabilistic split for 2nd+ bounces is absolutely acceptable
+- In case of many paths per pixel `hitT` for specular must be "averaged" by `NRD.hlsli/NRD_FrontEnd_SpecHitDistAveraging_*` functions
+- For *REBLUR* hits distance must be normalized using `NRD.hlsli/REBLUR_FrontEnd_GetNormHitDist`
+
+Distance to occluder (*SIGMA*):
+- visibility ray must be cast from the point of interest to a light source ( i.e. *not* from a light source )
+- `ACCEPT_FIRST_HIT_AND_END_SEARCH` ray flag can't be used to optimize tracing, because it can lead to wrong potentially very long hit distances from random distant occluders
+- `hit` means "occluder is hit"
+- `miss` means "light is hit"
+- `NoL <= 0` - 0 (it's very important!)
+- `NoL > 0, hit` - hit distance
+- `NoL > 0, miss` - >= NRD_FP16_MAX
+
+See `NRDDescs.h` and `NRD.hlsli` for more details and descriptions of other inputs and outputs.
+
+# RECOMMENDATIONS AND BEST PRACTICES
 
 Denoising is not a panacea or miracle. Denoising works best with ray tracing results produced by a suitable form of importance sampling. Additionally, *NRD* has its own restrictions. The following suggestions should help to achieve best image quality:
 
-## MATERIAL DE-MODULATION (IRRADIANCE → RADIANCE)
+## VALIDATION LAYER
+
+![Validation](Images/Validation.png)
+
+If `CommonSettings::enableValidation = true` *REBLUR* & *RELAX* denoisers render debug information into `OUT_VALIDATION` output. Alpha channel contains layer transparency to allow easy mix with the final image on the application side. The following viewport layout is used on the screen:
+
+| 0 | 1 | 2 | 3 |
+|---|---|---|---|
+| 4 | 5 | 6 | 7 |
+| 8 | 9 | 10| 11|
+| 12| 13| 14| 15|
+
+where:
+
+- Viewport 0 - world-space normals
+- Viewport 1 - linear roughness
+- Viewport 2 - linear viewZ
+  - green = `+`
+  - blue = `-`
+  - red = `out of denoising range`
+- Viewport 3 - difference between MVs, coming from `IN_MV`, and expected MVs, assuming that the scene is static
+  - blue = `out of screen`
+  - pixels with moving objects have non-0 values
+- Viewport 4 - world-space grid & camera jitter:
+  - 1 cube = `1 unit`
+  - the square in the bottom-right corner represents a pixel with accumulated samples
+  - the red boundary of the square marks jittering outside of the pixel area
+- Viewport 7 - amount of virtual history
+- Viewport 8 - number of accumulated frames for diffuse signal (checkerboared red = `history reset`)
+- Viewport 11 - number of accumulated frames for specular signal (checkerboared red = `history reset`)
+- Viewport 12 - input normalized `hitT` for diffuse signal (ambient occlusion, AO)
+- Viewport 15 - input normalized `hitT` for specular signal (specular occlusion, SO)
+
+## MATERIAL DEMODULATION
 
 *NRD* has been designed to work with pure radiance coming from a particular direction. This means that data in the form "something / probability" should be avoided if possible because overall entropy of the input signal will be increased (but it doesn't mean that denoising won't work). Additionally, it means that materials needs to be decoupled from the input signal, i.e. *irradiance*, typically produced by a path tracer, needs to be transformed into *radiance*, i.e. BRDF should be applied **after** denoising. This is achieved by using "demodulation":
 
@@ -643,29 +514,9 @@ Denoising is not a panacea or miracle. Denoising works best with ray tracing res
 
 Use `NRD.hlsli/NRD_MaterialFactors` helper to compute material demodulation factors.
 
-## COMBINED DENOISING OF DIRECT AND INDIRECT LIGHTING
+## INTERACTION WITH PRIMARY SURFACE REPLACEMENTS
 
-1. For specular signal use indirect `hitT` for both direct and indirect lighting
-
-The reason is that the denoiser uses `hitT` mostly for calculating motion vectors for reflections. For that purpose, the denoiser expects to see `hitT` from surfaces that are in the specular reflection lobe. When calculating direct lighting (*NEE/RTXDI*), we select a light per pixel, and the distance to that light becomes the `hitT` for both diffuse and specular channels. In many cases, the light is selected for a surface because of its diffuse contribution, not specular, which makes the specular channel contain the `hitT` of a diffuse light. That confuses the denoiser and breaks reprojection. On the other hand, the indirect specular `hitT` is always computed by tracing rays in the specular lobe.
-
-2. For diffuse signal `hitT` can be further adjusted by mixing `hitT` from direct and indirect rays to get sharper shadows
-
-Use first bounce hit distance for the indirect in the pseudo-code below:
-```cpp
-float hitDistContribution = directDiffuseLuminance / ( directDiffuseLuminance + indirectDiffuseLuminance + EPS );
-
-float maxContribution = 0.5; // 0.65 works good as well
-float directHitDistContribution = min(directHitDistContribution, maxContribution); // avoid over-sharpening
-
-hitDist = lerp(indirectDiffuseHitDist, directDiffuseHitDist, directHitTContribution);
-```
-
-## INTERACTION WITH PRIMARY SURFACE REPLACEMENTS (PSR)
-
-When denoising reflections in pure mirrors, some advantages can be reached if *NRD* "sees" the first "non-pure mirror" point after a series of pure mirror bounces (delta events). This point is called *Primary Surface Replacement*.
-
-[*Primary Surface Replacement (PSR)*](https://developer.nvidia.com/blog/rendering-perfect-reflections-and-refractions-in-path-traced-games/) can be used with *NRD*.
+When denoising reflections in pure mirrors, some advantages can be reached if *NRD* "sees" the first "non-pure mirror" point after a series of pure mirror bounces (delta events). This point is called [*Primary Surface Replacement (PSR)*](https://developer.nvidia.com/blog/rendering-perfect-reflections-and-refractions-in-path-traced-games/).
 
 Notes, requirements and restrictions:
 - the primary hit (0th bounce) gets replaced with the first "non-pure mirror" hit in the bounce chain - this hit becomes *PSR*
@@ -686,7 +537,7 @@ IMPORTANT: in other words, *PSR* is perfect for flat mirrors. *PSR* on curved su
 
 In case of *PSR* *NRD* disocclusion logic doesn't take curvature at primary hit into account, because data for primary hits is replaced. This can lead to more intense disocclusions on bumpy surfaces due to significant ray divergence. To mitigate this problem 2x-10x larger `CommonSettings::disocclusionThreshold` can be used. This is an applicable solution if the denoiser is used to denoise surfaces with *PSR* only (glass only, for example). In a general case, when *PSR* and normal surfaces are mixed on the screen, higher disocclusion thresholds are needed only for pixels with *PSR*. This can be achieved by using `IN_DISOCCLUSION_THRESHOLD_MIX` input to smoothly mix baseline `CommonSettings::disocclusionThreshold` into bigger `CommonSettings::disocclusionThresholdAlternate`. Most likely the increased disocclusion threshold is needed only for pixels with normal details at primary hits (local curvature is not zero).
 
-The illustration below shows expected inputs for secondary hits:
+The illustration below shows expected inputs for primary hit `A` replaced with hit `B` (*PSR*):
 
 ![Input with PSR](Images/InputsWithPsr.png)
 
@@ -699,9 +550,78 @@ IN_NORMAL_ROUGHNESS = GetVirtualSpaceNormalAndRoughnessAt( B );
 IN_MV = GetMotionAt( B );
 ```
 
-## INTERACTION WITH FRAME GENERATION TECHNIQUES
+## IMPROVING OUTPUT QUALITY
 
-Frame generation (FG) techniques boost FPS by interpolating between 2 last available frames. *NRD* works better when frame rate increases, because it gets more data per second. It's not the case for FG, because all rendering pipeline underlying passes (like, denoising) continue to work on the original non-boosted framerate. `GetMaxAccumulatedFrameNum` helper should get a real FPS, not a fake one.
+The temporal part of *NRD* naturally suppresses jitter, which is essential for upscaling techniques. If an *SH* denoiser is in use, a high quality resolve can be applied to the final output to regain back macro details, micro details and per-pixel jittering. As an example, the image below demonstrates the results *after* and *before* resolve with active *DLSS* (quality mode).
+
+![Resolve](Images/Resolve.jpg)
+
+The resolve process takes place on the application side and has the following modular structure:
+- construct an SG (spherical gaussian) light
+- apply diffuse or specular resolve function to reconstruct macro details
+- apply re-jittering to reconstruct micro details
+- (optionally) or just extract unresolved color (fully matches the output of a corresponding non-SH denoiser)
+
+Re-jittering math with minorly modified inputs can also be used with RESTIR produced sampling without involving SH denoisers. You only need to get light direction in the current pixel from RESTIR. Despite that RESTIR produces noisy light selections, its low variations can be easily handled by DLSS or other upscaling techs.
+
+<details>
+<summary>Shader code (click to unfold):</summary>
+
+```cpp
+// Diffuse
+float4 diff = gIn_Diff[ pixelPos ];
+float4 diff1 = gIn_DiffSh[ pixelPos ];
+
+NRD_SG diffSg = REBLUR_BackEnd_UnpackSh( diff, diff1 );
+
+// Specular
+float4 spec = gIn_Spec[ pixelPos ];
+float4 spec1 = gIn_SpecSh[ pixelPos ];
+
+NRD_SG specSg = REBLUR_BackEnd_UnpackSh( spec, spec1 );
+
+// ( Optional ) AO / SO ( available only for REBLUR )
+diff.w = diffSg.normHitDist;
+spec.w = specSg.normHitDist;
+
+if( gResolve )
+{
+    // ( Optional ) replace "roughness" with "roughnessAA"
+    roughness = NRD_SG_ExtractRoughnessAA( specSg );
+
+    // Regain macro-details
+    diff.xyz = NRD_SG_ResolveDiffuse( diffSg, N ); // or NRD_SH_ResolveDiffuse( sg, N )
+    spec.xyz = NRD_SG_ResolveSpecular( specSg, N, V, roughness );
+
+    // Regain micro-details & jittering // TODO: preload N and Z into SMEM
+    float3 Ne = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( 1, 0 ) ] ).xyz;
+    float3 Nw = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( -1, 0 ) ] ).xyz;
+    float3 Nn = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( 0, 1 ) ] ).xyz;
+    float3 Ns = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( 0, -1 ) ] ).xyz;
+
+    float Ze = gIn_ViewZ[ pixelPos + int2( 1, 0 ) ];
+    float Zw = gIn_ViewZ[ pixelPos + int2( -1, 0 ) ];
+    float Zn = gIn_ViewZ[ pixelPos + int2( 0, 1 ) ];
+    float Zs = gIn_ViewZ[ pixelPos + int2( 0, -1 ) ];
+
+    float2 scale = NRD_SG_ReJitter( diffSg, specSg, Rf0, V, roughness, viewZ, Ze, Zw, Zn, Zs, N, Ne, Nw, Nn, Ns );
+
+    diff.xyz *= scale.x;
+    spec.xyz *= scale.y;
+}
+else
+{
+    // ( Optional ) Unresolved color matching the non-SH version of the denoiser
+    diff.xyz = NRD_SG_ExtractColor( diffSg );
+    spec.xyz = NRD_SG_ExtractColor( specSg );
+}
+```
+
+</details>
+
+## HISTORY CONFIDENCE
+
+User-provided is essential to preserve the responsiviness of the denoised output.
 
 ## HAIR DENOISING TIPS
 
@@ -716,10 +636,35 @@ Sub-pixel thin geometry of strand-based hair transforms "normals guide" into jit
   - in other words, `B` must follow the following rules:
     - `cross( T, B ) != 0`
     - `B` must not follow hair strand "tube"
+- search for `FLAG_HAIR` in [NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample) for more details
 
 Hair strands tangent vectors *can't* be used as "normals guide" for *NRD* due to BRDF and curvature related calculations, requiring a vector, which can be considered a "normal" vector.
 
-# RECOMMENDATIONS AND BEST PRACTICES: LESSER TIPS
+## COMBINED DENOISING OF DIRECT AND INDIRECT LIGHTING
+
+Denoising process is driven by hit distances (with the exception that *RELAX* uses hit distances only in the Pre-Pass and for specular tracking). Denoising of combined direct and indirect lighting implies mixing corresponding hit distances into one value for NRD. Here are some suggestions:
+
+1. For specular signal use indirect `hitT` for both direct and indirect lighting
+
+The reason is that the denoiser uses `hitT` mostly for calculating motion vectors for reflections. For that purpose, the denoiser expects to see `hitT` from surfaces that are in the specular reflection lobe. When calculating direct lighting (*NEE/RTXDI*), we select a light per pixel, and the distance to that light becomes the `hitT` for both diffuse and specular channels. In many cases, the light is selected for a surface because of its diffuse contribution, not specular, which makes the specular channel contain the `hitT` of a diffuse light. That confuses the denoiser and breaks reprojection. On the other hand, the indirect specular `hitT` is always computed by tracing rays in the specular lobe.
+
+2. For diffuse signal hit distance can be adjusted by mixing `hitT` from direct and indirect rays to get sharper shadows
+
+Use 1st bounce hit distance for the indirect lighting in the pseudo-code below:
+```cpp
+float directHitDistContribution = directDiffuseLuminance / ( directDiffuseLuminance + indirectDiffuseLuminance + EPS );
+
+const float maxContribution = 0.5; // this is adjustable
+directHitDistContribution = min( directHitDistContribution, maxContribution ); // avoid over-sharpening
+
+float hitDist = lerp( indirectDiffuseHitDist, directDiffuseHitDist, directHitDistContribution );
+```
+
+## INTERACTION WITH FRAME GENERATION TECHNIQUES
+
+Frame generation (FG) techniques boost FPS by interpolating between 2 last available frames. *NRD* works better when frame rate increases, because it gets more data per second. It's not the case for FG, because all rendering pipeline underlying passes (like, denoising) continue to work on the original non-boosted framerate. `GetMaxAccumulatedFrameNum` helper should get a real FPS, not a fake one.
+
+## OTHER
 
 **[NRD]** All denoising and path-tracing best practices are in *NRD sample*.
 
@@ -773,7 +718,7 @@ Hair strands tangent vectors *can't* be used as "normals guide" for *NRD* due to
 
 **[NRD]** If you are unsure of which denoiser settings to use - use defaults via `{}` construction. It helps to improve compatibility with future versions and offers optimal IQ, because default settings are always adjusted by recent algorithmic changes.
 
-**[NRD]** Input signal quality can be improved by enabling *pre-pass* via setting `diffusePrepassBlurRadius` and `specularPrepassBlurRadius` to a non-zero value. Pre-pass is needed more for specular and less for diffuse, because pre-pass outputs optimal hit distance for specular tracking (see the sample for more details).
+**[NRD]** Input signal quality can be improved by enabling *pre-pass* via setting `diffusePrepassBlurRadius` and `specularPrepassBlurRadius` to a non-zero value. Pre-pass is needed more for specular and less for diffuse, because pre-pass outputs optimal hit distance for specular tracking. For relatively clean signals *pre-pass* may introduce additional blur. In this case `ReblurSettings::usePrepassOnlyForSpecularMotionEstimation = true` can be used in conjunction with `diffusePrepassBlurRadius = 0`.
 
 **[NRD]** In case of probabilistic diffuse / specular split at the primary hit, hit distance reconstruction pass must be enabled, if exposed in the denoiser (see `HitDistanceReconstructionMode`).
 
@@ -862,3 +807,69 @@ Is this a biased solution? If spatial filtering is off - no, because we just reo
 - if shadows overlap, a separate pass is needed to analyze noisy input and classify pixels as *umbra* - *penumbra* (and optionally *empty space*). Raster shadow maps can be used for this if available
 - it is not recommended to mix 1 cd and 100000 cd lights, since FP32 texture will be needed for a weighted sum.
 In this case, it's better to process the sun and other bright light sources separately.
+
+# MEMORY USAGE
+
+The *Persistent* column (matches *NRD Permanent pool*) indicates how much of the *Working set* is required to be left intact for subsequent frames of the application. This memory stores the history resources consumed by NRD. The *Aliasable* column (matches *NRD Transient pool*) shows how much of the *Working set* may be aliased by textures or other resources used by the application outside of the operating boundaries of NRD.
+
+| Resolution |                             Denoiser | Working set (Mb) |  Persistent (Mb) |   Aliasable (Mb) |
+|------------|--------------------------------------|------------------|------------------|------------------|
+|      1080p |                       REBLUR_DIFFUSE |            76.19 |            50.75 |            25.44 |
+|            |             REBLUR_DIFFUSE_OCCLUSION |            36.06 |            27.50 |             8.56 |
+|            |                    REBLUR_DIFFUSE_SH |           109.94 |            67.62 |            42.31 |
+|            |                      REBLUR_SPECULAR |            95.25 |            59.25 |            36.00 |
+|            |            REBLUR_SPECULAR_OCCLUSION |            44.56 |            36.00 |             8.56 |
+|            |                   REBLUR_SPECULAR_SH |           129.00 |            76.12 |            52.88 |
+|            |              REBLUR_DIFFUSE_SPECULAR |           148.12 |            88.88 |            59.25 |
+|            |    REBLUR_DIFFUSE_SPECULAR_OCCLUSION |            59.44 |            42.38 |            17.06 |
+|            |           REBLUR_DIFFUSE_SPECULAR_SH |           232.50 |           122.62 |           109.88 |
+|            | REBLUR_DIFFUSE_DIRECTIONAL_OCCLUSION |            71.94 |            48.62 |            23.31 |
+|            |                        RELAX_DIFFUSE |            90.81 |            54.88 |            35.94 |
+|            |                     RELAX_DIFFUSE_SH |           158.31 |            88.62 |            69.69 |
+|            |                       RELAX_SPECULAR |           101.44 |            63.38 |            38.06 |
+|            |                    RELAX_SPECULAR_SH |           168.94 |            97.12 |            71.81 |
+|            |               RELAX_DIFFUSE_SPECULAR |           168.94 |            97.12 |            71.81 |
+|            |            RELAX_DIFFUSE_SPECULAR_SH |           303.94 |           164.62 |           139.31 |
+|            |                         SIGMA_SHADOW |            31.88 |             8.44 |            23.44 |
+|            |            SIGMA_SHADOW_TRANSLUCENCY |            50.81 |             8.44 |            42.38 |
+|            |                            REFERENCE |            33.75 |            33.75 |             0.00 |
+|            |                                      |                  |                  |                  |
+|      1440p |                       REBLUR_DIFFUSE |           135.06 |            90.00 |            45.06 |
+|            |             REBLUR_DIFFUSE_OCCLUSION |            63.81 |            48.75 |            15.06 |
+|            |                    REBLUR_DIFFUSE_SH |           195.06 |           120.00 |            75.06 |
+|            |                      REBLUR_SPECULAR |           168.81 |           105.00 |            63.81 |
+|            |            REBLUR_SPECULAR_OCCLUSION |            78.81 |            63.75 |            15.06 |
+|            |                   REBLUR_SPECULAR_SH |           228.81 |           135.00 |            93.81 |
+|            |              REBLUR_DIFFUSE_SPECULAR |           262.56 |           157.50 |           105.06 |
+|            |    REBLUR_DIFFUSE_SPECULAR_OCCLUSION |           105.06 |            75.00 |            30.06 |
+|            |           REBLUR_DIFFUSE_SPECULAR_SH |           412.56 |           217.50 |           195.06 |
+|            | REBLUR_DIFFUSE_DIRECTIONAL_OCCLUSION |           127.56 |            86.25 |            41.31 |
+|            |                        RELAX_DIFFUSE |           161.31 |            97.50 |            63.81 |
+|            |                     RELAX_DIFFUSE_SH |           281.31 |           157.50 |           123.81 |
+|            |                       RELAX_SPECULAR |           180.06 |           112.50 |            67.56 |
+|            |                    RELAX_SPECULAR_SH |           300.06 |           172.50 |           127.56 |
+|            |               RELAX_DIFFUSE_SPECULAR |           300.06 |           172.50 |           127.56 |
+|            |            RELAX_DIFFUSE_SPECULAR_SH |           540.06 |           292.50 |           247.56 |
+|            |                         SIGMA_SHADOW |            56.38 |            15.00 |            41.38 |
+|            |            SIGMA_SHADOW_TRANSLUCENCY |            90.12 |            15.00 |            75.12 |
+|            |                            REFERENCE |            60.00 |            60.00 |             0.00 |
+|            |                                      |                  |                  |                  |
+|      2160p |                       REBLUR_DIFFUSE |           287.00 |           191.25 |            95.75 |
+|            |             REBLUR_DIFFUSE_OCCLUSION |           135.62 |           103.62 |            32.00 |
+|            |                    REBLUR_DIFFUSE_SH |           414.50 |           255.00 |           159.50 |
+|            |                      REBLUR_SPECULAR |           358.69 |           223.12 |           135.56 |
+|            |            REBLUR_SPECULAR_OCCLUSION |           167.50 |           135.50 |            32.00 |
+|            |                   REBLUR_SPECULAR_SH |           486.19 |           286.88 |           199.31 |
+|            |              REBLUR_DIFFUSE_SPECULAR |           557.88 |           334.69 |           223.19 |
+|            |    REBLUR_DIFFUSE_SPECULAR_OCCLUSION |           223.31 |           159.44 |            63.88 |
+|            |           REBLUR_DIFFUSE_SPECULAR_SH |           876.62 |           462.19 |           414.44 |
+|            | REBLUR_DIFFUSE_DIRECTIONAL_OCCLUSION |           271.12 |           183.31 |            87.81 |
+|            |                        RELAX_DIFFUSE |           342.81 |           207.25 |           135.56 |
+|            |                     RELAX_DIFFUSE_SH |           597.81 |           334.75 |           263.06 |
+|            |                       RELAX_SPECULAR |           382.69 |           239.12 |           143.56 |
+|            |                    RELAX_SPECULAR_SH |           637.69 |           366.62 |           271.06 |
+|            |               RELAX_DIFFUSE_SPECULAR |           637.69 |           366.62 |           271.06 |
+|            |            RELAX_DIFFUSE_SPECULAR_SH |          1147.69 |           621.62 |           526.06 |
+|            |                         SIGMA_SHADOW |           119.94 |            31.88 |            88.06 |
+|            |            SIGMA_SHADOW_TRANSLUCENCY |           191.56 |            31.88 |           159.69 |
+|            |                            REFERENCE |           127.50 |           127.50 |             0.00 |

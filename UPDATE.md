@@ -334,6 +334,15 @@ A single NRD instance can now include any combination of denoisers, including re
   - added `historyFixAlternatePixelStride`
   - `historyClampingColorBoxSigmaScale` renamed to `fastHistoryClampingSigmaScale` (no changes in meaning)
 
+## To v4.17
+- *API*:
+  - `IN_DIFF_CONFIDENCE` and `IN_SPEC_CONFIDENCE` can be provided at lower resolution (linearly upscaled)
+  - added "HISTORY CONFIDENCE" section to README
+- *REBLUR*:
+  - `HitDistanceParameters` renamed to `ReblurHitDistanceParameters` (no changes in meaning)
+  - `ReblurResponsiveAccumulationSettings` renamed to `ReblurReblurResponsiveAccumulationSettings` (no changes in meaning)
+  - added `ReblurConvergenceSettings`
+
 ## Custom shader compilation
 - since v4.16 `NRDConfig.hlsli` is included into every shader (including `NRD.hlsli`), delivering shared compile-time options. So there is no need to "copy-paste" anything from CMake
 - `PipelineDesc::shaderIdentifier` defines a shader permutation as `fileName|macro1=value1|macro2=value2...` (or just `fileName`, no whitespace characters)

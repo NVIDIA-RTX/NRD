@@ -219,7 +219,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Hit distance for tracking ( tests 6, 67, 155 )
         REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
-        float hitDistForTracking = ExtractHitDist( spec ) * _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, roughness ); // TODO: min in 3x3 seems to be not needed here
+        float hitDistForTracking = ExtractHitDist( spec ) * _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings, roughness ); // TODO: min in 3x3 seems to be not needed here
 
         // Needed to preserve contact ( test 3, 8 ), but adds pixelation in some cases ( test 160 ). More fun if lobe trimming is off.
         [flatten]

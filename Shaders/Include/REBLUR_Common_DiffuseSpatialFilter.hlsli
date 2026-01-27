@@ -39,7 +39,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #endif
 
         // Hit distance factor ( tests 53, 76, 95, 120 )
-        float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, 1.0 );
+        float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings, 1.0 );
         float hitDist = ExtractHitDist( diff ) * hitDistScale;
         float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
 
@@ -48,7 +48,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float blurRadius = gDiffPrepassBlurRadius;
         float areaFactor = hitDistFactor;
     #else
-        float diffNonLinearAccumSpeed = 1.0 / ( 1.0 + REBLUR_SAMPLES_PER_FRAME * data1.x );
+        float diffNonLinearAccumSpeed = GetAdvancedNonLinearAccumSpeed( data1.x );
 
         float blurRadius = gMaxBlurRadius;
         float areaFactor = hitDistFactor * diffNonLinearAccumSpeed;

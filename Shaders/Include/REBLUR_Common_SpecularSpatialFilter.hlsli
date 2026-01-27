@@ -45,7 +45,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         // Hit distance factor ( tests 76, 95, 120 )
         float4 Dv = ImportanceSampling::GetSpecularDominantDirection( Nv, Vv, roughness, ML_SPECULAR_DOMINANT_DIRECTION_G2 );
         float NoD = abs( dot( Nv, Dv.xyz ) );
-        float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, roughness );
+        float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings, roughness );
         float hitDist = ExtractHitDist( spec ) * hitDistScale;
         float hitDistFactor = GetHitDistFactor( hitDist, frustumSize ); // using "hitDist * NoD" worsens denoising at glancing angles
 
@@ -56,7 +56,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float blurRadius = gSpecPrepassBlurRadius;
         float areaFactor = roughness * hitDistFactor;
     #else
-        float specNonLinearAccumSpeed = 1.0 / ( 1.0 + REBLUR_SAMPLES_PER_FRAME * data1.y );
+        float specNonLinearAccumSpeed = GetAdvancedNonLinearAccumSpeed( data1.y );
 
         float blurRadius = gMaxBlurRadius;
         float areaFactor = roughness * hitDistFactor * specNonLinearAccumSpeed;
@@ -182,7 +182,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         #if( REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
             // Min hit distance for tracking, ignoring 0 values ( which still can be produced by VNDF sampling )
             // TODO: if trimming is off min hitDist can come from samples with very low probabilities, it worsens reprojection
-            float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistParams, Ns.w );
+            float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistSettings, Ns.w );
             float geometryWeight = w * NoV * float( hs != 0.0 );
             if( Rng::Hash::GetFloat( ) < geometryWeight )
                 hitDistForTracking = min( hitDistForTracking, hs );

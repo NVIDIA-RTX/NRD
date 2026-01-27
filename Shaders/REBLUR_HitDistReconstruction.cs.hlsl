@@ -35,7 +35,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
         hitDist.x = ExtractHitDist( gIn_Diff[ globalPos ] );
 
         #if( REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION == 1 )
-            hitDist.x *= _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, 1.0 );
+            hitDist.x *= _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings, 1.0 );
         #endif
     #endif
 
@@ -43,7 +43,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
         hitDist.y = ExtractHitDist( gIn_Spec[ globalPos ] );
 
         #if( REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION == 1 )
-            hitDist.y *= _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, normalAndRoughness.w );
+            hitDist.y *= _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings, normalAndRoughness.w );
         #endif
     #endif
 
@@ -143,8 +143,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Return back to normalized hit distances
     #if( REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION == 1 )
-        center.x /= _REBLUR_GetHitDistanceNormalization( center.z, gHitDistParams, 1.0 );
-        center.y /= _REBLUR_GetHitDistanceNormalization( center.z, gHitDistParams, roughness );
+        center.x /= _REBLUR_GetHitDistanceNormalization( center.z, gHitDistSettings, 1.0 );
+        center.y /= _REBLUR_GetHitDistanceNormalization( center.z, gHitDistSettings, roughness );
     #endif
 
     // Output

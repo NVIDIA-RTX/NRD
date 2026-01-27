@@ -259,8 +259,8 @@ float ComputeAntilag( float history, float avg, float sigma, float accumSpeed )
     // Tests 4, 36, 44, 47, 95 ( no SHARC, stop animation )
     float h = history;
     float a = avg;
-    float s = sigma * gAntilagParams.x;
-    float magic = gAntilagParams.y * gFramerateScale * gFramerateScale;
+    float s = sigma * gAntilagSettings.x;
+    float magic = gAntilagSettings.y * gFramerateScale * gFramerateScale;
 
     #if( REBLUR_ANTILAG_MODE == 0 )
         // Old mode, but uses better threshold ( not bad )
@@ -307,14 +307,24 @@ float2x3 GetKernelBasis( float3 D, float3 N )
 
 // Weight parameters
 
+float GetAdvancedNonLinearAccumSpeed( float accumSpeed )
+{
+    // Interactive sandbox: https://www.desmos.com/calculator/6h9ydbvm1y
+    float f = saturate( accumSpeed / ( 1.0 + gMaxAccumulatedFrameNum * gConvergenceSettings.z ) );
+    float e = gConvergenceSettings.x * lerp( gConvergenceSettings.y, 1.0, f );
+
+    return 1.0 / ( 1.0 + e * accumSpeed );
+}
+
+float GetSimpleNonLinearAccumSpeed( float accumSpeed )
+{
+    return 1.0 / ( 1.0 + accumSpeed );
+}
+
 float2 GetTemporalAccumulationParams( float isInScreenMulFootprintQuality, float accumSpeed )
 {
     float w = isInScreenMulFootprintQuality;
-
-    // This formula converges to "N / ( 1 + N )" slower, descreasing stabilization for shorter history.
-    // It's especially important right after disocclusion when there is nothing to stabilize ( less block-like artefacts ).
-    // Also it slightly improves overall response if "history confidence" is in action
-    w *= sqrt( accumSpeed * gMaxAccumulatedFrameNum ) / ( 1.0 + gMaxAccumulatedFrameNum ); // same as "sqrt( a / m ) * m / ( 1 + m )"
+    w *= 1.0 - GetAdvancedNonLinearAccumSpeed( accumSpeed );
     w *= float( REBLUR_SHOW == 0 );
 
     return float2( w, 1.0 + 3.0 * gFramerateScale * w );

@@ -11,7 +11,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #pragma once
 
 #define NRD_SETTINGS_VERSION_MAJOR 4
-#define NRD_SETTINGS_VERSION_MINOR 16
+#define NRD_SETTINGS_VERSION_MINOR 17
 
 static_assert(NRD_VERSION_MAJOR == NRD_SETTINGS_VERSION_MAJOR && NRD_VERSION_MINOR == NRD_SETTINGS_VERSION_MINOR, "Please, update all NRD SDK files");
 
@@ -37,14 +37,14 @@ namespace nrd
     //     BLACK and WHITE modes define cells with VALID data
     // Checkerboard can be only horizontal
     // Notes:
-    //     - if checkerboarding is enabled, "mode" defines the orientation of even numbered frames
-    //     - all inputs have the same resolution - logical FULL resolution
-    //     - noisy input signals ("IN_DIFF_XXX / IN_SPEC_XXX") are tightly packed to the LEFT HALF of the texture (the input pixel = 2x1 screen pixel)
-    //     - for others the input pixel = 1x1 screen pixel
-    //     - upsampling will be handled internally in checkerboard mode
+    //  - if checkerboarding is enabled, "mode" defines the orientation of even numbered frames
+    //  - all inputs must have the same resolution - logical FULL resolution
+    //  - noisy input signals ("IN_DIFF_XXX / IN_SPEC_XXX") are tightly packed to the LEFT HALF of the texture (the input pixel = 2x1 screen pixel)
+    //  - for others the input pixel = 1x1 screen pixel
+    //  - upsampling is handled internally in checkerboard mode
     enum class CheckerboardMode : uint8_t
     {
-        OFF,
+        OFF,        // RECOMMENDED (probabilistic lobe selection at the primary/PSR hit is the best choice, see "HitDistanceReconstructionMode")
         BLACK,
         WHITE,
 
@@ -54,12 +54,12 @@ namespace nrd
     enum class AccumulationMode : uint8_t
     {
         // Common mode (accumulation continues normally)
-        CONTINUE,
+        CONTINUE,   // RECOMMENDED (no overhead from history loss)
 
         // Discards history and resets accumulation
         RESTART,
 
-        // Like RESTART, but additionally clears resources from potential garbage
+        // Like RESTART, but additionally clears resources from potential garbage (slow)
         CLEAR_AND_RESTART,
 
         MAX_NUM
@@ -71,9 +71,9 @@ namespace nrd
         OFF,
 
         // If hit distance is invalid due to probabilistic sampling, it's reconstructed using 3x3 (or 5x5) neighbors.
-        // Probability at primary hit must be clamped to [1/4; 3/4] (or [1/16; 15/16) range to guarantee a sample in this area.
+        // Probability at primary hit must be clamped to [1/4; 3/4] (or [1/16; 15/16]) range to guarantee a sample in this area.
         // White noise must be replaced with Bayer dithering to gurantee a sample in this area (see NRD sample)
-        AREA_3X3, // RECOMMENDED
+        AREA_3X3,   // RECOMMENDED (better sampling and denoising quality)
         AREA_5X5,
 
         MAX_NUM
@@ -84,9 +84,9 @@ namespace nrd
     struct CommonSettings
     {
         // Matrix requirements:
-        //     - usage - vector is a column
-        //     - layout - column-major
-        //     - non jittered!
+        //  - usage - vector is a column
+        //  - layout - column-major
+        //  - non jittered!
         // LH / RH projection matrix (INF far plane is supported) with non-swizzled rows, i.e. clip-space depth = z / w
         float viewToClipMatrix[16] = {};
 
@@ -205,7 +205,7 @@ namespace nrd
 
     // "Normalized hit distance" = saturate( "hit distance" / f ), where:
     // f = ( A + viewZ * B ) * lerp( 1.0, C, exp2( D * roughness ^ 2 ) ), see "NRD.hlsl/REBLUR_FrontEnd_GetNormHitDist"
-    struct HitDistanceParameters
+    struct ReblurHitDistanceParameters
     {
         // (units > 0) - constant value
         float A = 3.0f;
@@ -229,7 +229,7 @@ namespace nrd
         float luminanceSensitivity = 3.0f; // can be 2.0 or even less if signal is good
     };
 
-    struct ResponsiveAccumulationSettings
+    struct ReblurResponsiveAccumulationSettings
     {
         // [0; 1] - if roughness < roughnessThreshold, temporal accumulation becomes responsive and driven by roughness (useful for animated water)
         // maxAccumulatedFrameNum *= smoothstep( 0, 1, max( roughness, 1e-3 ) / max( roughnessThreshold, 1e-3 ) )
@@ -240,11 +240,28 @@ namespace nrd
         uint32_t minAccumulatedFrameNum = 3;
     };
 
+    struct ReblurConvergenceSettings
+    {
+        // REBLUR uses "f = 1 / (1 + k * N)" formula, where "N" is the number of accumulated frames, to drive denoising process. Smaller "f" mean "higher convergence, higher confidence"
+        // Before v4.17:
+        //  - "k = 1" was implicitly assumed 
+        // Starting from v4.17:
+        //  - k = s * lerp( b, 1, saturate( N / ( 1 + f * maxAccumulatedFrameNum ) ) )
+        //  - b < 1 - allows to "do more" denoising after a history reset (a blurry result is better on average than a dirty result)
+        //  - s > 1 - allows to "do less" denoising for a short accumulation, i.e. "maxAccumulatedFrameNum" is low (blurriness is undesired for clean signals)
+        //  - b = 1, b = 1 - matches old behavior
+        // Interactive sandbox: https://www.desmos.com/calculator/6h9ydbvm1y
+        float s = 1.0f; // (> 0) - overall scale, how fast "f" approaches "0"
+        float b = 0.2f; // [0; 1] - controls "short history" behavior
+        float p = 0.8f; // (normalized %) - percentage of "maxAccumulatedFrameNum" affected by "b"
+    };
+
     struct ReblurSettings
     {
-        HitDistanceParameters hitDistanceParameters = {};
+        ReblurHitDistanceParameters hitDistanceParameters = {};
         ReblurAntilagSettings antilagSettings = {};
-        ResponsiveAccumulationSettings responsiveAccumulationSettings = {};
+        ReblurResponsiveAccumulationSettings responsiveAccumulationSettings = {};
+        ReblurConvergenceSettings convergenceSettings = {};
 
         // [0; REBLUR_MAX_HISTORY_FRAME_NUM] - maximum number of linearly accumulated frames
         // Always accumulate in "seconds" not in "frames", use "GetMaxAccumulatedFrameNum" for conversion
@@ -257,7 +274,7 @@ namespace nrd
 
         // [0; maxAccumulatedFrameNum] - maximum number of linearly accumulated frames for stabilized radiance
         // "0" disables the stabilization pass
-        // Values ">= maxAccumulatedFrameNum"  get clamped to "maxAccumulatedFrameNum"
+        // Values ">= maxAccumulatedFrameNum" get clamped to "maxAccumulatedFrameNum"
         uint32_t maxStabilizedFrameNum = REBLUR_MAX_HISTORY_FRAME_NUM;
 
         // [0; 3] - number of reconstructed frames after history reset (less than "maxFastAccumulatedFrameNum")

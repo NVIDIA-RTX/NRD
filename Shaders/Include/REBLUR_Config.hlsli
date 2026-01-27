@@ -91,7 +91,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_HISTORY_FIX_FILTER_RADIUS                        2 // pixels
 #define REBLUR_ROUGHNESS_SENSITIVITY_IN_TA                      ( NRD_ROUGHNESS_SENSITIVITY * 0.3 )
 #define REBLUR_ANTILAG_MODE                                     2 // 0 - modernized old, 1 - overly reactive @ low FPS, 2 - best?
-#define REBLUR_SAMPLES_PER_FRAME                                1.0 // TODO: expose in settings, it will become useful with very clean signals, when max number of accumulated frames is low
 #define REBLUR_MAX_PERCENT_OF_LOBE_VOLUME_FOR_PRE_PASS          0.3 // specially tuned for "hitDistForTracking"
 
 // Data types
@@ -120,11 +119,11 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float4, gFrustum ) \
     NRD_CONSTANT( float4, gFrustumPrev ) \
     NRD_CONSTANT( float4, gCameraDelta ) \
-    NRD_CONSTANT( float4, gHitDistParams ) \
+    NRD_CONSTANT( float4, gHitDistSettings ) \
     NRD_CONSTANT( float4, gViewVectorWorld ) \
     NRD_CONSTANT( float4, gViewVectorWorldPrev ) \
     NRD_CONSTANT( float4, gMvScale ) \
-    NRD_CONSTANT( float2, gAntilagParams ) \
+    NRD_CONSTANT( float2, gAntilagSettings ) \
     NRD_CONSTANT( float2, gResourceSize ) \
     NRD_CONSTANT( float2, gResourceSizeInv ) \
     NRD_CONSTANT( float2, gResourceSizeInvPrev ) \
@@ -136,6 +135,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float2, gRectOffset ) \
     NRD_CONSTANT( float2, gSpecProbabilityThresholdsForMvModification ) \
     NRD_CONSTANT( float2, gJitter ) \
+    NRD_CONSTANT( float4, gConvergenceSettings ) \
     NRD_CONSTANT( uint2, gPrintfAt ) \
     NRD_CONSTANT( uint2, gRectOrigin ) \
     NRD_CONSTANT( int2, gRectSizeMinusOne ) \

@@ -328,11 +328,11 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gFrustum = m_Frustum;
     consts->gFrustumPrev = m_FrustumPrev;
     consts->gCameraDelta = m_CameraDelta.xmm;
-    consts->gHitDistParams = float4(settings.hitDistanceParameters.A, settings.hitDistanceParameters.B, settings.hitDistanceParameters.C, settings.hitDistanceParameters.D);
+    consts->gHitDistSettings = float4(settings.hitDistanceParameters.A, settings.hitDistanceParameters.B, settings.hitDistanceParameters.C, settings.hitDistanceParameters.D);
     consts->gViewVectorWorld = m_ViewDirection.xmm;
     consts->gViewVectorWorldPrev = m_ViewDirectionPrev.xmm;
     consts->gMvScale = float4(m_CommonSettings.motionVectorScale[0], m_CommonSettings.motionVectorScale[1], m_CommonSettings.motionVectorScale[2], m_CommonSettings.isMotionVectorInWorldSpace ? 1.0f : 0.0f);
-    consts->gAntilagParams = float2(settings.antilagSettings.luminanceSigmaScale, settings.antilagSettings.luminanceSensitivity);
+    consts->gAntilagSettings = float2(settings.antilagSettings.luminanceSigmaScale, settings.antilagSettings.luminanceSensitivity);
     consts->gResourceSize = float2(float(resourceW), float(resourceH));
     consts->gResourceSizeInv = float2(1.0f / float(resourceW), 1.0f / float(resourceH));
     consts->gResourceSizeInvPrev = float2(1.0f / float(resourceWprev), 1.0f / float(resourceHprev));
@@ -344,6 +344,7 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gRectOffset = float2(float(m_CommonSettings.rectOrigin[0]) / float(resourceW), float(m_CommonSettings.rectOrigin[1]) / float(resourceH));
     consts->gSpecProbabilityThresholdsForMvModification = float2(m_CommonSettings.isBaseColorMetalnessAvailable ? settings.specularProbabilityThresholdsForMvModification[0] : 2.0f, m_CommonSettings.isBaseColorMetalnessAvailable ? settings.specularProbabilityThresholdsForMvModification[1] : 3.0f);
     consts->gJitter = float2(m_CommonSettings.cameraJitter[0], m_CommonSettings.cameraJitter[1]);
+    consts->gConvergenceSettings = float4(settings.convergenceSettings.s, settings.convergenceSettings.b, settings.convergenceSettings.p, 0.0f);
     consts->gPrintfAt = uint2(m_CommonSettings.printfAt[0], m_CommonSettings.printfAt[1]);
     consts->gRectOrigin = uint2(m_CommonSettings.rectOrigin[0], m_CommonSettings.rectOrigin[1]);
     consts->gRectSizeMinusOne = int2(rectW - 1, rectH - 1);

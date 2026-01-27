@@ -11,7 +11,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #pragma once
 
 #define NRD_DESCS_VERSION_MAJOR 4
-#define NRD_DESCS_VERSION_MINOR 16
+#define NRD_DESCS_VERSION_MINOR 17
 
 static_assert(NRD_VERSION_MAJOR == NRD_DESCS_VERSION_MAJOR && NRD_VERSION_MINOR == NRD_DESCS_VERSION_MINOR, "Please, update all NRD SDK files");
 
@@ -49,10 +49,13 @@ namespace nrd
         // Linear view depth for primary rays (R16f+)
         IN_VIEWZ,
 
-        // (Optional) User-provided history confidence in range 0-1, i.e. antilag (R8+)
-        // It must be computed for the previous frame in the current frame ( the only one trivial solution in any case ).
-        // These textures can be at lower resolution, they are linearly upscaled.
-        // Used only if "CommonSettings::isHistoryConfidenceAvailable = true" and "NRD_SUPPORTS_HISTORY_CONFIDENCE = 1"
+        // (Optional) User-provided history confidence in range 0-1, i.e. antilag (R8+):
+        //  - used only if "CommonSettings::isHistoryConfidenceAvailable = true" and "NRD_SUPPORTS_HISTORY_CONFIDENCE = 1"
+        //  - must be computed for the previous frame in the current frame (the only one trivial solution in any case)
+        //  - textures may be at lower resolution (linearly upscaled)
+        //  - separation into diffuse and specular is optional:
+        //    - 1 path/pixel (probabilistic lobe selection) => better compute lighting confidence and use for both inputs
+        //    - 1 diffuse path/pixel + 1 specular path/pixel => may be better to separate
         IN_DIFF_CONFIDENCE,
         IN_SPEC_CONFIDENCE,
 
@@ -164,8 +167,8 @@ namespace nrd
         /*
         IMPORTANT:
           - IN_MV, IN_NORMAL_ROUGHNESS, IN_VIEWZ are used by any denoiser, but these denoisers DON'T use:
-              - SIGMA_SHADOW & SIGMA_SHADOW_TRANSLUCENCY - IN_MV, if "stabilizationStrength = 0"
-              - REFERENCE - IN_MV, IN_NORMAL_ROUGHNESS, IN_VIEWZ
+            - SIGMA_SHADOW & SIGMA_SHADOW_TRANSLUCENCY - IN_MV, if "stabilizationStrength = 0"
+            - REFERENCE - IN_MV, IN_NORMAL_ROUGHNESS, IN_VIEWZ
           - Optional inputs are in ()
         */
 
@@ -469,7 +472,7 @@ namespace nrd
         uint32_t perSetStorageTexturesMaxNum;
 
         // If tight (per pipeline) pipeline layouts are used:
-        // - summed up across all dispatches
+        //  - summed up across all dispatches
         uint32_t totalTexturesNum;
         uint32_t totalStorageTexturesNum;
 

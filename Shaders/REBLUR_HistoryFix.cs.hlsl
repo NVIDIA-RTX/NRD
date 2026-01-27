@@ -113,7 +113,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float diffNonLinearAccumSpeed = 1.0 / ( 1.0 + frameNum.x );
 
-        float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, 1.0 );
+        float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings, 1.0 );
         float hitDist = ExtractHitDist( diff ) * hitDistScale;
         float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
         hitDist = ExtractHitDist( diff );
@@ -309,7 +309,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float smc = GetSpecMagicCurve( roughness );
         float specNonLinearAccumSpeed = 1.0 / ( 1.0 + frameNum.y );
 
-        float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistParams, roughness );
+        float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings, roughness );
         float hitDist = ExtractHitDist( spec ) * hitDistScale;
         #if( NRD_MODE != OCCLUSION )
             // "gIn_SpecHitDistForTracking" is better for low roughness, but doesn't suit for high roughness ( because it's min )
