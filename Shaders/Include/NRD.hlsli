@@ -1159,18 +1159,24 @@ float2 NRD_SG_ReJitter(
 
 float3 NRD_SH_ResolveDiffuse( NRD_SG sh, float3 N )
 {
-    float Y = dot( N, sh.c1 ) + 0.5 * sh.c0;
+    const float k0 = 1.0 / NRD_PI;
+    const float k1 = 3.0 / NRD_PI;
+
+    float Y = sh.c0 * k0 + dot( sh.c1, N ) * k1;
 
     return _NRD_YCoCgToLinear_Corrected( Y, sh.c0, sh.chroma );
 }
 
 float3 NRD_SH_ResolveSpecular( NRD_SG sh, float3 N, float3 V, float roughness )
 {
+    const float k0 = 1.0 / NRD_PI;
+    const float k1 = 3.0 / NRD_PI;
+
     float NoV = abs( dot( N, V ) );
     float f = _NRD_GetSpecularDominantFactor( NoV, roughness );
     float3 D = _NRD_GetSpecularDominantDirection( N, V, f );
 
-    float Y = dot( D, sh.c1 ) + 0.5 * sh.c0;
+    float Y = sh.c0 * k0 + dot( sh.c1, D ) * k1; // quite suboptimal, use SG resolve instead
 
     return _NRD_YCoCgToLinear_Corrected( Y, sh.c0, sh.chroma );
 }
