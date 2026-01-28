@@ -591,7 +591,7 @@ if( gResolve )
     roughness = NRD_SG_ExtractRoughnessAA( specSg );
 
     // Regain macro-details
-    diff.xyz = NRD_SG_ResolveDiffuse( diffSg, N ); // or NRD_SH_ResolveDiffuse( sg, N )
+    diff.xyz = NRD_SG_ResolveDiffuse( diffSg, N ); // or NRD_SH_ResolveDiffuse( diffSg, N )
     spec.xyz = NRD_SG_ResolveSpecular( specSg, N, V, roughness );
 
     // Regain micro-details & jittering // TODO: preload N and Z into SMEM
@@ -622,7 +622,33 @@ else
 
 ## HISTORY CONFIDENCE
 
-User-provided history confidence inputs (`IN_DIFF_CONFIDENCE` and `IN_SPEC_CONFIDENCE`) are essential to preserve the responsiviness of the denoised output.
+![Confidence](Images/Confidence.jpg)
+
+User-provided history confidence inputs (`IN_DIFF_CONFIDENCE` and `IN_SPEC_CONFIDENCE`) are essential to preserve the responsiveness of the denoised output. An application should not rely solely on the anti-lag provided by *REBLUR/RELAX*. History confidence is easy and fast to compute (less than 5% of the frame time).
+
+Brief overview:
+- history confidence is a value in range `[0; 1]`, where `0` means "history reset" and `1` means "full confidence / no acceleration"
+- history confidence is based on a gradient, which is a delta between:
+  - "stored" radiance from the *previous* frame
+  - "traced" radiance for the *previous* frame, but computed in the *current* frame
+- "traced" radiance must use *previous* frame's RNG seed to avoid sampling discrepancies and isolate differences in lighting
+  - `{1/5; 1/5}` of render resolution is sufficient, it's a good idea to merge "*[SHARC](https://github.com/NVIDIA-RTX/SHARC)* update" and "gradients" into one pass
+  - TLAS from the previous frame is not needed
+  - some form of relaxation on dynamic objects is recommended
+  - disocclusion handling is not needed, as disocclusions for primary rays are handled by *NRD* itself
+- prefer spatial blurring of gradients over temporal accumulation, as the latter makes calculations lag behind for a few frames
+- in the very last step, a "gradient" gets converted to "confidence" for NRD consumption. *REBLUR/RELAX* use confidence differently, which implies custom tuning for each denoiser, but in general *RELAX* expects smaller values
+  - usage in *REBLUR*:
+    - `historyLength *= lerp( confidence, 1, 1 / ( 1 + historyLength ) )`
+    - new `historyLength` goes through *all passes and the feedback loop*, i.e. on the next frame the accumulation will continue from this point
+  - usage in *RELAX*:
+    - `historyLength = min( historyLength, maxAccumulatedFrameNum * confidence )`
+    - new `historyLength` is used *only in the "Temporal Accumulation" pass*, i.e. gets applied "here and now"
+
+Implementation details:
+- see "SHARC Update" [pass](https://github.com/NVIDIA-RTX/NRD-Sample/blob/simplex/Shaders/SharcUpdate.cs.hlsl)
+- see "ConfidenceBlur" [pass](https://github.com/NVIDIA-RTX/NRD-Sample/blob/simplex/Shaders/ConfidenceBlur.cs.hlsl)
+- search for `Gradient` in [NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)
 
 ## HAIR DENOISING TIPS
 
@@ -637,7 +663,7 @@ Sub-pixel thin geometry of strand-based hair transforms "normals guide" into jit
   - in other words, `B` must follow the following rules:
     - `cross( T, B ) != 0`
     - `B` must not follow hair strand "tube"
-- search for `FLAG_HAIR` in [NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample) for more details (enable `RTXCR_INTEGRATION` in *CMake* and use `Claire` scene)
+- search for `FLAG_HAIR` in [NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample/simplex) for more details (enable `RTXCR_INTEGRATION` in *CMake* and use `Claire` scene)
 
 Hair strands tangent vectors *can't* be used as "normals guide" for *NRD* due to BRDF and curvature related calculations, requiring a vector, which can be considered a "normal" vector.
 
