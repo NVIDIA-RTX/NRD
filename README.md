@@ -545,8 +545,12 @@ Bvirtual = A + viewVector * length( B - A );
 
 IN_VIEWZ = TransformToViewSpace( Bvirtual ).z;
 IN_NORMAL_ROUGHNESS = GetVirtualSpaceNormalAndRoughnessAt( B );
-IN_MV = GetMotionAt( B );
+IN_MV = GetMotionAt( Bvirtual );
 ```
+
+Implementation details:
+- Jumping through "delta" events [code](https://github.com/NVIDIA-RTX/NRD-Sample/blob/0e4242ef553ac66c179d975322c7d18aaa14e3b5/Shaders/TraceOpaque.cs.hlsl#L452)
+- MV calculation [code](https://github.com/NVIDIA-RTX/NRD-Sample/blob/0e4242ef553ac66c179d975322c7d18aaa14e3b5/Shaders/TraceOpaque.cs.hlsl#L509)
 
 ## IMPROVING OUTPUT QUALITY
 
@@ -637,6 +641,8 @@ Brief overview:
   - some form of relaxation on dynamic objects is recommended
   - disocclusion handling is not needed, as disocclusions for primary rays are handled by *NRD* itself
 - prefer spatial blurring of gradients over temporal accumulation, as the latter makes calculations lag behind for a few frames
+  - 5 passes of 5x5 blur with incremented by `1` strides work better than A-trous, which loses density when used with custom weights
+  - geometry and normal weights are needed
 - in the very last step, a "gradient" gets converted to "confidence" for NRD consumption. *REBLUR/RELAX* use confidence differently, which implies custom tuning for each denoiser, but in general *RELAX* expects smaller values
   - usage in *REBLUR*:
     - `historyLength *= lerp( confidence, 1, 1 / ( 1 + historyLength ) )`
