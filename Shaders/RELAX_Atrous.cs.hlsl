@@ -67,7 +67,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
     {
         // TODO: confidence is for previous frame, so "prev uv" should be used
-        float specConfidenceDrivenRelaxation = saturate(gConfidenceDrivenRelaxationMultiplier * (1.0 - gIn_SpecConfidence.SampleLevel( gLinearClamp, pixelUv, 0 )));
+        float specConfidenceDrivenRelaxation = saturate(gConfidenceDrivenRelaxationMultiplier * (1.0 - saturate(gIn_SpecConfidence.SampleLevel(gLinearClamp, pixelUv, 0))));
 
         // Relaxing normal weights for specular
         float r = saturate(specConfidenceDrivenRelaxation * gConfidenceDrivenNormalEdgeStoppingRelaxation);
@@ -108,7 +108,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
     {
         // TODO: confidence is for previous frame, so "prev uv" should be used
-        float diffConfidenceDrivenRelaxation = saturate(gConfidenceDrivenRelaxationMultiplier * (1.0 - gIn_DiffConfidence.SampleLevel( gLinearClamp, pixelUv, 0 )));
+        float diffConfidenceDrivenRelaxation = saturate(gConfidenceDrivenRelaxationMultiplier * (1.0 - saturate(gIn_DiffConfidence.SampleLevel(gLinearClamp, pixelUv, 0))));
 
         // Relaxing normal weights for diffuse
         float r = saturate(diffConfidenceDrivenRelaxation * gConfidenceDrivenNormalEdgeStoppingRelaxation);

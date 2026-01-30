@@ -359,8 +359,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Accumulation speed
         float smbSpecHistoryConfidence = smbFootprintQuality;
         if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
-            smbSpecHistoryConfidence *= gIn_SpecConfidence.SampleLevel( gLinearClamp, smbPixelUv, 0 );
-
+        {
+            float confidence = saturate( gIn_SpecConfidence.SampleLevel( gLinearClamp, smbPixelUv, 0 ) );
+            smbSpecHistoryConfidence = min( smbSpecHistoryConfidence, confidence );
+        }
         smbSpecAccumSpeed *= lerp( smbSpecHistoryConfidence, 1.0, 1.0 / ( 1.0 + smbSpecAccumSpeed ) );
 
         // Current
@@ -562,8 +564,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float vmbSpecHistoryConfidence = vmbFootprintQuality;
         if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
-            vmbSpecHistoryConfidence *= gIn_SpecConfidence.SampleLevel( gLinearClamp, vmbPixelUv, 0 );
-
+        {
+            float confidence = saturate( gIn_SpecConfidence.SampleLevel( gLinearClamp, vmbPixelUv, 0 ) );
+            vmbSpecHistoryConfidence = min( vmbSpecHistoryConfidence, confidence );
+        }
         vmbSpecAccumSpeed *= lerp( vmbSpecHistoryConfidence, 1.0, 1.0 / ( 1.0 + vmbSpecAccumSpeed ) );
 
         bool vmbAllowCatRom = dot( vmbOcclusion, 1.0 ) > 3.5 && REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TA;
@@ -870,8 +874,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Accumulation speed
         float diffHistoryConfidence = smbFootprintQuality;
         if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
-            diffHistoryConfidence *= gIn_DiffConfidence.SampleLevel( gLinearClamp, smbPixelUv, 0 );
-
+        {
+            float confidence = saturate( gIn_DiffConfidence.SampleLevel( gLinearClamp, smbPixelUv, 0 ) );
+            diffHistoryConfidence = min( diffHistoryConfidence, confidence );
+        }
         diffAccumSpeed *= lerp( diffHistoryConfidence, 1.0, 1.0 / ( 1.0 + diffAccumSpeed ) );
 
         // Current

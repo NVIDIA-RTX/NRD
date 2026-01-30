@@ -594,7 +594,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
     {
-        float inDiffConfidence = gIn_DiffConfidence.SampleLevel( gLinearClamp, prevUVSMB, 0 );
+        float inDiffConfidence = saturate(gIn_DiffConfidence.SampleLevel(gLinearClamp, prevUVSMB, 0));
         diffMaxAccumulatedFrameNum *= inDiffConfidence;
         diffMaxFastAccumulatedFrameNum *= inDiffConfidence;
     }
@@ -637,7 +637,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float specMaxFastAccumulatedFrameNum = gSpecMaxFastAccumulatedFrameNum;
     if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
     {
-        float inSpecConfidence = gIn_SpecConfidence.SampleLevel( gLinearClamp, prevUVSMB, 0 );
+        float inSpecConfidence = saturate(gIn_SpecConfidence.SampleLevel(gLinearClamp, prevUVSMB, 0));
         specMaxAccumulatedFrameNum *= inSpecConfidence;
         specMaxFastAccumulatedFrameNum *= inSpecConfidence;
     }
