@@ -1075,7 +1075,7 @@ float3 NRD_SG_ResolveSpecular( NRD_SG sg, float3 N, float3 V, float roughness )
     light.sharpness = lightSharpness;
 
     // Warped NDF
-    float ndfSharpness = 0.5 / max( m2 * VoH, NRD_EPS ); // "max( x, NRD_EPS )" balanced with "fitting the unfittable"
+    float ndfSharpness = 0.5 / max( m2 * VoH, 1e-8 ); // "1e-8" needed to not energy for very low roughness ( "1e-6" is not enough )
 
     NRD_SG warpedNdf;
     warpedNdf.c0 = 1.0;
