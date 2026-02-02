@@ -709,6 +709,7 @@ float4 NRD_FrontEnd_PackNormalAndRoughness( float3 N, float roughness, float mat
 //   Back-end usage ( after NRD, convert radiance back into irradiance ):
 //      diffRadiance *= diffFactor
 //      specRadiance *= specFactor
+// IMPORTANT: use same "roughness" for both "de-modulation" and "modulation", i.e. not "roughnessAA" extracted from NRD data
 void NRD_MaterialFactors( float3 N, float3 V, float3 albedo, float3 Rf0, float roughness, out float3 diffFactor, out float3 specFactor )
 {
     float NoV = abs( dot( N, V ) );
