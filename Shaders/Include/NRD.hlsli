@@ -77,16 +77,33 @@ NOISY INPUTS:
 
 #include "NRDConfig.hlsli"
 
-// ( Optional ) Bindings
+// Bindings
 #define NRD_CONSTANT_BUFFER_REGISTER_INDEX                                              0
 
-// ( Optional ) Spaces ( NRD integration expects unique values )
+// Spaces ( NRD integration expects unique values )
 #define NRD_RESOURCES_SPACE_INDEX                                                       0 // SRVs and UAVs
 #define NRD_CONSTANT_BUFFER_AND_SAMPLERS_SPACE_INDEX                                    1 // constant buffer and samplers
 
-// ( Optional ) Entry point
+// Entry point
 #ifndef NRD_CS_MAIN
     #define NRD_CS_MAIN                                                                 main
+#endif
+
+// Other
+#ifndef NRD_REJITTER_VIEWZ_THRESHOLD
+    #define NRD_REJITTER_VIEWZ_THRESHOLD                                                0.01 // normalized %
+#endif
+
+#ifndef NRD_REJITTER_AMPLITUDE
+    #define NRD_REJITTER_AMPLITUDE                                                      NRD_PI // [1 / x; x]
+#endif
+
+#ifndef NRD_MATERIAL_FACTOR_MIN_SCALE
+    #define NRD_MATERIAL_FACTOR_MIN_SCALE                                               0.02 // smaller values may lead to instabilities
+#endif
+
+#ifndef NRD_ROUGHNESS_FACTOR_MIN_SCALE
+    #define NRD_ROUGHNESS_FACTOR_MIN_SCALE                                              0.1 // smaller values may lead to instabilities and bias
 #endif
 
 //=================================================================================================================================
@@ -321,14 +338,11 @@ NOISY INPUTS:
 #define NRD_ROUGHNESS_ENCODING_LINEAR                                                   1 // linearRoughness
 #define NRD_ROUGHNESS_ENCODING_SQRT_LINEAR                                              2 // sqrt( linearRoughness )
 
+// Constants
 #define NRD_FP16_MAX                                                                    65504.0
 #define NRD_PI                                                                          3.14159265358979323846
 #define NRD_EPS                                                                         1e-6
-#define NRD_REJITTER_VIEWZ_THRESHOLD                                                    0.01 // normalized %
-#define NRD_ROUGHNESS_EPS                                                               sqrt( sqrt( NRD_EPS ) ) // "m2" fitting in FP32 to "linear roughness"
 #define NRD_INF                                                                         1e6
-#define NRD_MATERIAL_FACTOR_MIN_SCALE                                                   0.02 // very small scales can lead to instabilities
-#define NRD_ROUGHNESS_FACTOR_MIN_SCALE                                                  0.1 // very small scales can lead to instabilities and bias
 
 // Misc
 float3 _NRD_SafeNormalize( float3 v )
@@ -431,13 +445,9 @@ float _NRD_Pow5( float x )
     return pow( saturate( 1.0 - x ), 5.0 );
 }
 
-float _NRD_FresnelTerm( float Rf0, float VoNH )
-{
-    return Rf0 + ( 1.0 - Rf0 ) * _NRD_Pow5( VoNH );
-}
-
 float _NRD_DistributionTerm( float roughness, float NoH )
 {
+    // Trowbridge-Reitz ( GGX )
     float m = roughness * roughness;
     float m2 = m * m;
 
@@ -450,6 +460,7 @@ float _NRD_DistributionTerm( float roughness, float NoH )
 
 float _NRD_GeometryTerm( float roughness, float NoL, float NoV )
 {
+    // Height-correlated
     float m = roughness * roughness;
     float m2 = m * m;
 
@@ -461,9 +472,8 @@ float _NRD_GeometryTerm( float roughness, float NoL, float NoV )
 
 float _NRD_DiffuseTerm( float roughness, float NoL, float NoV, float VoH )
 {
-    float m = roughness * roughness;
-
-    float f = 2.0 * VoH * VoH * m - 0.5;
+    // Burley
+    float f = 2.0 * VoH * VoH * roughness - 0.5; // yes, linear roughness
     float FdV = f * _NRD_Pow5( NoV ) + 1.0;
     float FdL = f * _NRD_Pow5( NoL ) + 1.0;
     float d = FdV * FdL;
@@ -471,7 +481,7 @@ float _NRD_DiffuseTerm( float roughness, float NoL, float NoV, float VoH )
     return d / NRD_PI;
 }
 
-float2 _NRD_ComputeBrdfs( float3 Ld, float3 Ls, float3 N, float3 V, float Rf0, float roughness )
+float2 _NRD_ComputeBrdfs( float3 Ld, float3 Ls, float3 N, float3 V, float roughness )
 {
     float2 result;
     float NoV = abs( dot( N, V ) );
@@ -482,10 +492,9 @@ float2 _NRD_ComputeBrdfs( float3 Ld, float3 Ls, float3 N, float3 V, float Rf0, f
         float NoL = saturate( dot( N, Ld ) );
         float VoH = abs( dot( V, H ) );
 
-        float F = _NRD_FresnelTerm( Rf0, VoH );
         float Kdiff = _NRD_DiffuseTerm( roughness, NoL, NoV, VoH );
 
-        result.x = ( 1.0 - F ) * Kdiff * NoL;
+        result.x = Kdiff * NoL;
     }
 
     { // Specular
@@ -493,16 +502,15 @@ float2 _NRD_ComputeBrdfs( float3 Ld, float3 Ls, float3 N, float3 V, float Rf0, f
 
         float NoL = saturate( dot( N, Ls ) );
         float NoH = saturate( dot( N, H ) );
-        float VoH = abs( dot( V, H ) );
 
-        float F = _NRD_FresnelTerm( Rf0, VoH );
         float D = _NRD_DistributionTerm( roughness, NoH );
-        float G = _NRD_GeometryTerm( roughness, NoL, NoV );
+        float Gmod = _NRD_GeometryTerm( roughness, NoL, NoV );
+        float Kspec = D * Gmod;
 
-        result.y = F * D * G * NoL;
+        result.y = Kspec * NoL;
     }
 
-    return result;
+    return result; // no F, because it's already demodulated
 }
 
 float3 _NRD_EnvironmentTerm_Rtg( float3 Rf0, float NoV, float roughness )
@@ -992,46 +1000,16 @@ void NRD_SG_Rotate( inout NRD_SG sg, float3x3 rotation )
 }
 
 // https://therealmjp.github.io/posts/sg-series-part-3-diffuse-lighting-from-an-sg-light-source/
-float3 NRD_SG_ResolveDiffuse( NRD_SG sg, float3 N )
+float3 NRD_SG_ResolveDiffuse( NRD_SG sg, float3 N, float3 V, float roughness )
 {
-#if 1
-    sg.c1 = _NRD_SG_ExtractDirection( sg );
+    float3 L = _NRD_SG_ExtractDirection( sg );
+    float NoL = saturate( dot( N, L ) );
 
-    // Numerical integration of the resulting irradiance from an SG diffuse light source ( with sharpness of 4.0 )
-    sg.sharpness = 4.0;
-
-    float c0 = 0.36;
-    float c1 = 1.0 / ( 4.0 * c0 );
-
-    float e = exp( -sg.sharpness );
-    float e2 = e * e;
-    float r = 1.0 / sg.sharpness;
-
-    float scale = 1.0 + 2.0 * e2 - r;
-    float bias = ( e - e2 ) * r - e2;
-
-    float NoL = dot( N, sg.c1 );
-    float x = sqrt( saturate( 1.0 - scale ) );
-    float x0 = c0 * NoL;
-    float x1 = c1 * x;
-    float n = x0 + x1;
-
-    float y = saturate( NoL );
-    if( abs( x0 ) <= x1 )
-        y = n * n / x;
-
-    float Y = scale * y + bias;
-    Y *= _NRD_SG_IntegralApprox( sg );
-
-    return _NRD_YCoCgToLinear_Corrected( Y, sg.c0, sg.chroma );
-#else
     // SG light
-    float lightSharpness = 2.0;
-
     NRD_SG light;
-    light.c0 = sg.c0 * lightSharpness; // with normalization
-    light.c1 = _NRD_SG_ExtractDirection( sg );
-    light.sharpness = lightSharpness;
+    light.sharpness = 2.0;
+    light.c0 = sg.c0 * light.sharpness; // with normalization
+    light.c1 = L;
 
     // Approximate NDF
     NRD_SG ndf;
@@ -1041,17 +1019,33 @@ float3 NRD_SG_ResolveDiffuse( NRD_SG sg, float3 N )
 
     // Multiply two SGs and integrate the result
     float Y = _NRD_SG_InnerProduct( ndf, light );
+
+#if 1
+    // Fancier, a bit biased
+    float3 H = normalize( L + V );
+    float NoV = abs( dot( N, V ) );
+    float VoH = abs( dot( V, H ) );
+    float Kdiff = _NRD_DiffuseTerm( roughness, NoL, NoV, VoH );
+
+    Y *= Kdiff;
+
+    // Fitting the unfittable
+    Y *= lerp( 1.0, lerp( 1.5, 0.6, roughness ), _NRD_Pow5( NoV ) );
+#else
     Y /= NRD_PI;
+#endif
+
+    // Fix the bare minimum
+    Y = max( Y, sg.c0 / NRD_PI );
 
     return _NRD_YCoCgToLinear_Corrected( Y, sg.c0, sg.chroma );
-#endif
 }
 
 // https://therealmjp.github.io/posts/sg-series-part-4-specular-lighting-from-an-sg-light-source/
 float3 NRD_SG_ResolveSpecular( NRD_SG sg, float3 N, float3 V, float roughness )
 {
-    // Clamp roughness to avoid numerical imprecision
-    roughness = max( roughness, NRD_ROUGHNESS_EPS );
+    // Clamp roughness to avoid numerical imprecisions
+    roughness = max( roughness, 0.03 );
 
     float m = roughness * roughness;
     float m2 = m * m;
@@ -1066,16 +1060,16 @@ float3 NRD_SG_ResolveSpecular( NRD_SG sg, float3 N, float3 V, float roughness )
     float NoV = abs( dot( N, V ) );
     float VoH = abs( dot( V, H ) );
 
-    // SG light
-    float lightSharpness = 2.0 / m2; // extract directionality? but no IQ gains, only instabilities for low roughness
+    NoV = lerp( 0.02, 1.0, NoV ); // fix energy increase on the horizon / silhouette
 
+    // SG light
     NRD_SG light;
-    light.c0 = sg.c0 * lightSharpness; // with normalization
+    light.sharpness = 2.0 / m2; // extract directionality? but no IQ gains, only instabilities for low roughness
+    light.c0 = sg.c0 * light.sharpness; // with normalization
     light.c1 = L;
-    light.sharpness = lightSharpness;
 
     // Warped NDF
-    float ndfSharpness = 0.5 / max( m2 * VoH, 1e-8 ); // "1e-8" needed to not energy for very low roughness ( "1e-6" is not enough )
+    float ndfSharpness = 0.5 / max( m2 * VoH, 1e-8 ); // "1e-8" needed to not add energy for very low roughness ( "1e-6" is not enough )
 
     NRD_SG warpedNdf;
     warpedNdf.c0 = 1.0;
@@ -1086,8 +1080,8 @@ float3 NRD_SG_ResolveSpecular( NRD_SG sg, float3 N, float3 V, float roughness )
     float Y = _NRD_SG_InnerProduct( warpedNdf, light );
 
     // Apply BRDF terms
-    float G = _NRD_GeometryTerm( roughness, NoL, NoV );
-    Y *= G * NoL; // F applied in demodulation
+    float Gmod = _NRD_GeometryTerm( roughness, NoL, NoV );
+    Y *= Gmod * NoL; // F applied in demodulation
 
     // Fitting the unfittable
     Y *= lerp( lerp( 0.1, 0.4, m2 ), 0.8, NoV );
@@ -1107,16 +1101,11 @@ s = int2( 0, -1 )
 */
 float2 NRD_SG_ReJitter(
     NRD_SG diffSg, NRD_SG specSg,
-    float3 Rf0, float3 V, float roughness,
+    float3 V, float roughness,
     float Z, float Ze, float Zw, float Zn, float Zs,
     float3 N, float3 Ne, float3 Nw, float3 Nn, float3 Ns
 )
 {
-    float rf0 = _NRD_Luminance( Rf0 );
-
-    // Clamp roughness to avoid numerical imprecision
-    roughness = max( roughness, NRD_ROUGHNESS_EPS );
-
     // Extract dominant light directions
     float3 Ld = _NRD_SG_ExtractDirection( diffSg );
     float3 Ls = _NRD_SG_ExtractDirection( specSg );
@@ -1125,22 +1114,22 @@ float2 NRD_SG_ReJitter(
     Ls = normalize( lerp( V, Ls, roughness ) );
 
     // BRDF at center
-    float2 brdfCenter = _NRD_ComputeBrdfs( Ld, Ls, N, V, rf0, roughness );
+    float2 brdfCenter = _NRD_ComputeBrdfs( Ld, Ls, N, V, roughness );
 
     // BRDFs at neighbors
-    float2 brdfAverage = _NRD_ComputeBrdfs( Ld, Ls, Ne, V, rf0, roughness );
-    brdfAverage += _NRD_ComputeBrdfs( Ld, Ls, Nn, V, rf0, roughness );
-    brdfAverage += _NRD_ComputeBrdfs( Ld, Ls, Nw, V, rf0, roughness );
-    brdfAverage += _NRD_ComputeBrdfs( Ld, Ls, Ns, V, rf0, roughness );
+    float2 brdfAverage = _NRD_ComputeBrdfs( Ld, Ls, Ne, V, roughness );
+    brdfAverage += _NRD_ComputeBrdfs( Ld, Ls, Nn, V, roughness );
+    brdfAverage += _NRD_ComputeBrdfs( Ld, Ls, Nw, V, roughness );
+    brdfAverage += _NRD_ComputeBrdfs( Ld, Ls, Ns, V, roughness );
 
     // Jacobian
     float2 j = max( brdfCenter * 4.0, NRD_EPS ) / max( brdfAverage, NRD_EPS );
-    j = clamp( j, 1.0 / NRD_PI, NRD_PI );
+    j = clamp( j, 1.0 / NRD_REJITTER_AMPLITUDE, NRD_REJITTER_AMPLITUDE );
 
     // Z weights
     float NoV = abs( dot( N, V ) );
-    float zThreshold = 0.01 * abs( Z ) / ( NoV * 0.95 + 0.05 );
-    float4 w = saturate( 1.0 - abs( float4( Ze, Zw, Zn, Zs ) - Z ) / zThreshold );
+    float zThreshold = NRD_REJITTER_VIEWZ_THRESHOLD * abs( Z ) / ( NoV * 0.95 + 0.05 );
+    float4 w = step( abs( float4( Ze, Zw, Zn, Zs ) - Z ), zThreshold );
     bool isSymmetrical = dot( w, 1.0 ) > 3.5;
 
     return isSymmetrical ? j : 1.0;
