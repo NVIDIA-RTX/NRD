@@ -1121,9 +1121,10 @@ float2 NRD_SG_ReJitter(
     brdfAverage += _NRD_ComputeBrdfs( Ld, Ls, Nn, V, roughness );
     brdfAverage += _NRD_ComputeBrdfs( Ld, Ls, Nw, V, roughness );
     brdfAverage += _NRD_ComputeBrdfs( Ld, Ls, Ns, V, roughness );
+    brdfAverage *= 0.25;
 
     // Jacobian
-    float2 j = max( brdfCenter * 4.0, NRD_EPS ) / max( brdfAverage, NRD_EPS );
+    float2 j = ( brdfCenter + NRD_EPS ) / ( brdfAverage + NRD_EPS );
     j = clamp( j, 1.0 / NRD_REJITTER_AMPLITUDE, NRD_REJITTER_AMPLITUDE );
 
     // Z weights
