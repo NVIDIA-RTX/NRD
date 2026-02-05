@@ -44,8 +44,10 @@ jobs:
         with:
           cmake-version: 'latest'
 
-      - name: Setup Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
 
       - name: Deploy
         run: bash 1-Deploy.sh
