@@ -1,46 +1,59 @@
-# NVIDIA REAL-TIME DENOISERS v4.17.0 (NRD)
+# NVIDIA REAL-TIME DENOISERS (NRD) v4.17.0
 
 [![Build NRD SDK](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml/badge.svg)](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml)
 
 ![Title](Images/Title.jpg)
 
-For quick starting see *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* project:
-- `simplex` branch - focuses on path tracing and *NRD* best practices (less code, less preprocessor, easier to follow)
-- `main` branch - contains everything needed for *NRD* development, testing and maintaining, all variants of *NRD* usage are here
-
 # OVERVIEW
 
-*NVIDIA Real-Time Denoisers (NRD)* is a spatio-temporal API agnostic denoising library. The library has been designed to work with low rpp (ray per pixel) signals. *NRD* is a fast solution that slightly depends on input signals and environment conditions.
+*NVIDIA Real-Time Denoisers (NRD)* is a real-time spatio-temporal API agnostic denoising library. The library has been designed to work with low ray per pixel (rpp) signals and handle static and dynamic lighting. *NRD* is not for volumetrics or transparency, since it uses per-pixel guides for opaque surfaces: normal, roughness, viewZ, motion vector.
 
 *NRD* includes the following denoisers:
 - *REBLUR* - recurrent blur based denoiser
 - *RELAX* - A-trous based denoiser, has been designed for *[RTXDI (RTX Direct Illumination)](https://developer.nvidia.com/rtxdi)*
-- *SIGMA* - shadow-only denoiser
-
-Performance on RTX 4080 @ 1440p (native resolution, default denoiser settings, `NormalEncoding::R10_G10_B10_A2_UNORM`):
-- `REBLUR_DIFFUSE_SPECULAR` - 2.25 ms (3.10 ms in `SH` mode, 2.00 ms in performance mode)
-- `RELAX_DIFFUSE_SPECULAR` - 3.00 ms (4.90 ms in `SH` mode)
-- `SIGMA_SHADOW` - 0.40 ms
-- `SIGMA_SHADOW_TRANSLUCENCY` - 0.45 ms
-- memory usage [table](#memory-usage)
+- *SIGMA* - per-light shadow-only denoiser
 
 Supported signal types:
 - *RELAX*:
-  - Diffuse & specular radiance
+  - Diffuse & specular radiance (+Spherical Harmonics "SH" variants, actually Spherical Gaussian "SG")
 - *REBLUR*:
-  - Diffuse & specular radiance
-  - Diffuse (ambient) & specular occlusion (OCCLUSION variants)
-  - Diffuse (ambient) directional occlusion (DIRECTIONAL_OCCLUSION variant)
-  - Diffuse & specular radiance in spherical harmonics (spherical gaussians) (SH variants)
+  - Diffuse & specular radiance (+Spherical Harmonics "SH" variants, actually Spherical Gaussian "SG")
+  - Diffuse (ambient) & specular occlusion ("OCCLUSION" variants)
+  - Diffuse (ambient) directional occlusion ("DIRECTIONAL_OCCLUSION" variant)
 - *SIGMA*:
-  - Shadows from an infinite light source (sun, moon)
-  - Shadows from a local light source (omni, spot)
+  - Shadows from an infinite light source (sun, moon) or a local light source (omni, spot)
+  - Shadows with translucency
 
-For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "removed" materials) can be used instead of radiance (see this [section](#material-demodulation)).
+Performance on RTX 4080 @ 1440p (native resolution, default denoiser settings, `NormalEncoding::R10_G10_B10_A2_UNORM`):
+- *REBLUR_DIFFUSE_SPECULAR* - 2.25 ms (3.10 ms in "SH" mode, 2.00 ms in performance mode)
+- *RELAX_DIFFUSE_SPECULAR* - 3.00 ms (4.90 ms in "SH" mode)
+- *SIGMA_SHADOW* - 0.40 ms
+- *SIGMA_SHADOW_TRANSLUCENCY* - 0.45 ms
+- memory usage [table](#memory-usage)
 
 *NRD* is distributed as a source as well with a “ready-to-use” library (if used in a precompiled form). It can be integrated into any *D3D12*, *Vulkan* or *D3D11* engine using two variants:
-1. Integration via *NRI*-based `NRDIntegration` layer. In this case, the engine should expose native *GAPI* pointers for certain types of objects. The integration layer is provided as a part of SDK
+1. Integration via *NRI*-based [NRDIntegration](#integration) layer. In this case, the engine should expose native *GAPI* pointers for certain types of objects. The integration layer is provided as a part of SDK
 2. Native implementation of the *NRD* API using engine capabilities
+
+## QUICK START
+
+NRD is easy to use:
+- [build](#how-to-build) with `NRD_NRI=ON`
+- HOST code - use [NRDIntegration](https://github.com/NVIDIA-RTX/NRD/blob/master/Integration/NRDIntegration.h) layer for easy integration
+  - understand [inputs](#inputs)
+  - set inputs and outputs via `ResourceSnapshot` (see [example](https://github.com/NVIDIA-RTX/NRD-Sample/blob/f5a574e6eb630f48b89437a224dede75beed4dcb/Source/NRDSample.cpp#L417))
+  - on each frame call `NewFrame`, `SetCommonSettings`, `SetDenoiserSettings` and `Denoise`
+- SHADER code - use [NRD.hlsli](https://github.com/NVIDIA-RTX/NRD/blob/master/Shaders/Include/NRD.hlsli)
+  - use `NRD_FrontEnd_Spec*` and `NRD_FrontEnd_TrimHitDistance` helpers in your path tracer (see [example](#integration))
+  - use `[RELAX/REBLUR/SIGMA]_FrontEnd_Pack*` and `REBLUR_FrontEnd_GetNormHitDist` functions in the shader code to pack data for [noisy inputs](#noisy-inputs)
+    - use `NRD_MaterialFactors` to convert noisy irradiance into radiance before "packing" data (remove materials)
+  - use `[RELAX/REBLUR/SIGMA]_BackEnd_Unpack*` functions from `NRD.hlsli` to unpack data from outputs
+    - for "SH" denoisers apply SG/SH resolve and re-jittering (see [Interaction with upscalers](#interaction-with-upscaling-dlssfsrxesstaau))
+    - use `NRD_MaterialFactors` to convert denoised radiance back to irradiance after "unpacking" data (add materials back)
+
+See *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* project for all details:
+- `simplex` branch (recommended) - focuses on path tracing and *NRD* best practices (less code, less preprocessor, easier to follow)
+- `main` branch - contains everything needed for *NRD* development, testing and maintaining, all variants of *NRD* usage are here
 
 ## HOW TO BUILD?
 
@@ -55,7 +68,7 @@ For diffuse and specular signals de-modulated irradiance (i.e. irradiance with "
 
 *CMake* options:
 - Common:
-  - `NRD_NRI` - pull, build and include *NRI* into *NRD SDK* package (OFF by default)
+  - `NRD_NRI` - pull, build and include *NRI* into *NRD SDK* package, required to use [NRDIntegration](https://github.com/NVIDIA-RTX/NRD/blob/master/Integration/NRDIntegration.h) layer (OFF by default)
   - `NRD_SHADERS_PATH` - shader output path override
   - `NRD_EMBEDS_DXBC_SHADERS` - *NRD* compiles and embeds DXBC shaders (ON by default on Windows)
   - `NRD_EMBEDS_DXIL_SHADERS` - *NRD* compiles and embeds DXIL shaders (ON by default on Windows)
@@ -117,7 +130,7 @@ Flow:
 6. *GetComputeDispatches* - returns per-dispatch data for the list of denoisers (bound subresources with required state, constant buffer data). Returned memory is owned by the instance and gets overwritten by the next *GetComputeDispatches* call
 7. *DestroyInstance* - destroys an instance
 
-*NRD* doesn't make any *GAPI* calls. The application is supposed to invoke a set of compute *Dispatch* calls to do denoising. Refer to [NRDIntegration.hpp](https://github.com/NVIDIA-RTX/NRD/blob/master/Integration/NRDIntegration.hpp) file as an example of an integration using low level RHI.
+*NRD* doesn't make any *GAPI* calls. The application is supposed to invoke a set of compute *Dispatch* calls to do denoising. Refer to [NRDIntegration](https://github.com/NVIDIA-RTX/NRD/blob/master/Integration/NRDIntegration.hpp) file as an example of an integration using low level RHI.
 
 *NRD* doesn't have a "resize" functionality. On a resolution change the old denoiser needs to be destroyed and a new one needs to be created with new parameters. But *NRD* supports dynamic resolution scaling via `CommonSettings::resourceSize, resourceSizePrev, rectSize, rectSizePrev`.
 
@@ -131,12 +144,19 @@ If GAPI's native pointers are retrievable from the RHI, the [NRDIntegration](htt
 
 *NRI = NVIDIA Rendering Interface* - an abstraction layer on top of GAPIs: *D3D11*, *D3D12* and *Vulkan*. *NRI* has been designed to provide low overhead access to the GAPIs and simplify development of *D3D12* and *Vulkan* applications. *NRI* API has been influenced by *Vulkan* as the common denominator among these 3 APIs.
 
-*NRI* and *NRD* are ready-to-use products. The application must expose native pointers only for Device, Resource and CommandList entities (no SRVs and UAVs - they are not needed, everything will be created internally). Native resource pointers are needed only for the denoiser inputs and outputs (all intermediate textures will be handled internally). Descriptor heap will be changed to an internal one, so the application needs to bind its original descriptor heap after invoking the denoiser.
+*NRI* and *NRD* are ready-to-use products. The application must expose native pointers only for Device, Resource and CommandList entities (no SRVs and UAVs - they are not needed, everything will be created internally). Native resource pointers are needed only for the denoiser inputs and outputs (all intermediate textures will be handled internally). The descriptor heap will be changed to an internal one, so the application needs to bind its original descriptor heap after invoking the denoiser.
 
 In rare cases, when the integration via the engine’s RHI is not possible and the integration using native pointers is complicated, a "DoDenoising" call can be added explicitly to the application-side RHI. It helps to avoid increasing code entropy.
 
+Or alternatively, an app-side RHI or a native *GAPI* can be used explicitly:
+* Create shaders from precompiled binary blobs
+* Create an SRV for a texture (always `mip0`, no subresources)
+* Create and bind 2 predefined samplers
+* Invoke a Dispatch call (no raster, no VS/PS)
+* Create 2D textures with SRV/UAV access
+
 <details>
-<summary>(CLICK) An example demonstrating how to use "NRDIntegration" layer:</summary>
+<summary>(CLICK) An example:</summary>
 
 ```cpp
 //=======================================================================================================
@@ -277,6 +297,7 @@ Shader part:
 
 // Pseudo code (this can be simplified for 1 path per pixel, see "NRD sample/simplex" branch)
 Hit primaryHit; // aka 0 bounce, or PSR
+
 Out out = (Out)0;
 
 if (!OCCLUSION)
@@ -342,13 +363,13 @@ out.specRadiance *= invPathNum;
 float diffNorm = diffPathNum ? 1.0 / float( diffPathNum ) : 0.0;
 out.diffHitDist *= diffNorm;
 if (SH)
-    result.diffDirection *= diffNorm;
+    out.diffDirection *= diffNorm;
 
 float specNorm = diffPathNum < pathNum ? 1.0 / float( pathNum - diffPathNum ) : 0.0;
 if (OCCLUSION)
   out.specHitDist *= specNorm;
 if (SH)
-    result.specDirection *= specNorm;
+    out.specDirection *= specNorm;
 
 // Material de-modulation (convert irradiance into radiance)
 float3 diffFactor, specFactor;
@@ -356,15 +377,41 @@ NRD_MaterialFactors(primaryHit.N, primaryHit.V, primaryHit.albedo, primaryHit.Rf
 
 out.diffRadiance /= diffFactor;
 out.specRadiance /= specFactor;
+
+// Pack for NRD
+float4 outDiff = 0.0;
+float4 outSpec = 0.0;
+float4 outDiffSh = 0.0;
+float4 outSpecSh = 0.0;
+
+if (RELAX)
+{
+    if (SH)
+    {
+        outDiff = RELAX_FrontEnd_PackSh( out.diffRadiance, out.diffHitDist, out.diffDirection, outDiffSh, USE_SANITIZATION );
+        outSpec = RELAX_FrontEnd_PackSh( out.specRadiance, out.specHitDist, out.specDirection, outSpecSh, USE_SANITIZATION );
+    }
+    else
+    {
+        outDiff = RELAX_FrontEnd_PackRadianceAndHitDist( out.diffRadiance, out.diffHitDist, USE_SANITIZATION );
+        outSpec = RELAX_FrontEnd_PackRadianceAndHitDist( out.specRadiance, out.specHitDist, USE_SANITIZATION );
+    }
+}
+else
+{
+    if (SH)
+    {
+        outDiff = REBLUR_FrontEnd_PackSh( out.diffRadiance, out.diffHitDist, out.diffDirection, outDiffSh, USE_SANITIZATION );
+        outSpec = REBLUR_FrontEnd_PackSh( out.specRadiance, out.specHitDist, out.specDirection, outSpecSh, USE_SANITIZATION );
+    }
+    else
+    {
+        outDiff = REBLUR_FrontEnd_PackRadianceAndNormHitDist( out.diffRadiance, out.diffHitDist, USE_SANITIZATION );
+        outSpec = REBLUR_FrontEnd_PackRadianceAndNormHitDist( out.specRadiance, out.specHitDist, USE_SANITIZATION );
+    }
+}
 ```
 </details>
-
-Or alternatively, an app-side RHI or a native *GAPI* can be used explicitly:
-* Create shaders from precompiled binary blobs
-* Create an SRV for a texture (always `mip0`, no subresources)
-* Create and bind 2 predefined samplers
-* Invoke a Dispatch call (no raster, no VS/PS)
-* Create 2D textures with SRV/UAV access
 
 # INPUTS
 
@@ -406,7 +453,7 @@ Commons inputs for primary hits (if *PSR* is not used, common use case) or for s
   - project on screen using matrices passed to NRD
   - `.w` component is positive view Z (or just transform world-space position to main view space and take `.z` component)
 
-* **IN\_DIFF/SPEC\_CONFIDENCE** - convidence in the accumulated history represented in `[0; 1]` range
+* **IN\_DIFF/SPEC\_CONFIDENCE** - confidence in the accumulated history represented in `[0; 1]` range
 
   These inputs are optional and are used only if `CommonSettings::isHistoryConfidenceAvailable = true`. *REBLUR* and *RELAX* have embedded anti-lag techniques, but if properly computed, using confidence inputs is the best way to mitigate temporal lags. They are easy and cheap to compute. See this [section](#history-confidence) for more details.
 
@@ -494,8 +541,8 @@ where:
   - the square in the bottom-right corner represents a pixel with accumulated samples
   - the red boundary of the square marks jittering outside of the pixel area
 - Viewport 7 - amount of virtual history
-- Viewport 8 - number of accumulated frames for diffuse signal (checkerboared red = `history reset`)
-- Viewport 11 - number of accumulated frames for specular signal (checkerboared red = `history reset`)
+- Viewport 8 - number of accumulated frames for diffuse signal (checkerboarded red = `history reset`)
+- Viewport 11 - number of accumulated frames for specular signal (checkerboarded red = `history reset`)
 - Viewport 12 - input normalized `hitT` for diffuse signal (ambient occlusion, AO)
 - Viewport 15 - input normalized `hitT` for specular signal (specular occlusion, SO)
 
@@ -552,14 +599,13 @@ Implementation details:
 - Jumping through "delta" events [code](https://github.com/NVIDIA-RTX/NRD-Sample/blob/0e4242ef553ac66c179d975322c7d18aaa14e3b5/Shaders/TraceOpaque.cs.hlsl#L452)
 - MV calculation [code](https://github.com/NVIDIA-RTX/NRD-Sample/blob/0e4242ef553ac66c179d975322c7d18aaa14e3b5/Shaders/TraceOpaque.cs.hlsl#L509)
 
-## IMPROVING OUTPUT QUALITY
+## INTERACTION WITH UPSCALING (DLSS/FSR/XESS/TAAU)
 
-The temporal part of *NRD* naturally suppresses jitter, which is essential for upscaling techniques. If an *SH* denoiser is in use, a high quality resolve can be applied to the final output to regain back macro details, micro details and per-pixel jittering. As an example, the image below demonstrates the results *after* and *before* resolve with active *DLSS* (quality mode).
+The temporal part of *NRD* naturally suppresses jitter, which is essential for upscaling techniques. If an *SH* denoiser is in use, a high quality resolve can be applied to the final output to regain back macro details, micro details and per-pixel jittering. As an example, the image below demonstrates the results *before* and *after* resolve with active *DLSS* (quality mode).
 
 ![Resolve](Images/Resolve.jpg)
 
 The resolve process takes place on the application side and has the following modular structure:
-- construct an SG (spherical gaussian) light
 - apply diffuse or specular resolve function to reconstruct macro details
 - apply re-jittering to reconstruct micro details
 - (optionally) or just extract unresolved color (fully matches the output of a corresponding non-SH denoiser)
@@ -570,59 +616,62 @@ Re-jittering math with minorly modified inputs can also be used with RESTIR prod
 <summary>(CLICK) Shader code:</summary>
 
 ```cpp
-// See https://github.com/NVIDIA-RTX/NRD-Sample/blob/main/Shaders/Include/Shared.hlsli#L13
-// And https://github.com/NVIDIA-RTX/NRD-Sample/blob/main/Shaders/Composition.cs.hlsl#L88
+// See https://github.com/NVIDIA-RTX/NRD-Sample/blob/simplex/Shaders/Composition.cs.hlsl
 
-// Diffuse
+// Radiance
 float4 diff = gIn_Diff[ pixelPos ];
 float4 diff1 = gIn_DiffSh[ pixelPos ];
 
 NRD_SG diffSg = REBLUR_BackEnd_UnpackSh( diff, diff1 );
 
-// Specular
 float4 spec = gIn_Spec[ pixelPos ];
 float4 spec1 = gIn_SpecSh[ pixelPos ];
 
 NRD_SG specSg = REBLUR_BackEnd_UnpackSh( spec, spec1 );
 
-// ( Optional ) AO / SO ( available only for REBLUR )
-diff.w = diffSg.normHitDist;
-spec.w = specSg.normHitDist;
+// Regain macro-details
+diff.xyz = NRD_SG_ResolveDiffuse( diffSg, N ); // or NRD_SH_ResolveDiffuse( diffSg, N )
+spec.xyz = NRD_SG_ResolveSpecular( specSg, N, V, roughness );
 
-if( gResolve )
-{
-    // ( Optional ) replace "roughness" with "roughnessAA"
-    roughness = NRD_SG_ExtractRoughnessAA( specSg );
+// Regain micro-details & jittering // TODO: preload N and Z into SMEM
+float3 Ne = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( 1, 0 ) ] ).xyz;
+float3 Nw = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( -1, 0 ) ] ).xyz;
+float3 Nn = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( 0, 1 ) ] ).xyz;
+float3 Ns = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( 0, -1 ) ] ).xyz;
 
-    // Regain macro-details
-    diff.xyz = NRD_SG_ResolveDiffuse( diffSg, N ); // or NRD_SH_ResolveDiffuse( diffSg, N )
-    spec.xyz = NRD_SG_ResolveSpecular( specSg, N, V, roughness );
+float Ze = gIn_ViewZ[ pixelPos + int2( 1, 0 ) ];
+float Zw = gIn_ViewZ[ pixelPos + int2( -1, 0 ) ];
+float Zn = gIn_ViewZ[ pixelPos + int2( 0, 1 ) ];
+float Zs = gIn_ViewZ[ pixelPos + int2( 0, -1 ) ];
 
-    // Regain micro-details & jittering // TODO: preload N and Z into SMEM
-    float3 Ne = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( 1, 0 ) ] ).xyz;
-    float3 Nw = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( -1, 0 ) ] ).xyz;
-    float3 Nn = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( 0, 1 ) ] ).xyz;
-    float3 Ns = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ pixelPos + int2( 0, -1 ) ] ).xyz;
+float2 scale = NRD_SG_ReJitter( diffSg, specSg, V, roughness, viewZ, Ze, Zw, Zn, Zs, N, Ne, Nw, Nn, Ns );
 
-    float Ze = gIn_ViewZ[ pixelPos + int2( 1, 0 ) ];
-    float Zw = gIn_ViewZ[ pixelPos + int2( -1, 0 ) ];
-    float Zn = gIn_ViewZ[ pixelPos + int2( 0, 1 ) ];
-    float Zs = gIn_ViewZ[ pixelPos + int2( 0, -1 ) ];
+diff.xyz *= scale.x;
+spec.xyz *= scale.y;
 
-    float2 scale = NRD_SG_ReJitter( diffSg, specSg, Rf0, V, roughness, viewZ, Ze, Zw, Zn, Zs, N, Ne, Nw, Nn, Ns );
+// Material modulation ( convert radiance back into irradiance )
+float3 diffFactor, specFactor;
+NRD_MaterialFactors( N, V, albedo, Rf0, roughness, diffFactor, specFactor );
 
-    diff.xyz *= scale.x;
-    spec.xyz *= scale.y;
-}
-else
-{
-    // ( Optional ) Unresolved color matching the non-SH version of the denoiser
+// Optional stuff
+#if 0
+    // Unresolved color matching the non-SH version of the denoiser
     diff.xyz = NRD_SG_ExtractColor( diffSg );
     spec.xyz = NRD_SG_ExtractColor( specSg );
-}
+
+    // Misc data
+    //    history length  - "returnHistoryLengthInsteadOfOcclusion = true"
+    //    AO / SO         - "returnHistoryLengthInsteadOfOcclusion = false" ( REBLUR only )
+    diff.w = diffSg.normHitDist;
+    spec.w = specSg.normHitDist;
+#endif
 ```
 
 </details>
+
+## INTERACTION WITH FRAME GENERATION
+
+Frame generation (FG) techniques boost FPS by interpolating between 2 last available frames. *NRD* works better when frame rate increases, because it gets more data per second. It's not the case for FG, because all rendering pipeline underlying passes (like, denoising) continue to work on the original non-boosted framerate. `GetMaxAccumulatedFrameNum` helper should get a real FPS, not a fake one.
 
 ## HISTORY CONFIDENCE
 
@@ -693,10 +742,6 @@ directHitDistContribution = min( directHitDistContribution, maxContribution ); /
 float hitDist = lerp( indirectDiffuseHitDist, directDiffuseHitDist, directHitDistContribution );
 ```
 
-## INTERACTION WITH FRAME GENERATION TECHNIQUES
-
-Frame generation (FG) techniques boost FPS by interpolating between 2 last available frames. *NRD* works better when frame rate increases, because it gets more data per second. It's not the case for FG, because all rendering pipeline underlying passes (like, denoising) continue to work on the original non-boosted framerate. `GetMaxAccumulatedFrameNum` helper should get a real FPS, not a fake one.
-
 ## OTHER
 
 **[NRD]** All denoising and path-tracing best practices are in *NRD sample*.
@@ -705,7 +750,7 @@ Frame generation (FG) techniques boost FPS by interpolating between 2 last avail
 
 **[NRD]** Read all comments in `NRDDescs.h`, `NRDSettings.h` and `NRD.hlsli`.
 
-**[NRD]** The *NRD API* has been designed to support integration into native *Vulkan* apps. If the RHI you work with is D3D11-like, not all provided data will be needed. `NRDIntegration.hpp` can be used as a guide demonstrating how to map *NRD API* to a *Vulkan*-like RHI.
+**[NRD]** The *NRD API* has been designed to support integration into native *Vulkan* apps. If the RHI you work with is D3D11-like, not all provided data will be needed. [NRDIntegration.hpp](https://github.com/NVIDIA-RTX/NRD/blob/master/Integration/NRDIntegration.hpp) can be used as a guide demonstrating how to map *NRD API* to a *Vulkan*-like RHI.
 
 **[NRD]** *NRD* requires linear roughness and world-space normals. See `NRD.hlsli` for more details and supported customizations.
 
@@ -779,7 +824,7 @@ maxAccumulatedFrameNum > maxFastAccumulatedFrameNum > historyFixFrameNum
 
 **[RELAX]** *RELAX* works well with signals produced by *RTXDI* or very clean high RPP signals. The Sweet Home of *RELAX* is *RTXDI* sample.
 
-**[SIGMA]** Using "blue" noise helps to minimize shadow shimmering and flickering. It works best if the pattern has limited number of animated frames (4-8) or it is static on the screen.
+**[SIGMA]** Using "blue" noise helps to minimize shadow shimmering and flickering. It works best if the pattern has a limited number of animated frames (4-8) or it is static on the screen.
 
 **[SIGMA]** *SIGMA* can be used for multi-light shadow denoising if applied "per light". `maxStabilizedFrameNum` can be set to `0` to disable temporal history. It provides the following benefits:
  - light count independent memory usage
