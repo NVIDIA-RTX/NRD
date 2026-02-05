@@ -6,7 +6,7 @@
 
 # OVERVIEW
 
-*NVIDIA Real-Time Denoisers (NRD)* is a real-time spatio-temporal API agnostic denoising library. The library has been designed to work with low ray per pixel (rpp) signals and handle static and dynamic lighting. *NRD* is not for volumetrics or transparency, since it uses per-pixel guides for opaque surfaces: normal, roughness, viewZ, motion vector.
+*NVIDIA Real-Time Denoisers (NRD)* is an API-agnostic, spatio-temporal library designed for high-quality denoising of low ray-per-pixel (RPP) signals. Engineered to handle both static and dynamic lighting, *NRD* utilizes per-pixel G-buffer guides (normal, roughness, viewZ and motion vectors) to resolve noise on opaque surfaces. While NRD is not natively designed for volumetrics or transparency, the *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample/simplex)* demonstrates a robust "denoising-free" glass rendering path. This approach combines *[SHARC](https://github.com/NVIDIA-RTX/SHARC)*, clever reprojection of the currently denoised frame and dithering to deliver high-fidelity results via TAA or upscaling.
 
 *NRD* includes the following denoisers:
 - *REBLUR* - recurrent blur based denoiser
