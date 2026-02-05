@@ -458,7 +458,7 @@ Commons inputs for primary hits (if *PSR* is not used, common use case) or for s
 
 * **IN\_DIFF/SPEC\_CONFIDENCE** - confidence in the accumulated history represented in `[0; 1]` range
 
-  These inputs are optional and are used only if `CommonSettings::isHistoryConfidenceAvailable = true`. *REBLUR* and *RELAX* have embedded anti-lag techniques, but if properly computed, using confidence inputs is the best way to mitigate temporal lags. They are easy and cheap to compute. See this [section](#history-confidence) for more details.
+  These inputs are optional and are used only if `CommonSettings::isHistoryConfidenceAvailable = true`. *REBLUR* and *RELAX* have embedded anti-lag techniques, but if properly computed, using confidence inputs is the best way to mitigate temporal lags. They are easy and cheap to compute. Moreover, separation into diffuse and specular confidence is not mandatory. Same "lighting" confidence may be used for both inputs. See this [section](#history-confidence) for more details.
 
 The illustration below shows expected inputs for a primary hit `A`:
 
