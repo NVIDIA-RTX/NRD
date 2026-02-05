@@ -24,12 +24,16 @@ Supported signal types:
   - Shadows from an infinite light source (sun, moon) or a local light source (omni, spot)
   - Shadows with translucency
 
-Performance on RTX 4080 @ 1440p (native resolution, default denoiser settings, `NormalEncoding::R10_G10_B10_A2_UNORM`):
-- *REBLUR_DIFFUSE_SPECULAR* - 2.25 ms (3.10 ms in "SH" mode, 2.00 ms in performance mode)
-- *RELAX_DIFFUSE_SPECULAR* - 3.00 ms (4.90 ms in "SH" mode)
+Performance on RTX 4080 @ 1440p (native) with the following settings - default denoiser settings, `NormalEncoding::R10_G10_B10_A2_UNORM`, `HitDistanceReconstructionMode::AREA_3X3` (common for probabilistic lobe selection at the primary/PSR hit):
+- *REBLUR_DIFFUSE_SPECULAR* - 2.55 ms (3.55 ms in "SH" mode)
+  - `enableAntifirefly = true` - +0-2% overhead
+- *RELAX_DIFFUSE_SPECULAR* - 3.15 ms (5.05 ms in "SH" mode)
+  - `enableAntifirefly = true` - +7-10% overhead
 - *SIGMA_SHADOW* - 0.40 ms
 - *SIGMA_SHADOW_TRANSLUCENCY* - 0.45 ms
-- memory usage [table](#memory-usage)
+
+Memory usage:
+- see [table](#memory-usage)
 
 *NRD* is distributed as a source as well with a “ready-to-use” library (if used in a precompiled form). It can be integrated into any *D3D12*, *Vulkan* or *D3D11* engine using two variants:
 1. Integration via *NRI*-based [NRDIntegration](#integration) layer. In this case, the engine should expose native *GAPI* pointers for certain types of objects. The integration layer is provided as a part of SDK
@@ -554,8 +558,8 @@ where:
     Denoising( diffuseRadiance * albedo ) → NRD( diffuseRadiance / albedo ) * albedo
 
     // Specular
-    float3 preintegratedBRDF = PreintegratedBRDF( Rf0, N, V, roughness )
-    Denoising( specularRadiance * BRDF ) → NRD( specularRadiance * BRDF / preintegratedBRDF ) * preintegratedBRDF
+    float3 envBRDF = PreintegratedBRDF( Rf0, N, V, roughness )
+    Denoising( specularRadiance * BRDF ) → NRD( specularRadiance * BRDF / envBRDF ) * envBRDF
 
 Use `NRD.hlsli/NRD_MaterialFactors` helper to compute material demodulation factors.
 
