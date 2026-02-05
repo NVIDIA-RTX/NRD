@@ -96,8 +96,7 @@ SDK packaging:
 - Run `3-PrepareSDK`
 - Grab generated in the root directory `_NRD_SDK` and `_NRI_SDK` (if needed) folders and use them in your project
 
-## HOW TO UPDATE?
-
+Updating:
 - Clone latest
 - Run `4-Clean`
 - Run `1-Deploy`
