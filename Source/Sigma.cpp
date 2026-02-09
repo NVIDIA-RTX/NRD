@@ -10,7 +10,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "InstanceImpl.h"
 
-#include "../Shaders/Include/SIGMA_Config.hlsli"
+#include "../Shaders/SIGMA_Config.hlsli"
 #include "../Shaders/SIGMA_Blur.resources.hlsli"
 #include "../Shaders/SIGMA_ClassifyTiles.resources.hlsli"
 #include "../Shaders/SIGMA_Copy.resources.hlsli"

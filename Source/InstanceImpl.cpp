@@ -8,8 +8,6 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-#include "../Shaders/Include/NRD.hlsli"
-
 #include "InstanceImpl.h"
 
 constexpr std::array<nrd::Sampler, (size_t)nrd::Sampler::MAX_NUM> g_Samplers = {

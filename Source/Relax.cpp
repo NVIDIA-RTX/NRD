@@ -10,7 +10,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "InstanceImpl.h"
 
-#include "../Shaders/Include/RELAX_Config.hlsli"
+#include "../Shaders/RELAX_Config.hlsli"
 #include "../Shaders/RELAX_AntiFirefly.resources.hlsli"
 #include "../Shaders/RELAX_Atrous.resources.hlsli"
 #include "../Shaders/RELAX_AtrousSmem.resources.hlsli"

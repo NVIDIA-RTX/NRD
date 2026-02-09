@@ -1,4 +1,4 @@
-# NVIDIA REAL-TIME DENOISERS (NRD) v4.17.0
+# NVIDIA REAL-TIME DENOISERS (NRD) v4.17.1
 
 [![Build NRD SDK](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml/badge.svg)](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml)
 
@@ -47,7 +47,7 @@ NRD is easy to use:
   - understand [inputs](#inputs)
   - set inputs and outputs via `ResourceSnapshot` (see [example](https://github.com/NVIDIA-RTX/NRD-Sample/blob/f5a574e6eb630f48b89437a224dede75beed4dcb/Source/NRDSample.cpp#L417))
   - on each frame call `NewFrame`, `SetCommonSettings`, `SetDenoiserSettings` and `Denoise`
-- SHADER code - use [NRD.hlsli](https://github.com/NVIDIA-RTX/NRD/blob/master/Shaders/Include/NRD.hlsli)
+- SHADER code - use [NRD.hlsli](https://github.com/NVIDIA-RTX/NRD/blob/master/Shaders/NRD.hlsli)
   - use `NRD_FrontEnd_Spec*` and `NRD_FrontEnd_TrimHitDistance` helpers in your path tracer (see [example](#integration))
   - use `[RELAX/REBLUR/SIGMA]_FrontEnd_Pack*` and `REBLUR_FrontEnd_GetNormHitDist` functions in the shader code to pack data for [noisy inputs](#noisy-inputs)
     - use `NRD_MaterialFactors` to convert noisy irradiance into radiance before "packing" data (remove materials)

@@ -10,7 +10,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "InstanceImpl.h"
 
-#include "../Shaders/Include/REBLUR_Config.hlsli"
+#include "../Shaders/REBLUR_Config.hlsli"
 #include "../Shaders/REBLUR_Blur.resources.hlsli"
 #include "../Shaders/REBLUR_ClassifyTiles.resources.hlsli"
 #include "../Shaders/REBLUR_HistoryFix.resources.hlsli"

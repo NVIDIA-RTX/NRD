@@ -74,7 +74,7 @@ to_int_bool(BASECOLOR_METALNESS_INT NRD_SUPPORTS_BASECOLOR_METALNESS)
 to_int_bool(ANTIFIREFLY_INT NRD_SUPPORTS_ANTIFIREFLY)
 to_int_bool(REBLUR_PERFORMANCE_MODE_INT REBLUR_PERFORMANCE_MODE)
 
-file(WRITE "Shaders/Include/NRDConfig.hlsli"
+file(WRITE "Shaders/NRDConfig.hlsli"
     "// This file is auto-generated during project deployment. Do not modify!\n"
     "#define NRD_NORMAL_ENCODING ${NRD_NORMAL_ENCODING}\n"
     "#define NRD_ROUGHNESS_ENCODING ${NRD_ROUGHNESS_ENCODING}\n"
@@ -347,7 +347,6 @@ set(SHADERMAKE_GENERAL_ARGS
     -c "Shaders/Shaders.cfg"
     -o "${NRD_SHADERS_PATH}"
     -I "${ML_SOURCE_DIR}"
-    -I "Shaders/Include"
     -D NRD_INTERNAL
 )
 
