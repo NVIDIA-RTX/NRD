@@ -26,12 +26,16 @@ void Preload( uint2 sharedPos, int2 globalPos )
 {
     globalPos = clamp( globalPos, 0, gRectSizeMinusOne );
 
+    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( globalPos ) ] );
+
     #if( NRD_DIFF )
-        s_DiffLuma[ sharedPos.y ][ sharedPos.x ] = gIn_DiffFast[ globalPos ];
+        float diffFast = gIn_DiffFast[ globalPos ];
+        s_DiffLuma[ sharedPos.y ][ sharedPos.x ] = viewZ > gDenoisingRange ? REBLUR_INVALID : diffFast;
     #endif
 
     #if( NRD_SPEC )
-        s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = gIn_SpecFast[ globalPos ];
+        float specFast = gIn_SpecFast[ globalPos ];
+        s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = viewZ > gDenoisingRange ? REBLUR_INVALID : specFast;
     #endif
 
     // TODO: this is needed only for 1-pixel border, but adding a conditional will break texture batching. Only a minor/zero gain expected...
@@ -214,9 +218,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         // Local variance
-        float diffCenter = 0;
-        float diffM1 = 0;
-        float diffM2 = 0;
+        float diffCenter = s_DiffLuma[ smemPos.y ][ smemPos.x ];
+        float diffM1 = diffCenter;
+        float diffM2 = diffCenter * diffCenter;
         float diffSpecialM1 = 0;
         float diffSpecialM2 = 0;
 
@@ -226,12 +230,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             [unroll]
             for( i = -NRD_BORDER; i <= NRD_BORDER; i++ )
             {
-                int2 pos = smemPos + int2( i, j );
-                float d = s_DiffLuma[ pos.y ][ pos.x ];
-
-                // Center
                 if( i == 0 && j == 0 )
-                    diffCenter = d;
+                    continue;
+
+                int2 pos = smemPos + int2( i, j );
+
+                float d = s_DiffLuma[ pos.y ][ pos.x ];
+                d = d == REBLUR_INVALID ? diffCenter : d;
 
                 // Variance in 5x5 for fast history
                 if( abs( i ) <= REBLUR_FAST_HISTORY_CLAMPING_RADIUS && abs( j ) <= REBLUR_FAST_HISTORY_CLAMPING_RADIUS )
@@ -417,9 +422,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         // Local variance
-        float specCenter = 0;
-        float specM1 = 0;
-        float specM2 = 0;
+        float specCenter = s_SpecLuma[ smemPos.y ][ smemPos.x ];
+        float specM1 = specCenter;
+        float specM2 = specCenter * specCenter;
         float specSpecialM1 = 0;
         float specSpecialM2 = 0;
 
@@ -429,15 +434,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             [unroll]
             for( i = -NRD_BORDER; i <= NRD_BORDER; i++ )
             {
-                int2 pos = smemPos + int2( i, j );
-                float s = s_SpecLuma[ pos.y ][ pos.x ];
-
-                // Center
                 if( i == 0 && j == 0 )
-                    specCenter = s;
+                    continue;
+
+                int2 pos = smemPos + int2( i, j );
+
+                float s = s_SpecLuma[ pos.y ][ pos.x ];
+                s = s == REBLUR_INVALID ? specCenter : s;
 
                 // Variance in 5x5 for fast history
-                if( abs( i ) <= 2 && abs( j ) <= 2 )
+                if( abs( i ) <= REBLUR_FAST_HISTORY_CLAMPING_RADIUS && abs( j ) <= REBLUR_FAST_HISTORY_CLAMPING_RADIUS )
                 {
                     specM1 += s;
                     specM2 += s * s;

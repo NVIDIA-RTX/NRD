@@ -25,12 +25,16 @@ void Preload( uint2 sharedPos, int2 globalPos )
 {
     globalPos = clamp( globalPos, 0, gRectSizeMinusOne );
 
+    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( globalPos ) ] );
+
     #if( NRD_DIFF )
-        s_DiffLuma[ sharedPos.y ][ sharedPos.x ] = GetLuma( gIn_Diff[ globalPos ] );
+        float diffLuma = GetLuma( gIn_Diff[ globalPos ] );
+        s_DiffLuma[ sharedPos.y ][ sharedPos.x ] = viewZ > gDenoisingRange ? REBLUR_INVALID : diffLuma;
     #endif
 
     #if( NRD_SPEC )
-        s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = GetLuma( gIn_Spec[ globalPos ] );
+        float specLuma = GetLuma( gIn_Spec[ globalPos ] );
+        s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = viewZ > gDenoisingRange ? REBLUR_INVALID : specLuma;
     #endif
 }
 
@@ -120,6 +124,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                 // Accumulate moments
                 float d = s_DiffLuma[ pos.y ][ pos.x ];
+                d = d == REBLUR_INVALID ? diffLuma : d;
+
                 diffLumaM1 += d;
                 diffLumaM2 += d * d;
             }
@@ -202,6 +208,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                 // Accumulate moments
                 float s = s_SpecLuma[ pos.y ][ pos.x ];
+                s = s == REBLUR_INVALID ? specLuma : s;
+
                 specLumaM1 += s;
                 specLumaM2 += s * s;
             }

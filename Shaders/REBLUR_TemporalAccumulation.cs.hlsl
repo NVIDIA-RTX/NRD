@@ -57,7 +57,9 @@ void Preload( uint2 sharedPos, int2 globalPos )
             float hitDist = gSpecPrepassBlurRadius == 0.0 ? ExtractHitDist( spec ) : gIn_SpecHitDistForTracking[ globalPos ];
         #endif
 
-        s_HitDistForTracking[ sharedPos.y ][ sharedPos.x ] = hitDist == 0.0 ? NRD_INF : hitDist;
+        float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( globalPos ) ] );
+
+        s_HitDistForTracking[ sharedPos.y ][ sharedPos.x ] = ( hitDist == 0.0 || viewZ > gDenoisingRange ) ? NRD_INF : hitDist; // for "min"
     #endif
 }
 
