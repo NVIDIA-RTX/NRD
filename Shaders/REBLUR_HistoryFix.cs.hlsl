@@ -20,7 +20,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 groupshared float s_DiffLuma[ BUFFER_Y ][ BUFFER_X ];
 groupshared float s_SpecLuma[ BUFFER_Y ][ BUFFER_X ];
-groupshared float2 s_FrameNum[ BUFFER_Y ][ BUFFER_X ];
 
 void Preload( uint2 sharedPos, int2 globalPos )
 {
@@ -37,9 +36,6 @@ void Preload( uint2 sharedPos, int2 globalPos )
         float specFast = gIn_SpecFast[ globalPos ];
         s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = viewZ > gDenoisingRange ? REBLUR_INVALID : specFast;
     #endif
-
-    // TODO: this is needed only for 1-pixel border, but adding a conditional will break texture batching. Only a minor/zero gain expected...
-    s_FrameNum[ sharedPos.y ][ sharedPos.x ] = UnpackData1( gIn_Data1[ globalPos ] );
 }
 
 // Tests 20, 23, 24, 27, 28, 54, 59, 65, 66, 76, 81, 98, 112, 117, 124, 126, 128, 134
@@ -77,33 +73,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float NoV = abs( dot( Nv, Vv ) );
 
     int2 smemPos = threadPos + NRD_BORDER;
-    float2 frameNum = s_FrameNum[ smemPos.y ][ smemPos.x ];
 
+    float2 frameNum = UnpackData1( gIn_Data1[ pixelPos ] );
     float invHistoryFixFrameNum = 1.0 / max( gHistoryFixFrameNum, NRD_EPS );
     float2 frameNumAvgNorm = saturate( frameNum * invHistoryFixFrameNum );
 
-    // Use smaller strides if neighborhood pixels have longer history to minimize chances of ruining contact details
-    float baseStride = materialID == gHistoryFixAlternatePixelStrideMaterialID ? gHistoryFixAlternatePixelStride : gHistoryFixBasePixelStride;
-    baseStride /= 1.0 + 1.0; // to match RELAX, where "frameNum" after "TemporalAccumulation" is "1", not "0"
-
-    float2 stride = 1.0;
-
-    [unroll]
-    for( i = -1; i <= 1; i++ )
-    {
-        [unroll]
-        for( j = -1; j <= 1; j++ )
-        {
-            if( i == 0 && j == 0 )
-                continue;
-
-            float2 f = s_FrameNum[ smemPos.y + j ][ smemPos.x + i ];
-
-            stride -= saturate( ( f - frameNum ) * invHistoryFixFrameNum ) / 9.0;
-        }
-    }
-
-    stride = lerp( 1.0, baseStride, stride );
+    float2 stride = materialID == gHistoryFixAlternatePixelStrideMaterialID ? gHistoryFixAlternatePixelStride : gHistoryFixBasePixelStride;
+    stride /= 1.0 + 1.0; // to match RELAX, where "frameNum" after "TemporalAccumulation" is "1", not "0"
     stride *= 2.0 / REBLUR_HISTORY_FIX_FILTER_RADIUS; // preserve blur radius in pixels ( default blur radius is 2 taps )
     stride *= float2( frameNum < gHistoryFixFrameNum );
 
@@ -125,6 +101,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Stride between taps
         float diffStride = stride.x;
         diffStride *= lerp( 0.25 + 0.75 * Math::Sqrt01( hitDistFactor ), 1.0, diffNonLinearAccumSpeed ); // "hitDistFactor" is very noisy and breaks nice patterns
+        #ifdef NRD_COMPILER_DXC
+            // Adapt to neighbors if they are more stable
+            float d10 = QuadReadAcrossX( diffStride );
+            float d01 = QuadReadAcrossY( diffStride );
+
+            float avg = ( d10 + d01 + diffStride ) / 3.0;
+            diffStride = min( diffStride, avg );
+        #endif
         diffStride = round( diffStride );
 
         // History reconstruction
@@ -327,6 +311,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float specStride = stride.y;
         specStride *= lerp( 0.25 + 0.75 * Math::Sqrt01( hitDistFactor ), 1.0, specNonLinearAccumSpeed ); // "hitDistFactor" is very noisy and breaks nice patterns
         specStride *= lerp( 0.25, 1.0, smc ); // hand tuned // TODO: use "lobeRadius"?
+        #ifdef NRD_COMPILER_DXC
+            // Adapt to neighbors if they are more stable
+            float d10 = QuadReadAcrossX( specStride );
+            float d01 = QuadReadAcrossY( specStride );
+
+            float avg = ( d10 + d01 + specStride ) / 3.0;
+            specStride = min( specStride, avg );
+        #endif
         specStride = round( specStride );
 
         // History reconstruction

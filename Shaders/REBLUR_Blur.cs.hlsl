@@ -42,6 +42,17 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Shared data
     REBLUR_DATA1_TYPE data1 = UnpackData1( gIn_Data1[ pixelPos ] );
+    data1.x = GetAdvancedNonLinearAccumSpeed( data1.x );
+    data1.y = GetAdvancedNonLinearAccumSpeed( data1.y );
+
+    #ifdef NRD_COMPILER_DXC
+        // Adapt to neighbors if they are more stable
+        REBLUR_DATA1_TYPE d10 = QuadReadAcrossX( data1 );
+        REBLUR_DATA1_TYPE d01 = QuadReadAcrossY( data1 );
+
+        REBLUR_DATA1_TYPE avg = ( d10 + d01 + data1 ) / 3.0;
+        data1 = min( data1, avg );
+    #endif
 
     float2 pixelUv = float2( pixelPos + 0.5 ) * gRectSizeInv;
     float3 Xv = Geometry::ReconstructViewPosition( pixelUv, gFrustum, viewZ, gOrthoMode );

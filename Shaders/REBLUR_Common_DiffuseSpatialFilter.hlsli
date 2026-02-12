@@ -48,7 +48,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float blurRadius = gDiffPrepassBlurRadius;
         float areaFactor = hitDistFactor;
     #else
-        float diffNonLinearAccumSpeed = GetAdvancedNonLinearAccumSpeed( data1.x );
+        float diffNonLinearAccumSpeed = data1.x;
 
         float blurRadius = gMaxBlurRadius;
         float areaFactor = hitDistFactor * diffNonLinearAccumSpeed;
