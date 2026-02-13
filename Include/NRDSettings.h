@@ -244,7 +244,7 @@ namespace nrd
     {
         // REBLUR uses "f = 1 / (1 + k * N)" formula, where "N" is the number of accumulated frames, to drive denoising process. Smaller "f" mean "higher convergence, higher confidence"
         // Before v4.17:
-        //  - "k = 1" was implicitly assumed 
+        //  - "k = 1" was implicitly assumed
         // Starting from v4.17:
         //  - k = s * lerp( b, 1, saturate( N / ( 1 + f * maxAccumulatedFrameNum ) ) )
         //  - b < 1 - allows to "do more" denoising after a history reset (a blurry result is better on average than a dirty result)
