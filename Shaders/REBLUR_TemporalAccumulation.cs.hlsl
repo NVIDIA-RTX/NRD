@@ -963,7 +963,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         if( !diffHasData )
             diffFastNonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, diffFastNonLinearAccumSpeed );
 
-        float diffFastResult = lerp( smbDiffFastHistory.x, GetLuma( diff ), diffFastNonLinearAccumSpeed );
+        float diffFastResult = lerp( smbDiffFastHistory, GetLuma( diff ), diffFastNonLinearAccumSpeed );
+
         #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
             // Firefly suppressor ( fixes heavy crawling under camera rotation, test 99 )
             float diffFastClamped = min( diffFastResult, GetLuma( smbDiffHistory ) * diffMaxRelativeIntensity * REBLUR_FIREFLY_SUPPRESSOR_FAST_RELATIVE_INTENSITY );
