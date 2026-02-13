@@ -156,6 +156,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Compute antilag
         float diffAntilag = ComputeAntilag( smbDiffLumaHistory, diffLumaM1, diffLumaSigma, smbFootprintQuality * data1.x );
 
+        float diffMinAccumSpeed = min( data1.x, gHistoryFixFrameNum ) * REBLUR_USE_ANTILAG_NOT_INVOKING_HISTORY_FIX;
+        data1.x = lerp( diffMinAccumSpeed, data1.x, diffAntilag );
+
         // Clamp history and combine with the current frame
         float2 diffTemporalAccumulationParams = GetTemporalAccumulationParams( smbFootprintQuality, data1.x );
 
@@ -183,10 +186,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #if( NRD_MODE == SH )
             gOut_DiffSh[ pixelPos ] = diffSh;
         #endif
-
-        // Apply anti-lag
-        float diffMinAccumSpeed = min( data1.x, gHistoryFixFrameNum ) * REBLUR_USE_ANTILAG_NOT_INVOKING_HISTORY_FIX;
-        data1.x = lerp( diffMinAccumSpeed, data1.x, diffAntilag );
     #endif
 
     // Specular
@@ -320,6 +319,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float footprintQuality = lerp( smbFootprintQuality, vmbFootprintQuality, virtualHistoryAmount );
         float specAntilag = ComputeAntilag( specLumaHistory, specLumaM1, specLumaSigma, footprintQuality * data1.y );
 
+        float specMinAccumSpeed = min( data1.y, gHistoryFixFrameNum ) * REBLUR_USE_ANTILAG_NOT_INVOKING_HISTORY_FIX;
+        data1.y = lerp( specMinAccumSpeed, data1.y, specAntilag );
+
         // Clamp history and combine with the current frame
         float2 specTemporalAccumulationParams = GetTemporalAccumulationParams( footprintQuality, data1.y );
 
@@ -358,10 +360,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #if( NRD_MODE == SH )
             gOut_SpecSh[ pixelPos ] = specSh;
         #endif
-
-        // Apply anti-lag
-        float specMinAccumSpeed = min( data1.y, gHistoryFixFrameNum ) * REBLUR_USE_ANTILAG_NOT_INVOKING_HISTORY_FIX;
-        data1.y = lerp( specMinAccumSpeed, data1.y, specAntilag );
     #endif
 
     gOut_InternalData[ pixelPos ] = PackInternalData( data1.x, data1.y, materialID );
