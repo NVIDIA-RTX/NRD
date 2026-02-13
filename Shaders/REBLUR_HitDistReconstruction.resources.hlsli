@@ -46,12 +46,16 @@ NRD_OUTPUTS_END
 #define REBLUR_HitDistReconstructionGroupX 8
 #define REBLUR_HitDistReconstructionGroupY 16
 
+// Shader only
+#ifndef __cplusplus
+
 #if( MODE_5X5 == 1 )
     #define NRD_BORDER 2
+#else
+    #define NRD_BORDER 1
 #endif
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
 #define GROUP_X REBLUR_HitDistReconstructionGroupX
 #define GROUP_Y REBLUR_HitDistReconstructionGroupY
+
+#endif

@@ -69,8 +69,10 @@ NRD_OUTPUTS_END
 #define REBLUR_PrePassGroupX 16
 #define REBLUR_PrePassGroupY 16
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
+// Shader only
+#ifndef __cplusplus
+
 #define GROUP_X REBLUR_PrePassGroupX
 #define GROUP_Y REBLUR_PrePassGroupY
+
+#endif

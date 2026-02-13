@@ -24,8 +24,10 @@ NRD_OUTPUTS_END
 #define RELAX_ClassifyTilesGroupX 16
 #define RELAX_ClassifyTilesGroupY 16
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
+// Shader only
+#ifndef __cplusplus
+
 #define GROUP_X RELAX_ClassifyTilesGroupX
 #define GROUP_Y RELAX_ClassifyTilesGroupY
+
+#endif

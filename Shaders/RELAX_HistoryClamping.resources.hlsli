@@ -87,11 +87,12 @@ NRD_OUTPUTS_END
 #define RELAX_HistoryClampingGroupX 8
 #define RELAX_HistoryClampingGroupY 8
 
+// Shader only
+#ifndef __cplusplus
+
 #define NRD_BORDER 2
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
 #define GROUP_X RELAX_HistoryClampingGroupX
 #define GROUP_Y RELAX_HistoryClampingGroupY
 
+#endif

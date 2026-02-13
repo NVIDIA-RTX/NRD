@@ -98,8 +98,10 @@ NRD_OUTPUTS_END
 #define REBLUR_PostBlurGroupX 8
 #define REBLUR_PostBlurGroupY 16
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
+// Shader only
+#ifndef __cplusplus
+
 #define GROUP_X REBLUR_PostBlurGroupX
 #define GROUP_Y REBLUR_PostBlurGroupY
+
+#endif

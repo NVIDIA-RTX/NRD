@@ -125,12 +125,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     const int2 pixelPos = _pixelPos
 
 // Preloading in SMEM
-#ifndef NRD_BORDER
-    #define NRD_BORDER                                          1 // TODO: should be 0, but all shaders using SMEM use 1- or 2- pixel wide border
-#endif
-
-#define BUFFER_X                                                ( GROUP_X + NRD_BORDER * 2 )
-#define BUFFER_Y                                                ( GROUP_Y + NRD_BORDER * 2 )
+#define BUFFER_X ( GROUP_X + NRD_BORDER * 2 )
+#define BUFFER_Y ( GROUP_Y + NRD_BORDER * 2 )
 
 #define PRELOAD_INTO_SMEM_WITH_TILE_CHECK \
     isSky *= NRD_USE_TILE_CHECK; \
