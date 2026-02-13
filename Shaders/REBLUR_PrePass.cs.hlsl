@@ -33,14 +33,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if( viewZ > gDenoisingRange )
         return;
 
-    // Normal and roughness
+    // Center data
     float materialID;
     float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( pixelPos ) ], materialID );
     float3 N = normalAndRoughness.xyz;
     float3 Nv = Geometry::RotateVectorInverse( gViewToWorld, N );
     float roughness = normalAndRoughness.w;
 
-    // Shared data
     float2 pixelUv = float2( pixelPos + 0.5 ) * gRectSizeInv;
     float3 Xv = Geometry::ReconstructViewPosition( pixelUv, gFrustum, viewZ, gOrthoMode );
 
@@ -66,6 +65,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     wc *= Math::PositiveRcp( wc.x + wc.y );
     checkerboardPos.xy >>= 1;
 #endif
+
+    // Non-linear accum speed
+    float2 nonLinearAccumSpeed = REBLUR_PRE_BLUR_NON_LINEAR_ACCUM_SPEED;
 
     // Spatial filtering
     #define REBLUR_SPATIAL_MODE REBLUR_PRE_BLUR

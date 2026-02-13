@@ -27,9 +27,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     if( gSpecPrepassBlurRadius != 0.0 )
     {
         Rng::Hash::Initialize( pixelPos, gFrameIndex );
-
-        float specNonLinearAccumSpeed = REBLUR_PRE_BLUR_NON_LINEAR_ACCUM_SPEED;
 #endif
+        float specNonLinearAccumSpeed = nonLinearAccumSpeed.y;
 
         float fractionScale = 1.0;
         float radiusScale = 1.0;
@@ -56,8 +55,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float blurRadius = gSpecPrepassBlurRadius;
         float areaFactor = roughness * hitDistFactor;
     #else
-        float specNonLinearAccumSpeed = data1.y;
-
         float blurRadius = gMaxBlurRadius;
         float areaFactor = roughness * hitDistFactor * specNonLinearAccumSpeed;
     #endif

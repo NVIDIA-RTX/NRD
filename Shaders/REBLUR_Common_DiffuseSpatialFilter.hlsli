@@ -24,8 +24,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #if( REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
     if( gDiffPrepassBlurRadius != 0.0 )
     {
-        float diffNonLinearAccumSpeed = REBLUR_PRE_BLUR_NON_LINEAR_ACCUM_SPEED;
 #endif
+        float diffNonLinearAccumSpeed = nonLinearAccumSpeed.x;
 
         float fractionScale = 1.0;
         float radiusScale = 1.0;
@@ -48,8 +48,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float blurRadius = gDiffPrepassBlurRadius;
         float areaFactor = hitDistFactor;
     #else
-        float diffNonLinearAccumSpeed = data1.x;
-
         float blurRadius = gMaxBlurRadius;
         float areaFactor = hitDistFactor * diffNonLinearAccumSpeed;
     #endif
