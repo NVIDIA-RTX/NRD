@@ -684,6 +684,7 @@ void Integration::DenoiseVK(const Identifier* denoisers, uint32_t denoisersNum, 
         textureDesc.vkImage = resource.vk.image;
         textureDesc.vkFormat = resource.vk.format;
         textureDesc.vkImageType = 1; // VK_IMAGE_TYPE_2D
+        textureDesc.vkImageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         textureDesc.width = m_Desc.resourceWidth;
         textureDesc.height = m_Desc.resourceHeight;
         textureDesc.depth = 1;
