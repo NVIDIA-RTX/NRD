@@ -240,11 +240,9 @@ float GetLumaScale( float currLuma, float newLuma )
 
 #endif
 
-float ComputeAntilag( float history, float avg, float sigma, float accumSpeed )
+float ComputeAntilag( float h, float a, float sigma, float accumSpeed )
 {
     // Tests 4, 36, 44, 47, 95 ( no SHARC, stop animation )
-    float h = history;
-    float a = avg;
     float s = sigma * gAntilagSettings.x;
     float magic = gAntilagSettings.y * gFramerateScale * gFramerateScale;
 
@@ -267,6 +265,15 @@ float ComputeAntilag( float history, float avg, float sigma, float accumSpeed )
         float d = abs( h - hc ) / ( max( h, hc ) + NRD_EPS );
 
         d = 1.0 / ( 1.0 + d * accumSpeed / magic );
+    #endif
+
+    #ifdef NRD_COMPILER_DXC
+        // Adapt to neighbors if they are more stable
+        float d10 = QuadReadAcrossX( d );
+        float d01 = QuadReadAcrossY( d );
+
+        float avg = ( d10 + d01 + d ) / 3.0;
+        d = max( d, avg );
     #endif
 
     return REBLUR_SHOW == 0 ? d : 1.0;
@@ -316,11 +323,12 @@ float GetAdvancedNonLinearAccumSpeed( float accumSpeed )
     return 1.0 / ( 1.0 + e * accumSpeed );
 }
 
-float2 GetTemporalAccumulationParams( float isInScreenMulFootprintQuality, float accumSpeed )
+float2 GetTemporalAccumulationParams( float isInScreenMulFootprintQuality, float accumSpeed, float antilag )
 {
     float w = isInScreenMulFootprintQuality;
     w *= 1.0 - GetAdvancedNonLinearAccumSpeed( accumSpeed );
     w *= float( REBLUR_SHOW == 0 );
+    w *= antilag;
 
     return float2( w, 1.0 + 3.0 * gFramerateScale * w );
 }

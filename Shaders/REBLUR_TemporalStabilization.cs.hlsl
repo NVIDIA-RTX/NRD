@@ -160,10 +160,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         data1.x = lerp( diffMinAccumSpeed, data1.x, diffAntilag );
 
         // Clamp history and combine with the current frame
-        float2 diffTemporalAccumulationParams = GetTemporalAccumulationParams( smbFootprintQuality, data1.x );
+        float2 diffTemporalAccumulationParams = GetTemporalAccumulationParams( smbFootprintQuality, data1.x, diffAntilag );
 
         float diffHistoryWeight = diffTemporalAccumulationParams.x;
-        diffHistoryWeight *= diffAntilag; // this is important
         diffHistoryWeight *= float( pixelUv.x >= gSplitScreen );
         diffHistoryWeight *= float( smbPixelUv.x >= gSplitScreenPrev );
 
@@ -323,13 +322,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         data1.y = lerp( specMinAccumSpeed, data1.y, specAntilag );
 
         // Clamp history and combine with the current frame
-        float2 specTemporalAccumulationParams = GetTemporalAccumulationParams( footprintQuality, data1.y );
+        float2 specTemporalAccumulationParams = GetTemporalAccumulationParams( footprintQuality, data1.y, specAntilag );
 
         // TODO: roughness should affect stabilization:
         // - use "virtualHistoryRoughnessBasedConfidence" from TA
         // - compute moments for samples with similar roughness
         float specHistoryWeight = specTemporalAccumulationParams.x;
-        specHistoryWeight *= specAntilag; // this is important
         specHistoryWeight *= float( pixelUv.x >= gSplitScreen );
         specHistoryWeight *= virtualHistoryAmount != 1.0 ? float( smbPixelUv.x >= gSplitScreenPrev ) : 1.0;
         specHistoryWeight *= virtualHistoryAmount != 0.0 ? float( vmbPixelUv.x >= gSplitScreenPrev ) : 1.0;

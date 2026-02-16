@@ -220,13 +220,14 @@ namespace nrd
         float D = -25.0f;
     };
 
+    // Use the validation layer output to ensure that under complicated lighting conditions "diff/spec frames" visualization stays in the "violet" zone
     struct ReblurAntilagSettings
     {
-        // [1; 5] - delta is reduced by local variance multiplied by this value
-        float luminanceSigmaScale = 4.0f; // can be 3.0 or even less if signal is good
+        // (> 0) - luminance gradient (delta) gets reduced by local variance multiplied by this value
+        float luminanceSigmaScale = 2.0f; // old default was 4.0
 
-        // [1; 5] - antilag sensitivity (smaller values increase sensitivity)
-        float luminanceSensitivity = 3.0f; // can be 2.0 or even less if signal is good
+        // (> 0) - sensitivity (smaller values increase sensitivity)
+        float luminanceSensitivity = 3.0f;
     };
 
     struct ReblurResponsiveAccumulationSettings
