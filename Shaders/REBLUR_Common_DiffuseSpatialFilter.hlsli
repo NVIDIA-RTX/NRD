@@ -69,7 +69,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
         // ( Optional ) Gradually reduce "minHitDistWeight" to preserve contact details
     #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && NRD_MODE != OCCLUSION )
-        minHitDistWeight *= sqrt( diffNonLinearAccumSpeed );
+        minHitDistWeight *= diffNonLinearAccumSpeed;
     #endif
 
         // Screen-space settings
@@ -153,7 +153,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             REBLUR_TYPE s = gIn_Diff[ int2( checkerboardX, pos.y ) ];
             s = Denanify( w, s );
 
-            w *= lerp( minHitDistWeight, 1.0, ComputeExponentialWeight( ExtractHitDist( s ), hitDistanceWeightParams.x, hitDistanceWeightParams.y ) );
+            w *= minHitDistWeight + ComputeExponentialWeight( ExtractHitDist( s ), hitDistanceWeightParams.x, hitDistanceWeightParams.y );
 
             // Accumulate
             sum += w;

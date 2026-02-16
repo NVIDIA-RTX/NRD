@@ -89,7 +89,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
         // ( Optional ) Gradually reduce "minHitDistWeight" to preserve contact details
     #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && NRD_MODE != OCCLUSION )
-        minHitDistWeight *= sqrt( specNonLinearAccumSpeed );
+        minHitDistWeight *= specNonLinearAccumSpeed;
     #endif
 
         // Screen-space settings
@@ -197,7 +197,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             w *= lerp( saturate( t ), 1.0, Math::LinearStep( 0.5, 1.0, roughness ) );
         #endif
 
-            w *= lerp( minHitDistWeight, 1.0, ComputeExponentialWeight( ExtractHitDist( s ), hitDistanceWeightParams.x, hitDistanceWeightParams.y ) );
+            w *= minHitDistWeight + ComputeExponentialWeight( ExtractHitDist( s ), hitDistanceWeightParams.x, hitDistanceWeightParams.y );
 
             // Accumulate
             sum += w;
