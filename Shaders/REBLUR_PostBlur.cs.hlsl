@@ -53,7 +53,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     REBLUR_DATA1_TYPE data1 = UnpackData1( gIn_Data1[ pixelPos ] );
 
     // Output
-    gOut_Normal_Roughness[ pixelPos ] = normalAndRoughnessPacked;
+    #if( REBLUR_COPY_GBUFFER == 1 )
+        gOut_Normal_Roughness[ pixelPos ] = normalAndRoughnessPacked;
+    #endif
+
     #if( TEMPORAL_STABILIZATION == 0 )
         gOut_InternalData[ pixelPos ] = PackInternalData( data1.x, data1.y, materialID );
     #endif

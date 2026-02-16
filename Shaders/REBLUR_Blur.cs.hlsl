@@ -25,7 +25,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Copy viewZ ( including sky! ) for the next pass and frame ( potentially lower precision )
     float viewZpacked = gIn_ViewZ[ WithRectOrigin( pixelPos ) ];
-    gOut_ViewZ[ pixelPos ] = viewZpacked;
+
+    #if( REBLUR_COPY_GBUFFER == 1 )
+        gOut_ViewZ[ pixelPos ] = viewZpacked;
+    #endif
 
     // Tile-based early out and viewZ-based early out
     float isSky = gIn_Tiles[ pixelPos >> 4 ].x;

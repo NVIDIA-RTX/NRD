@@ -13,6 +13,13 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #define REBLUR_PERFORMANCE_MODE                             0
 #endif
 
+// TODO: better add a generic CMake option, like:
+//      option(NRD_OWNS_PREV_GBUFFER "NRD copies and stores 'IN_VIEWZ' and 'IN_NORMAL_ROUGHNESS' for the next frame, otherwise previous data must be fed via 'IN_PREV_VIEWZ' and 'IN_PREV_NORMAL_ROUGHNESS' inputs" ON)
+// but currently the implementation would require a lot of changes in RELAX, so keep this one hidden and undocumented
+#ifndef REBLUR_COPY_GBUFFER
+    #define REBLUR_COPY_GBUFFER                                 1 // doesn't affect C++ code
+#endif
+
 // Switches ( default 1 )
 #define REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA              1
 #define REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TA              1
