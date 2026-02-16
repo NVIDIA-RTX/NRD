@@ -43,8 +43,10 @@ NRD_OUTPUTS_END
 #define RELAX_CopyGroupX 8
 #define RELAX_CopyGroupY 8
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
+// Shader only
+#ifndef __cplusplus
+
 #define GROUP_X RELAX_CopyGroupX
 #define GROUP_Y RELAX_CopyGroupY
+
+#endif

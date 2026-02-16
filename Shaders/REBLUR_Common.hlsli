@@ -122,20 +122,6 @@ float GetMinAllowedLimitForHitDistNonLinearAccumSpeed( float roughness )
     return 1.0 / ( 1.0 + frameNum );
 }
 
-float GetNonLinearAccumSpeed( float accumSpeed, float maxAccumSpeed, float confidence, bool hasData )
-{
-    #if( REBLUR_USE_CONFIDENCE_NON_LINEARLY == 1 )
-        float nonLinearAccumSpeed = max( 1.0 - confidence, 1.0 / ( 1.0 + min( accumSpeed, maxAccumSpeed ) ) );
-    #else
-        float nonLinearAccumSpeed = 1.0 / ( 1.0 + min( accumSpeed, maxAccumSpeed * confidence ) );
-    #endif
-
-    if( !hasData )
-        nonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, nonLinearAccumSpeed );
-
-    return nonLinearAccumSpeed;
-}
-
 float RemapRoughnessToResponsiveFactor( float roughness )
 {
     float amount = max( roughness, 1e-3 ) * gResponsiveAccumulationInvRoughnessThreshold;
@@ -307,6 +293,20 @@ float2x3 GetKernelBasis( float3 D, float3 N )
 
 // Weight parameters
 
+float GetNonLinearAccumSpeed( float accumSpeed, float maxAccumSpeed, float confidence, bool hasData )
+{
+    #if( REBLUR_USE_CONFIDENCE_NON_LINEARLY == 1 )
+        float nonLinearAccumSpeed = max( 1.0 - confidence, 1.0 / ( 1.0 + min( accumSpeed, maxAccumSpeed ) ) );
+    #else
+        float nonLinearAccumSpeed = 1.0 / ( 1.0 + min( accumSpeed, maxAccumSpeed * confidence ) );
+    #endif
+
+    if( !hasData )
+        nonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, nonLinearAccumSpeed );
+
+    return nonLinearAccumSpeed;
+}
+
 float GetAdvancedNonLinearAccumSpeed( float accumSpeed )
 {
     // Interactive sandbox: https://www.desmos.com/calculator/6h9ydbvm1y
@@ -314,11 +314,6 @@ float GetAdvancedNonLinearAccumSpeed( float accumSpeed )
     float e = gConvergenceSettings.x * lerp( gConvergenceSettings.y, 1.0, f );
 
     return 1.0 / ( 1.0 + e * accumSpeed );
-}
-
-float GetSimpleNonLinearAccumSpeed( float accumSpeed )
-{
-    return 1.0 / ( 1.0 + accumSpeed );
 }
 
 float2 GetTemporalAccumulationParams( float isInScreenMulFootprintQuality, float accumSpeed )

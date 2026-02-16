@@ -33,16 +33,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if( viewZ > gDenoisingRange )
         return; // IMPORTANT: no data output, must be rejected by the "viewZ" check!
 
-    // Normal and roughness
+    // Center data
     float materialID;
     float4 normalAndRoughnessPacked = gIn_Normal_Roughness[ WithRectOrigin( pixelPos ) ];
     float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( normalAndRoughnessPacked, materialID );
     float3 N = normalAndRoughness.xyz;
     float3 Nv = Geometry::RotateVectorInverse( gViewToWorld, N );
     float roughness = normalAndRoughness.w;
-
-    // Shared data
-    REBLUR_DATA1_TYPE data1 = UnpackData1( gIn_Data1[ pixelPos ] );
 
     float2 pixelUv = float2( pixelPos + 0.5 ) * gRectSizeInv;
     float3 Xv = Geometry::ReconstructViewPosition( pixelUv, gFrustum, viewZ, gOrthoMode );
@@ -53,10 +50,26 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     const float frustumSize = GetFrustumSize( gMinRectDimMulUnproject, gOrthoMode, viewZ );
     const float4 rotator = GetBlurKernelRotation( REBLUR_POST_BLUR_ROTATOR_MODE, pixelPos, gRotatorPost, gFrameIndex );
 
+    REBLUR_DATA1_TYPE data1 = UnpackData1( gIn_Data1[ pixelPos ] );
+
     // Output
     gOut_Normal_Roughness[ pixelPos ] = normalAndRoughnessPacked;
     #if( TEMPORAL_STABILIZATION == 0 )
         gOut_InternalData[ pixelPos ] = PackInternalData( data1.x, data1.y, materialID );
+    #endif
+
+    // Non-linear accum speed
+    float2 nonLinearAccumSpeed;
+    nonLinearAccumSpeed.x = GetAdvancedNonLinearAccumSpeed( data1.x );
+    nonLinearAccumSpeed.y = GetAdvancedNonLinearAccumSpeed( data1.y );
+
+    #ifdef NRD_COMPILER_DXC
+        // Adapt to neighbors if they are more stable
+        REBLUR_DATA1_TYPE d10 = QuadReadAcrossX( nonLinearAccumSpeed );
+        REBLUR_DATA1_TYPE d01 = QuadReadAcrossY( nonLinearAccumSpeed );
+
+        REBLUR_DATA1_TYPE avg = ( d10 + d01 + nonLinearAccumSpeed ) / 3.0;
+        nonLinearAccumSpeed = min( nonLinearAccumSpeed, avg );
     #endif
 
     // Spatial filtering

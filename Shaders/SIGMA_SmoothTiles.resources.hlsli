@@ -29,8 +29,12 @@ NRD_OUTPUTS_END
 #define SIGMA_SmoothTilesGroupX 16
 #define SIGMA_SmoothTilesGroupY 16
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
+// Shader only
+#ifndef __cplusplus
+
+#define NRD_BORDER 1
+
 #define GROUP_X SIGMA_SmoothTilesGroupX
 #define GROUP_Y SIGMA_SmoothTilesGroupY
+
+#endif

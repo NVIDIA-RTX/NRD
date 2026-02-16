@@ -107,8 +107,12 @@ NRD_OUTPUTS_END
 #define RELAX_TemporalAccumulationGroupX 8
 #define RELAX_TemporalAccumulationGroupY 16
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
+// Shader only
+#ifndef __cplusplus
+
+#define NRD_BORDER 1
+
 #define GROUP_X RELAX_TemporalAccumulationGroupX
 #define GROUP_Y RELAX_TemporalAccumulationGroupY
+
+#endif

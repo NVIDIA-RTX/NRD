@@ -244,7 +244,7 @@ namespace nrd
     {
         // REBLUR uses "f = 1 / (1 + k * N)" formula, where "N" is the number of accumulated frames, to drive denoising process. Smaller "f" mean "higher convergence, higher confidence"
         // Before v4.17:
-        //  - "k = 1" was implicitly assumed 
+        //  - "k = 1" was implicitly assumed
         // Starting from v4.17:
         //  - k = s * lerp( b, 1, saturate( N / ( 1 + f * maxAccumulatedFrameNum ) ) )
         //  - b < 1 - allows to "do more" denoising after a history reset (a blurry result is better on average than a dirty result)
@@ -267,7 +267,7 @@ namespace nrd
         // Always accumulate in "seconds" not in "frames", use "GetMaxAccumulatedFrameNum" for conversion
         uint32_t maxAccumulatedFrameNum = 30;
 
-        // [0; maxAccumulatedFrameNum) - maximum number of linearly accumulated frames for fast history
+        // [0; maxAccumulatedFrameNum] - maximum number of linearly accumulated frames for fast history
         // Values ">= maxAccumulatedFrameNum" disable fast history
         // Usually 5x-7x times shorter than the main history (casting more rays, using SHARC or other signal improving techniques help to accumulate less)
         uint32_t maxFastAccumulatedFrameNum = 6;
@@ -277,7 +277,7 @@ namespace nrd
         // Values ">= maxAccumulatedFrameNum" get clamped to "maxAccumulatedFrameNum"
         uint32_t maxStabilizedFrameNum = REBLUR_MAX_HISTORY_FRAME_NUM;
 
-        // [0; 3] - number of reconstructed frames after history reset (less than "maxFastAccumulatedFrameNum")
+        // [0; maxFastAccumulatedFrameNum) - number of reconstructed frames after history reset
         uint32_t historyFixFrameNum = 3;
 
         // (> 0) - base stride between pixels in 5x5 history reconstruction kernel

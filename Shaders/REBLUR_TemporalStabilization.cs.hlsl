@@ -25,12 +25,16 @@ void Preload( uint2 sharedPos, int2 globalPos )
 {
     globalPos = clamp( globalPos, 0, gRectSizeMinusOne );
 
+    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( globalPos ) ] );
+
     #if( NRD_DIFF )
-        s_DiffLuma[ sharedPos.y ][ sharedPos.x ] = GetLuma( gIn_Diff[ globalPos ] );
+        float diffLuma = GetLuma( gIn_Diff[ globalPos ] );
+        s_DiffLuma[ sharedPos.y ][ sharedPos.x ] = viewZ > gDenoisingRange ? REBLUR_INVALID : diffLuma;
     #endif
 
     #if( NRD_SPEC )
-        s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = GetLuma( gIn_Spec[ globalPos ] );
+        float specLuma = GetLuma( gIn_Spec[ globalPos ] );
+        s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = viewZ > gDenoisingRange ? REBLUR_INVALID : specLuma;
     #endif
 }
 
@@ -120,6 +124,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                 // Accumulate moments
                 float d = s_DiffLuma[ pos.y ][ pos.x ];
+                d = d == REBLUR_INVALID ? diffLuma : d;
+
                 diffLumaM1 += d;
                 diffLumaM2 += d * d;
             }
@@ -150,6 +156,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Compute antilag
         float diffAntilag = ComputeAntilag( smbDiffLumaHistory, diffLumaM1, diffLumaSigma, smbFootprintQuality * data1.x );
 
+        float diffMinAccumSpeed = min( data1.x, gHistoryFixFrameNum ) * REBLUR_USE_ANTILAG_NOT_INVOKING_HISTORY_FIX;
+        data1.x = lerp( diffMinAccumSpeed, data1.x, diffAntilag );
+
         // Clamp history and combine with the current frame
         float2 diffTemporalAccumulationParams = GetTemporalAccumulationParams( smbFootprintQuality, data1.x );
 
@@ -177,10 +186,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #if( NRD_MODE == SH )
             gOut_DiffSh[ pixelPos ] = diffSh;
         #endif
-
-        // Apply anti-lag
-        float diffMinAccumSpeed = min( data1.x, gHistoryFixFrameNum ) * REBLUR_USE_ANTILAG_NOT_INVOKING_HISTORY_FIX;
-        data1.x = lerp( diffMinAccumSpeed, data1.x, diffAntilag );
     #endif
 
     // Specular
@@ -202,6 +207,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                 // Accumulate moments
                 float s = s_SpecLuma[ pos.y ][ pos.x ];
+                s = s == REBLUR_INVALID ? specLuma : s;
+
                 specLumaM1 += s;
                 specLumaM2 += s * s;
             }
@@ -221,7 +228,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
         float hitDistForTracking = ExtractHitDist( spec ) * _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings, roughness ); // TODO: min in 3x3 seems to be not needed here
 
-        // Needed to preserve contact ( test 3, 8 ), but adds pixelation in some cases ( test 160 ). More fun if lobe trimming is off.
+        // Needed to preserve contact ( test 3, 8 ), but adds pixelation in some cases ( test 149, 160 ), more fun if lobe trimming is off
         [flatten]
         if( gSpecPrepassBlurRadius != 0.0 )
             hitDistForTracking = min( hitDistForTracking, gIn_SpecHitDistForTracking[ pixelPos ] );
@@ -312,6 +319,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float footprintQuality = lerp( smbFootprintQuality, vmbFootprintQuality, virtualHistoryAmount );
         float specAntilag = ComputeAntilag( specLumaHistory, specLumaM1, specLumaSigma, footprintQuality * data1.y );
 
+        float specMinAccumSpeed = min( data1.y, gHistoryFixFrameNum ) * REBLUR_USE_ANTILAG_NOT_INVOKING_HISTORY_FIX;
+        data1.y = lerp( specMinAccumSpeed, data1.y, specAntilag );
+
         // Clamp history and combine with the current frame
         float2 specTemporalAccumulationParams = GetTemporalAccumulationParams( footprintQuality, data1.y );
 
@@ -350,10 +360,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #if( NRD_MODE == SH )
             gOut_SpecSh[ pixelPos ] = specSh;
         #endif
-
-        // Apply anti-lag
-        float specMinAccumSpeed = min( data1.y, gHistoryFixFrameNum ) * REBLUR_USE_ANTILAG_NOT_INVOKING_HISTORY_FIX;
-        data1.y = lerp( specMinAccumSpeed, data1.y, specAntilag );
     #endif
 
     gOut_InternalData[ pixelPos ] = PackInternalData( data1.x, data1.y, materialID );

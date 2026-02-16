@@ -27,8 +27,10 @@ NRD_OUTPUTS_END
 #define SIGMA_CopyGroupX 8
 #define SIGMA_CopyGroupY 16
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
+// Shader only
+#ifndef __cplusplus
+
 #define GROUP_X SIGMA_CopyGroupX
 #define GROUP_Y SIGMA_CopyGroupY
+
+#endif

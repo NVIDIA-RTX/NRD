@@ -33,8 +33,10 @@ NRD_OUTPUTS_END
 #define SIGMA_SplitScreenGroupX 8
 #define SIGMA_SplitScreenGroupY 16
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
+// Shader only
+#ifndef __cplusplus
+
 #define GROUP_X SIGMA_SplitScreenGroupX
 #define GROUP_Y SIGMA_SplitScreenGroupY
+
+#endif

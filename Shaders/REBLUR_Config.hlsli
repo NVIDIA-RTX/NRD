@@ -92,6 +92,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_ROUGHNESS_SENSITIVITY_IN_TA                      ( NRD_ROUGHNESS_SENSITIVITY * 0.3 )
 #define REBLUR_ANTILAG_MODE                                     2 // 0 - modernized old, 1 - overly reactive @ low FPS, 2 - best?
 #define REBLUR_MAX_PERCENT_OF_LOBE_VOLUME_FOR_PRE_PASS          0.3 // specially tuned for "hitDistForTracking"
+#define REBLUR_INVALID                                          -32768.0 // marks INF pixels, which must be ignored in SMEM involved calculations
 
 // Data types
 #if( NRD_MODE == OCCLUSION )

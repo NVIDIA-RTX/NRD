@@ -66,8 +66,10 @@ NRD_OUTPUTS_END
 #define RELAX_PrePassGroupX 16
 #define RELAX_PrePassGroupY 16
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
+// Shader only
+#ifndef __cplusplus
+
 #define GROUP_X RELAX_PrePassGroupX
 #define GROUP_Y RELAX_PrePassGroupY
+
+#endif

@@ -33,14 +33,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if( isSky != 0.0 || any( pixelPos > gRectSizeMinusOne ) || viewZ > gDenoisingRange )
         return;
 
-    // Normal and roughness
+    // Center data
     float materialID;
     float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( pixelPos ) ], materialID );
     float3 N = normalAndRoughness.xyz;
     float3 Nv = Geometry::RotateVectorInverse( gViewToWorld, N );
     float roughness = normalAndRoughness.w;
 
-    // Shared data
     REBLUR_DATA1_TYPE data1 = UnpackData1( gIn_Data1[ pixelPos ] );
 
     float2 pixelUv = float2( pixelPos + 0.5 ) * gRectSizeInv;
@@ -51,6 +50,20 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     const float frustumSize = GetFrustumSize( gMinRectDimMulUnproject, gOrthoMode, viewZ );
     const float4 rotator = GetBlurKernelRotation( REBLUR_BLUR_ROTATOR_MODE, pixelPos, gRotator, gFrameIndex );
+
+    // Non-linear accum speed
+    float2 nonLinearAccumSpeed;
+    nonLinearAccumSpeed.x = GetAdvancedNonLinearAccumSpeed( data1.x );
+    nonLinearAccumSpeed.y = GetAdvancedNonLinearAccumSpeed( data1.y );
+
+    #ifdef NRD_COMPILER_DXC
+        // Adapt to neighbors if they are more stable
+        REBLUR_DATA1_TYPE d10 = QuadReadAcrossX( nonLinearAccumSpeed );
+        REBLUR_DATA1_TYPE d01 = QuadReadAcrossY( nonLinearAccumSpeed );
+
+        REBLUR_DATA1_TYPE avg = ( d10 + d01 + nonLinearAccumSpeed ) / 3.0;
+        nonLinearAccumSpeed = min( nonLinearAccumSpeed, avg );
+    #endif
 
     // Spatial filtering
     #define REBLUR_SPATIAL_MODE REBLUR_BLUR

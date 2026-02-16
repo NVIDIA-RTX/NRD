@@ -26,8 +26,10 @@ NRD_OUTPUTS_END
 #define REFERENCE_TemporalAccumulationGroupX 16
 #define REFERENCE_TemporalAccumulationGroupY 16
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
+// Shader only
+#ifndef __cplusplus
+
 #define GROUP_X REFERENCE_TemporalAccumulationGroupX
 #define GROUP_Y REFERENCE_TemporalAccumulationGroupY
+
+#endif

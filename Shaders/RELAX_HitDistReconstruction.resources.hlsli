@@ -46,12 +46,16 @@ NRD_OUTPUTS_END
 #define RELAX_HitDistReconstructionGroupX 8
 #define RELAX_HitDistReconstructionGroupY 8
 
+// Shader only
+#ifndef __cplusplus
+
 #if( MODE_5X5 == 1 )
     #define NRD_BORDER 2
+#else
+    #define NRD_BORDER 1
 #endif
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
 #define GROUP_X RELAX_HitDistReconstructionGroupX
 #define GROUP_Y RELAX_HitDistReconstructionGroupY
+
+#endif

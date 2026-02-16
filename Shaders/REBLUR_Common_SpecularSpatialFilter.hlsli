@@ -27,9 +27,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     if( gSpecPrepassBlurRadius != 0.0 )
     {
         Rng::Hash::Initialize( pixelPos, gFrameIndex );
-
-        float specNonLinearAccumSpeed = REBLUR_PRE_BLUR_NON_LINEAR_ACCUM_SPEED;
 #endif
+        float specNonLinearAccumSpeed = nonLinearAccumSpeed.y;
 
         float fractionScale = 1.0;
         float radiusScale = 1.0;
@@ -56,8 +55,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float blurRadius = gSpecPrepassBlurRadius;
         float areaFactor = roughness * hitDistFactor;
     #else
-        float specNonLinearAccumSpeed = GetAdvancedNonLinearAccumSpeed( data1.y );
-
         float blurRadius = gMaxBlurRadius;
         float areaFactor = roughness * hitDistFactor * specNonLinearAccumSpeed;
     #endif
@@ -91,8 +88,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float minHitDistWeight = gMinHitDistanceWeight * fractionScale * smc;
 
         // ( Optional ) Gradually reduce "minHitDistWeight" to preserve contact details
-    #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && NRD_MODE != REBLUR_OCCLUSION )
-        minHitDistWeight *= sqrt( specNonLinearAccumSpeed );
+    #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && NRD_MODE != OCCLUSION )
+        minHitDistWeight *= specNonLinearAccumSpeed;
     #endif
 
         // Screen-space settings
@@ -200,7 +197,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             w *= lerp( saturate( t ), 1.0, Math::LinearStep( 0.5, 1.0, roughness ) );
         #endif
 
-            w *= lerp( minHitDistWeight, 1.0, ComputeExponentialWeight( ExtractHitDist( s ), hitDistanceWeightParams.x, hitDistanceWeightParams.y ) );
+            w *= minHitDistWeight + ComputeExponentialWeight( ExtractHitDist( s ), hitDistanceWeightParams.x, hitDistanceWeightParams.y );
 
             // Accumulate
             sum += w;

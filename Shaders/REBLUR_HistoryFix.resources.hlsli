@@ -81,14 +81,16 @@ NRD_OUTPUTS_END
 #define REBLUR_HistoryFixGroupX 8
 #define REBLUR_HistoryFixGroupY 16
 
+// Shader only
+#ifndef __cplusplus
+
 #if( NRD_SUPPORTS_ANTIFIREFLY )
     #define NRD_BORDER REBLUR_ANTI_FIREFLY_FILTER_RADIUS
 #else
     #define NRD_BORDER REBLUR_FAST_HISTORY_CLAMPING_RADIUS
 #endif
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
 #define GROUP_X REBLUR_HistoryFixGroupX
 #define GROUP_Y REBLUR_HistoryFixGroupY
+
+#endif

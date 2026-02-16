@@ -36,12 +36,16 @@ NRD_OUTPUTS_END
 #define SIGMA_TemporalStabilizationGroupX 8
 #define SIGMA_TemporalStabilizationGroupY 16
 
+// Shader only
+#ifndef __cplusplus
+
 #if( SIGMA_5X5_TEMPORAL_KERNEL == 1 )
     #define NRD_BORDER 2
+#else
+    #define NRD_BORDER 1
 #endif
 
-// Redirection
-#undef GROUP_X
-#undef GROUP_Y
 #define GROUP_X SIGMA_TemporalStabilizationGroupX
 #define GROUP_Y SIGMA_TemporalStabilizationGroupY
+
+#endif
