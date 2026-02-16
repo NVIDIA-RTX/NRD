@@ -88,7 +88,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float minHitDistWeight = gMinHitDistanceWeight * fractionScale * smc;
 
         // ( Optional ) Gradually reduce "minHitDistWeight" to preserve contact details
-    #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && NRD_MODE != REBLUR_OCCLUSION )
+    #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && NRD_MODE != OCCLUSION )
         minHitDistWeight *= sqrt( specNonLinearAccumSpeed );
     #endif
 
