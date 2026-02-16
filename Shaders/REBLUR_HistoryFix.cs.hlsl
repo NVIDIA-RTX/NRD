@@ -203,8 +203,15 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float diffLuma = GetLuma( diff );
 
-        // Local variance
+        // Mix fast history with "fixed" normal history if normal history is not longer than fast
+        float f = frameNumAvgNorm.x;
+
         float diffFastCenter = s_DiffLuma[ smemPos.y ][ smemPos.x ];
+        diffFastCenter = lerp( diffLuma, diffFastCenter, f );
+
+        gOut_DiffFast[ pixelPos ] = diffFastCenter;
+
+        // Local variance
         float diffFastM1 = diffFastCenter;
         float diffFastM2 = diffFastCenter * diffFastCenter;
         float diffAntiFireflyM1 = 0;
@@ -222,7 +229,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 int2 pos = smemPos + int2( i, j );
 
                 float d = s_DiffLuma[ pos.y ][ pos.x ];
-                d = d == REBLUR_INVALID ? diffFastCenter : d; // TODO: use HistoryFix-ed "diffLuma"?
+                d = d == REBLUR_INVALID ? diffFastCenter : d;
 
                 // Variance in 5x5 for fast history
                 if( abs( i ) <= REBLUR_FAST_HISTORY_CLAMPING_RADIUS && abs( j ) <= REBLUR_FAST_HISTORY_CLAMPING_RADIUS )
@@ -251,11 +258,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             diffLuma = clamp( diffLuma, diffAntiFireflyM1 - diffAntiFireflySigma, diffAntiFireflyM1 + diffAntiFireflySigma );
         }
-
-        // Fix fast history
-        float f = frameNumAvgNorm.x;
-        diffFastCenter = lerp( diffLuma, diffFastCenter, f );
-        gOut_DiffFast[ pixelPos ] = diffFastCenter;
 
         // Clamp to fast history
         {
@@ -415,8 +417,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float specLuma = GetLuma( spec );
 
-        // Local variance
+        // Mix fast history with "fixed" normal history if normal history is not longer than fast
+        float f = frameNumAvgNorm.y;
+        f = lerp( 1.0, f, smc ); // HistoryFix-ed data is undesired in fast history for low roughness ( test 115 )
+
         float specFastCenter = s_SpecLuma[ smemPos.y ][ smemPos.x ];
+        specFastCenter = lerp( specLuma, specFastCenter, f );
+
+        gOut_SpecFast[ pixelPos ] = specFastCenter;
+
+        // Local variance
         float specFastM1 = specFastCenter;
         float specFastM2 = specFastCenter * specFastCenter;
         float specAntiFireflyM1 = 0;
@@ -434,7 +444,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 int2 pos = smemPos + int2( i, j );
 
                 float s = s_SpecLuma[ pos.y ][ pos.x ];
-                s = s == REBLUR_INVALID ? specFastCenter : s; // TODO: use HistoryFix-ed "specLuma"?
+                s = s == REBLUR_INVALID ? specFastCenter : s;
 
                 // Variance in 5x5 for fast history
                 if( abs( i ) <= REBLUR_FAST_HISTORY_CLAMPING_RADIUS && abs( j ) <= REBLUR_FAST_HISTORY_CLAMPING_RADIUS )
@@ -463,13 +473,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             specLuma = clamp( specLuma, specAntiFireflyM1 - specAntiFireflySigma, specAntiFireflyM1 + specAntiFireflySigma );
         }
-
-        // Fix fast history
-        float f = frameNumAvgNorm.y;
-        f = lerp( 1.0, f, smc ); // HistoryFix-ed data is undesired in fast history for low roughness ( test 115 )
-        specFastCenter = lerp( specLuma, specFastCenter, f );
-
-        gOut_SpecFast[ pixelPos ] = specFastCenter;
 
         // Clamp to fast history
         {
