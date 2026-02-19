@@ -710,7 +710,8 @@ float4 NRD_FrontEnd_PackNormalAndRoughness( float3 N, float roughness, float mat
     return p;
 }
 
-// Material de-modulation
+// MATERIAL DEMODULATION
+
 //   Front-end usage ( before NRD, convert irradiance into radiance ):
 //      diffIrradiance /= diffFactor
 //      specIrradiance /= specFactor
@@ -731,9 +732,7 @@ void NRD_MaterialFactors( float3 N, float3 V, float3 albedo, float3 Rf0, float r
     specFactor = lerp( NRD_MATERIAL_FACTOR_MIN_SCALE.xxx, float3( 1.0, 1.0, 1.0 ), specFactor );
 }
 
-//=================================================================================================================================
-// FRONT-END - SPECULAR HIT DISTANCE AVERAGING ( in case of rpp > 1 )
-//=================================================================================================================================
+// SPECULAR HIT DISTANCE AVERAGING ( in case of rpp > 1 )
 
 float NRD_FrontEnd_SpecHitDistAveraging_Begin( )
 {
@@ -760,8 +759,10 @@ void NRD_FrontEnd_SpecHitDistAveraging_End( inout float accumulatedSpecHitDist )
 }
 
 //=================================================================================================================================
-// FRONT-END - REBLUR
+// REBLUR
 //=================================================================================================================================
+
+// FRONT-END
 
 // This function returns AO / SO which REBLUR can decode back to "hit distance" internally
 float REBLUR_FrontEnd_GetNormHitDist( float hitDist, float viewZ, float4 hitDistParams, float roughness )
@@ -825,83 +826,7 @@ float4 REBLUR_FrontEnd_PackDirectionalOcclusion( float3 direction, float normHit
     return float4( sg.c1, sg.c0 );
 }
 
-//=================================================================================================================================
-// FRONT-END - RELAX
-//=================================================================================================================================
-
-// X => IN_DIFF_RADIANCE_HITDIST
-// X => IN_SPEC_RADIANCE_HITDIST
-float4 RELAX_FrontEnd_PackRadianceAndHitDist( float3 radiance, float hitDist, bool sanitize )
-{
-    if( sanitize )
-    {
-        radiance = _NRD_IsInvalid( radiance ) ? float3( 0, 0, 0 ) : clamp( radiance, 0, NRD_FP16_MAX );
-        hitDist = _NRD_IsInvalid( hitDist ) ? 0 : clamp( hitDist, 0, NRD_FP16_MAX );
-    }
-
-    return float4( radiance, hitDist );
-}
-
-// X => IN_DIFF_SH0 and IN_DIFF_SH1
-// X => IN_SPEC_SH0 and IN_SPEC_SH1
-float4 RELAX_FrontEnd_PackSh( float3 radiance, float hitDist, float3 direction, out float4 out1, bool sanitize )
-{
-    if( sanitize )
-    {
-        radiance = _NRD_IsInvalid( radiance ) ? float3( 0, 0, 0 ) : clamp( radiance, 0, NRD_FP16_MAX );
-        hitDist = _NRD_IsInvalid( hitDist ) ? 0 : clamp( hitDist, 0, NRD_FP16_MAX );
-        direction = _NRD_IsInvalid( direction ) ? float3( 0, 0, 0 ) : clamp( direction, -1.0, 1.0 );
-    }
-
-    // IN_DIFF_SH0 / IN_SPEC_SH0
-    float4 out0 = float4( radiance, hitDist );
-
-    // IN_DIFF_SH1 / IN_SPEC_SH1
-    out1 = float4( direction * _NRD_Luminance( radiance ), 0 );
-
-    return out0;
-}
-
-//=================================================================================================================================
-// FRONT-END - SIGMA
-//=================================================================================================================================
-
-// SIGMA single light
-
-// Infinite ( directional ) light source
-// X => IN_PENUMBRA
-float SIGMA_FrontEnd_PackPenumbra( float distanceToOccluder, float tanOfLightAngularRadius )
-{
-    float penumbraSize = distanceToOccluder * tanOfLightAngularRadius;
-    float penumbraRadius = penumbraSize * 0.5;
-
-    return distanceToOccluder >= NRD_FP16_MAX ? NRD_FP16_MAX : min( penumbraRadius, 32768.0 );
-}
-
-// Local light source
-// X => IN_PENUMBRA
-// "lightSize" must be an acceptable projection to the plane perpendicular to the light direction
-float SIGMA_FrontEnd_PackPenumbra( float distanceToOccluder, float distanceToLight, float lightSize )
-{
-    float penumbraSize = lightSize * distanceToOccluder / max( distanceToLight - distanceToOccluder, NRD_EPS );
-    float penumbraRadius = penumbraSize * 0.5;
-
-    return distanceToOccluder >= NRD_FP16_MAX ? NRD_FP16_MAX : min( penumbraRadius, 32768.0 );
-}
-
-// X => IN_TRANSLUCENCY
-float4 SIGMA_FrontEnd_PackTranslucency( float distanceToOccluder, float3 translucency )
-{
-    float4 r;
-    r.x = float( distanceToOccluder >= NRD_FP16_MAX );
-    r.yzw = saturate( translucency );
-
-    return r;
-}
-
-//=================================================================================================================================
-// BACK-END - REBLUR
-//=================================================================================================================================
+// BACK-END
 
 // OUT_DIFF_RADIANCE_HITDIST => X
 // OUT_SPEC_RADIANCE_HITDIST => X
@@ -940,8 +865,45 @@ NRD_SG REBLUR_BackEnd_UnpackDirectionalOcclusion( float4 data )
 }
 
 //=================================================================================================================================
-// BACK-END - RELAX
+// RELAX
 //=================================================================================================================================
+
+// FRONT-END
+
+// X => IN_DIFF_RADIANCE_HITDIST
+// X => IN_SPEC_RADIANCE_HITDIST
+float4 RELAX_FrontEnd_PackRadianceAndHitDist( float3 radiance, float hitDist, bool sanitize )
+{
+    if( sanitize )
+    {
+        radiance = _NRD_IsInvalid( radiance ) ? float3( 0, 0, 0 ) : clamp( radiance, 0, NRD_FP16_MAX );
+        hitDist = _NRD_IsInvalid( hitDist ) ? 0 : clamp( hitDist, 0, NRD_FP16_MAX );
+    }
+
+    return float4( radiance, hitDist );
+}
+
+// X => IN_DIFF_SH0 and IN_DIFF_SH1
+// X => IN_SPEC_SH0 and IN_SPEC_SH1
+float4 RELAX_FrontEnd_PackSh( float3 radiance, float hitDist, float3 direction, out float4 out1, bool sanitize )
+{
+    if( sanitize )
+    {
+        radiance = _NRD_IsInvalid( radiance ) ? float3( 0, 0, 0 ) : clamp( radiance, 0, NRD_FP16_MAX );
+        hitDist = _NRD_IsInvalid( hitDist ) ? 0 : clamp( hitDist, 0, NRD_FP16_MAX );
+        direction = _NRD_IsInvalid( direction ) ? float3( 0, 0, 0 ) : clamp( direction, -1.0, 1.0 );
+    }
+
+    // IN_DIFF_SH0 / IN_SPEC_SH0
+    float4 out0 = float4( radiance, hitDist );
+
+    // IN_DIFF_SH1 / IN_SPEC_SH1
+    out1 = float4( direction * _NRD_Luminance( radiance ), 0 );
+
+    return out0;
+}
+
+// BACK-END
 
 // OUT_DIFF_RADIANCE_HITDIST => X
 // OUT_SPEC_RADIANCE_HITDIST => X
@@ -965,8 +927,43 @@ NRD_SG RELAX_BackEnd_UnpackSh( float4 sh0, float4 sh1 )
 }
 
 //=================================================================================================================================
-// BACK-END - SIGMA
+// SIGMA
 //=================================================================================================================================
+
+// FRONT-END
+
+// Infinite ( directional ) light source
+// X => IN_PENUMBRA
+float SIGMA_FrontEnd_PackPenumbra( float distanceToOccluder, float tanOfLightAngularRadius )
+{
+    float penumbraSize = distanceToOccluder * tanOfLightAngularRadius;
+    float penumbraRadius = penumbraSize * 0.5;
+
+    return distanceToOccluder >= NRD_FP16_MAX ? NRD_FP16_MAX : min( penumbraRadius, 32768.0 );
+}
+
+// Local light source
+// X => IN_PENUMBRA
+// "lightSize" must be an acceptable projection to the plane perpendicular to the light direction
+float SIGMA_FrontEnd_PackPenumbra( float distanceToOccluder, float distanceToLight, float lightSize )
+{
+    float penumbraSize = lightSize * distanceToOccluder / max( distanceToLight - distanceToOccluder, NRD_EPS );
+    float penumbraRadius = penumbraSize * 0.5;
+
+    return distanceToOccluder >= NRD_FP16_MAX ? NRD_FP16_MAX : min( penumbraRadius, 32768.0 );
+}
+
+// X => IN_TRANSLUCENCY
+float4 SIGMA_FrontEnd_PackTranslucency( float distanceToOccluder, float3 translucency )
+{
+    float4 r;
+    r.x = float( distanceToOccluder >= NRD_FP16_MAX );
+    r.yzw = saturate( translucency );
+
+    return r;
+}
+
+// BACK-END
 
 // OUT_SHADOW_TRANSLUCENCY => X
 //   SIGMA_SHADOW / SIGMA_SHADOW_TRANSLUCENCY:
@@ -976,7 +973,7 @@ NRD_SG RELAX_BackEnd_UnpackSh( float4 sh0, float4 sh1 )
 #define SIGMA_BackEnd_UnpackShadow( shadow ) ( shadow * shadow )
 
 //=================================================================================================================================
-// BACK-END - HIGH QUALITY RESOLVE
+// HIGH QUALITY RESOLVE ( SPHERICAL GAUSSIAN )
 //=================================================================================================================================
 
 float3 NRD_SG_ExtractColor( NRD_SG sg )
@@ -1137,7 +1134,7 @@ float2 NRD_SG_ReJitter(
 }
 
 //=================================================================================================================================
-// SPHERICAL HARMONICS ( MEDIUM QUALITY )
+// MEDIUM QUALITY RESOLVE ( SPHERICAL HARMONICS )
 //=================================================================================================================================
 
 float3 NRD_SH_ResolveDiffuse( NRD_SG sh, float3 N )
