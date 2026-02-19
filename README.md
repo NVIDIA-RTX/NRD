@@ -429,7 +429,7 @@ else
 
 ## NON-NOISY INPUTS
 
-Commons inputs for primary hits (if *PSR* is not used, common use case) or for secondary hits (if *PSR* is used, valid only for 0-roughness):
+*NRD* doesn't use "baseColor" and "metalness" anywhere for denoising. All materials must be de-modulated before denoising on the application side (see [material demodulation](#material-demodulation)). Here are commons inputs, provided for primary hits (or *PSR*):
 
 * **IN\_MV** - non-jittered surface motion (`old = new + MV`)
 
@@ -458,9 +458,17 @@ Commons inputs for primary hits (if *PSR* is not used, common use case) or for s
   - project on screen using matrices passed to NRD
   - `.w` component is positive view Z (or just transform world-space position to main view space and take `.z` component)
 
-* **IN\_DIFF/SPEC\_CONFIDENCE** - confidence in the accumulated history represented in `[0; 1]` range
+* **IN\_DIFF/SPEC\_CONFIDENCE** - (optional, but highly recommended) confidence of the accumulated history represented in `[0; 1]` range
 
-  These inputs are optional and are used only if `CommonSettings::isHistoryConfidenceAvailable = true`. *REBLUR* and *RELAX* have embedded anti-lag techniques, but if properly computed, using confidence inputs is the best way to mitigate temporal lags. They are easy and cheap to compute. Moreover, separation into diffuse and specular confidence is not mandatory. Same "lighting" confidence may be used for both inputs. See this [section](#history-confidence) for more details.
+  These inputs are optional and are used only if `CommonSettings::isHistoryConfidenceAvailable = true` and `NRD_SUPPORTS_HISTORY_CONFIDENCE = 1`. *REBLUR* and *RELAX* have embedded anti-lag techniques, but if properly computed, using confidence inputs is the best way to mitigate temporal lags. They are easy and cheap to compute. Moreover, separation into diffuse and specular confidence is not mandatory. Same "lighting" confidence may be used for both inputs. See this [section](#history-confidence) for more details.
+
+* **IN\_DISOCCLUSION\_THRESHOLD\_MIX** - (optional) disocclusion threshold selector in `[0; 1]` range
+
+  A optional input used only if `CommonSettings::isDisocclusionThresholdMixAvailable = true` and `NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX = 1`. The resulting disocclusion threshold value is a linear interpolation between `CommonSettings::disocclusionThreshold` and `CommonSettings::disocclusionThresholdAlternate` values.
+
+* **IN\_BASECOLOR\_METALNESS** - (optional) base color (`.xyz`) and metalness (`.w`) input
+
+  This optional input is used only if `CommonSettings::isBaseColorMetalnessAvailable = true` and `NRD_SUPPORTS_BASECOLOR_METALNESS = 1`. Currently used only by *REBLUR* (if `stabilizationStrength != 0`) to patch motion vectors if specular (virtual) motion prevails on diffuse (surface) motion. This may improve upscaler/TAA behavior.
 
 The illustration below shows expected inputs for a primary hit `A`:
 
@@ -474,7 +482,7 @@ IN_NORMAL_ROUGHNESS = GetNormalAndRoughnessAt( A );
 IN_MV = GetMotionAt( A );
 ```
 
-See `NRDDescs.h` and `NRD.hlsli` for more details and descriptions of other inputs and outputs. See this [section](#interaction-with-primary-surface-replacements) for interaction with Primary Surface Replacements (PSRs).
+See `NRDDescs.h` and `NRD.hlsli` for more details and descriptions of other inputs and outputs. Also see [interaction with Primary Surface Replacements (PSRs)](#interaction-with-primary-surface-replacements).
 
 ## NOISY INPUTS
 
@@ -617,6 +625,8 @@ The resolve process takes place on the application side and has the following mo
 
 Re-jittering math with minorly modified inputs can also be used with RESTIR produced sampling without involving SH denoisers. You only need to get light direction in the current pixel from RESTIR. Despite that RESTIR produces noisy light selections, its low variations can be easily handled by DLSS or other upscaling techs.
 
+If `IN_BASECOLOR_METALNESS` input is provided and enabled, then *REBLUR* patches `IN_MV` input for surfaces where the specular motion prevails on the surface motion. It may improve upscaling behavior.
+
 <details>
 <summary>(CLICK) Shader code:</summary>
 
@@ -704,6 +714,11 @@ Brief overview:
   - usage in *RELAX*:
     - `historyLength = min( historyLength, maxAccumulatedFrameNum * confidence )`
     - new `historyLength` is used *only in the "Temporal Accumulation" pass*, i.e. gets applied "here and now"
+
+Tips and tricks:
+- `0.5 / maxAccumulatedFrameNum` dithering may be applied to avoid banding in history length (visible in the validation layer)
+- clamping to `historyFixFrameNum / maxAccumulatedFrameNum` avoids triggering "HistoryFix" pass if it's undesired
+- applying reasonable acceleration to surfaces with animated normals (water, etc.) helps maintain responsiveness
 
 Implementation details:
 - see "SHARC Update" [pass](https://github.com/NVIDIA-RTX/NRD-Sample/blob/simplex/Shaders/SharcUpdate.cs.hlsl)
