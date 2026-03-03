@@ -223,14 +223,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         if( data1.y < gHistoryFixFrameNum )
             specLuma = min( specLuma, specLumaM1 * ( 1.2 + 1.0 / ( 1.0 + data1.y ) ) );
 
-        // Hit distance for tracking ( tests 6, 67, 155 )
-        REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
-        float hitDistForTracking = ExtractHitDist( spec ) * _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings, roughness ); // TODO: min in 3x3 seems to be not needed here
-
-        // Needed to preserve contact ( test 3, 8 ), but adds pixelation in some cases ( test 149, 160 ), more fun if lobe trimming is off
-        [flatten]
-        if( gSpecPrepassBlurRadius != 0.0 )
-            hitDistForTracking = min( hitDistForTracking, gIn_SpecHitDistForTracking[ pixelPos ] );
+        // Hit distance for tracking ( tests 3, 6, 8, 67, 149, 155, 160, 217 )
+        // This matches "vmbOcclusion" is computed for
+        // TODO: adds pixelation in some cases, more fun if lobe trimming is off
+        float hitDistForTracking = gIn_SpecHitDistForTracking[ pixelPos ];
 
         // Virtual motion
         float virtualHistoryAmount = data2.x;
@@ -344,6 +340,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float specLumaStabilized = lerp( specLuma, specLumaHistory, min( specHistoryWeight, gStabilizationStrength ) );
 
+        REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
         spec = ChangeLuma( spec, specLumaStabilized );
         #if( NRD_MODE == SH )
             REBLUR_SH_TYPE specSh = gIn_SpecSh[ pixelPos ];
