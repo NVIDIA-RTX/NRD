@@ -494,12 +494,12 @@ float2 GetGeometryWeightParams( float planeDistSensitivity, float frustumSize, f
 
 float2 GetHitDistanceWeightParams( float hitDist, float nonLinearAccumSpeed, float roughness = 1.0 )
 {
-    // TODO: compare "GetHitDistFactor"?
-    // IMPORTANT: since this weight is exponential, 3% can lead to leaks from bright objects in reflections.
-    // Even 1% is not enough in some cases, but using a lower value makes things even more fragile
-    float smc = GetSpecMagicCurve( roughness );
-    float norm = lerp( 0.0005, 1.0, min( nonLinearAccumSpeed, smc ) );
-    float a = 1.0 / norm;
+    // This math is fragile: in non-occlusion modes hit distances are already under-denoised:
+    // - denoising less adds more graininess to radiance ( probably not as bad, a review is needed )
+    // - denoising more leads to "solarization" ( shadows banding )
+    float smc = max( GetSpecMagicCurve( roughness ), 1.0 / ( 1.0 + 64.0 ) );
+    float norm = min( nonLinearAccumSpeed, smc );
+    float a = 1.0 / norm; // dividing this to "[1; NRD_EXP_WEIGHT_DEFAULT_SCALE]" changes the behavior
     float b = hitDist * a;
 
     return float2( a, -b );
