@@ -68,7 +68,9 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float minHitDistWeight = gMinHitDistanceWeight * fractionScale;
 
         // ( Optional ) Gradually reduce "minHitDistWeight" to preserve contact details
-    #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && NRD_MODE != OCCLUSION )
+        // This is valid only for non-occlusion modes!
+        // This helps to squeeze more details for radiance by introducing more "graininess" in hit distances
+    #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && NRD_MODE != OCCLUSION && NRD_MODE != DO )
         minHitDistWeight *= diffNonLinearAccumSpeed;
     #endif
 
