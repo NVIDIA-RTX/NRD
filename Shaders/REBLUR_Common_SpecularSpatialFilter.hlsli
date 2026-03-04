@@ -21,7 +21,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #endif
 
 {
-    float smc = GetSpecMagicCurve( roughness );
+    // 0.5 matches previously used "sqrt( roughness )" and fixes "roughnes < 0.1"
+    float smc = GetSpecMagicCurve( roughness, 0.5 );
 
 #if( REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
     if( gSpecPrepassBlurRadius != 0.0 )
@@ -53,13 +54,14 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float hitDistForTracking = hitDist == 0.0 ? NRD_INF : hitDist;
 
         float blurRadius = gSpecPrepassBlurRadius;
-        float areaFactor = roughness * hitDistFactor;
+        float areaFactor = hitDistFactor;
     #else
         float blurRadius = gMaxBlurRadius;
-        float areaFactor = roughness * hitDistFactor * specNonLinearAccumSpeed;
+        float areaFactor = hitDistFactor * specNonLinearAccumSpeed;
     #endif
 
         blurRadius *= Math::Sqrt01( areaFactor ); // "areaFactor" affects area, not radius
+        blurRadius *= smc; // previously "sqrt( roughness )" was used as "areaFactor * roughness", it's wrong for "roughness < 0.1"
 
     #if( REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
         // The "area factor" idea works well and offers linear progression of blur radiuses over time, but it makes
