@@ -659,21 +659,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // TODO: more fallback to "smb" needed in many cases if roughness changes
         virtualHistoryAmount *= virtualHistoryRoughnessBasedConfidence; // helps to preserve roughness details, which lies on surfaces
 
-        // Sample surface history
-        REBLUR_TYPE smbSpecHistory;
-        REBLUR_FAST_TYPE smbSpecFastHistory;
-        REBLUR_SH_TYPE smbSpecShHistory;
-
-        BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(
-            saturate( smbPixelUv ) * gRectSizePrev, gResourceSizeInvPrev,
-            smbOcclusionWeights, smbAllowCatRom,
-            gHistory_Spec, smbSpecHistory,
-            gHistory_SpecFast, smbSpecFastHistory
-            #if( NRD_MODE == SH )
-                , gHistory_SpecSh, smbSpecShHistory
-            #endif
-        );
-
         // Surface history confidence ( test 9, 9e )
         // IMPORTANT: needs to be responsive, because "vmb" fails on bumpy surfaces for the following reasons:
         //  - normal and prev-prev tests fail
@@ -684,7 +669,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             //a = acos( saturate( dot( V, smbVprev ) ) ); // numerically unstable
 
             float nonLinearAccumSpeed = 1.0 / ( 1.0 + smbSpecAccumSpeed );
-            float h = lerp( ExtractHitDist( smbSpecHistory ), ExtractHitDist( spec ), nonLinearAccumSpeed ) * hitDistNormalization;
+            float hPrev = ExtractHitDist( gHistory_Spec.SampleLevel( gLinearClamp, smbPixelUv * gResolutionScalePrev, 0 ) ); // this is safe because "history" is always "cleared" on startup, the rest is handled by "lerp" below
+            float h = lerp( hPrev, ExtractHitDist( spec ), nonLinearAccumSpeed ) * hitDistNormalization;
 
             float tana0 = ImportanceSampling::GetSpecularLobeTanHalfAngle( roughnessModified, NRD_MAX_PERCENT_OF_LOBE_VOLUME ); // base lobe angle
             tana0 *= lerp( NoV, 1.0, roughnessModified ); // make more strict if NoV is low and lobe is very V-dependent
@@ -723,74 +709,52 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         smbSpecAccumSpeed = min( smbSpecAccumSpeed, maxFrameNum.x );
         vmbSpecAccumSpeed = min( vmbSpecAccumSpeed, maxFrameNum.y );
 
-        // Fallback to "smb" if "vmb" history is short // ***
-        float virtualHistoryAmountUnbiased = virtualHistoryAmount;
-    #if( REBLUR_USE_OLD_SMB_FALLBACK_LOGIC == 1 )
-        // Interactive comparison of two methods: https://www.desmos.com/calculator/syocjyk9wc
-        // TODO: the amount gets shifted heavily towards "smb" if "smb" > "vmb" even by 5 frames
-        float vmbToSmbRatio = saturate( vmbSpecAccumSpeed / ( smbSpecAccumSpeed + NRD_EPS ) );
-        float smbBonusFrames = max( smbSpecAccumSpeed - vmbSpecAccumSpeed, 0.0 );
-        virtualHistoryAmount *= vmbToSmbRatio;
-        virtualHistoryAmount /= 1.0 + smbBonusFrames * ( 1.0 - vmbToSmbRatio );
-    #else
-        // This version works in both directions: towards "smb" and towards "vmb"
-        // TODO: "magic" is tuned to ~match old logic and also offer non-aggressive fallback to "vmb" on top ( test 218 )
-        float magic = vmbSpecAccumSpeed > smbSpecAccumSpeed ? 8.0 : 0.5;
-        virtualHistoryAmount *= 1.0 + ( vmbSpecAccumSpeed - smbSpecAccumSpeed ) / ( magic * max( vmbSpecAccumSpeed, smbSpecAccumSpeed ) + 1.0 );
-        virtualHistoryAmount = saturate( virtualHistoryAmount );
-    #endif
+        // Fallback to the opposite if the history length is short ( test 218 ) // ***
+        float magic = vmbSpecAccumSpeed > smbSpecAccumSpeed ? 8.0 : 0.5; // TODO: tune better?
+        float scale = 1.0 + ( vmbSpecAccumSpeed - smbSpecAccumSpeed ) / ( 1.0 + magic * max( vmbSpecAccumSpeed, smbSpecAccumSpeed ) );
+        virtualHistoryAmount = saturate( virtualHistoryAmount * scale );
 
-        #if( REBLUR_VIRTUAL_HISTORY_AMOUNT != 2 )
-            virtualHistoryAmount = REBLUR_VIRTUAL_HISTORY_AMOUNT;
-        #endif
+        // Choose one: "smb" or "vmb"
+        virtualHistoryAmount = step( 0.5, virtualHistoryAmount );
 
-        // Sample virtual history
-        REBLUR_TYPE vmbSpecHistory;
-        REBLUR_FAST_TYPE vmbSpecFastHistory;
-        REBLUR_SH_TYPE vmbSpecShHistory;
+        // Sample history
+        float2 uv = lerp( smbPixelUv, vmbPixelUv, virtualHistoryAmount );
+        float4 occlusionWeights = lerp( smbOcclusionWeights, vmbOcclusionWeights, virtualHistoryAmount );
+        bool allowCatRom = virtualHistoryAmount < 0.5 ? smbAllowCatRom : vmbAllowCatRom;
+
+        REBLUR_TYPE specHistory;
+        REBLUR_FAST_TYPE specFastHistory;
+        REBLUR_SH_TYPE specShHistory;
 
         BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(
-            saturate( vmbPixelUv ) * gRectSizePrev, gResourceSizeInvPrev,
-            vmbOcclusionWeights, vmbAllowCatRom,
-            gHistory_Spec, vmbSpecHistory,
-            gHistory_SpecFast, vmbSpecFastHistory
+            saturate( uv ) * gRectSizePrev, gResourceSizeInvPrev,
+            occlusionWeights, allowCatRom,
+            gHistory_Spec, specHistory,
+            gHistory_SpecFast, specFastHistory
             #if( NRD_MODE == SH )
-                , gHistory_SpecSh, vmbSpecShHistory
+                , gHistory_SpecSh, specShHistory
             #endif
         );
 
         // Avoid negative values
-        smbSpecHistory = ClampNegativeToZero( smbSpecHistory );
-        vmbSpecHistory = ClampNegativeToZero( vmbSpecHistory );
+        specHistory = ClampNegativeToZero( specHistory );
 
         // Accumulation
-        float smbSpecNonLinearAccumSpeed = 1.0 / ( 1.0 + smbSpecAccumSpeed );
-        float vmbSpecNonLinearAccumSpeed = 1.0 / ( 1.0 + vmbSpecAccumSpeed );
-
+        float specAccumSpeedCorrected = lerp( smbSpecAccumSpeed_NoHistoryFix, vmbSpecAccumSpeed_NoHistoryFix, virtualHistoryAmount ); // avoid "HistoryFix" in responsive accumulation
+        float specAccumSpeed = lerp( smbSpecAccumSpeed, vmbSpecAccumSpeed, virtualHistoryAmount );
+        float specNonLinearAccumSpeed = 1.0 / ( 1.0 + specAccumSpeed );
         if( !specHasData )
-        {
-            smbSpecNonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, smbSpecNonLinearAccumSpeed );
-            vmbSpecNonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, vmbSpecNonLinearAccumSpeed );
-        }
+            specNonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, specNonLinearAccumSpeed );
 
-        REBLUR_TYPE smbSpec = MixHistoryAndCurrent( smbSpecHistory, spec, smbSpecNonLinearAccumSpeed, roughnessModified );
-        REBLUR_TYPE vmbSpec = MixHistoryAndCurrent( vmbSpecHistory, spec, vmbSpecNonLinearAccumSpeed, roughnessModified );
-
-        REBLUR_TYPE specResult = lerp( smbSpec, vmbSpec, virtualHistoryAmount );
+        REBLUR_TYPE specResult = MixHistoryAndCurrent( specHistory, spec, specNonLinearAccumSpeed, roughnessModified );
 
         #if( NRD_MODE == SH )
             float4 specSh = gIn_SpecSh[ specPos ];
-            float4 smbShSpec = lerp( smbSpecShHistory, specSh, smbSpecNonLinearAccumSpeed );
-            float4 vmbShSpec = lerp( vmbSpecShHistory, specSh, vmbSpecNonLinearAccumSpeed );
-
-            float4 specShResult = lerp( smbShSpec, vmbShSpec, virtualHistoryAmount );
+            float4 specShResult = lerp( specShHistory, specSh, specNonLinearAccumSpeed );
 
             // ( Optional ) Output modified roughness to assist AA during SG resolve
             specShResult.w = roughnessModified; // IMPORTANT: must not be blurred! this is why "specSh.xyz" is used ~everywhere
         #endif
-
-        float specAccumSpeed = lerp( smbSpecAccumSpeed, vmbSpecAccumSpeed, virtualHistoryAmount );
-        REBLUR_TYPE specHistory = lerp( smbSpecHistory, vmbSpecHistory, virtualHistoryAmount );
 
         // Firefly suppressor
         #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
@@ -820,13 +784,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         if( materialID == gStrandMaterialID )
             maxFastAccumulatedFrameNum = max( maxFastAccumulatedFrameNum, gMaxAccumulatedFrameNum / 5 );
 
-        float smbSpecFastNonLinearAccumSpeed = GetNonLinearAccumSpeed( smbSpecAccumSpeed, maxFastAccumulatedFrameNum, surfaceHistoryConfidence, specHasData );
-        float vmbSpecFastNonLinearAccumSpeed = GetNonLinearAccumSpeed( vmbSpecAccumSpeed, maxFastAccumulatedFrameNum, virtualHistoryConfidence, specHasData );
-
-        float smbSpecFast = lerp( smbSpecFastHistory, GetLuma( spec ), smbSpecFastNonLinearAccumSpeed );
-        float vmbSpecFast = lerp( vmbSpecFastHistory, GetLuma( spec ), vmbSpecFastNonLinearAccumSpeed );
-
-        float specFastResult = lerp( smbSpecFast, vmbSpecFast, virtualHistoryAmountUnbiased );
+        float specHistoryConfidence = lerp( surfaceHistoryConfidence, virtualHistoryConfidence, virtualHistoryAmount );
+        float specFastNonLinearAccumSpeed = GetNonLinearAccumSpeed( specAccumSpeed, maxFastAccumulatedFrameNum, specHistoryConfidence, specHasData );
+        float specFastResult = lerp( specFastHistory, GetLuma( spec ), specFastNonLinearAccumSpeed );
 
         #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
             // Firefly suppressor ( fixes heavy crawling under camera rotation: test 95, 120 )
@@ -835,9 +795,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         gOut_SpecFast[ pixelPos ] = specFastResult;
-
-        // Avoid "HistoryFix" in responsive accumulation
-        specAccumSpeed = lerp( smbSpecAccumSpeed_NoHistoryFix, vmbSpecAccumSpeed_NoHistoryFix, virtualHistoryAmount );
 
         // Debug
         #if( REBLUR_SHOW == REBLUR_SHOW_CURVATURE )
@@ -859,7 +816,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             virtualHistoryAmount = hitDistForTracking * lerp( 1.0, 5.0, smc ) / ( 1.0 + hitDistForTracking * lerp( 1.0, 5.0, smc ) );
         #endif
     #else
-        float specAccumSpeed = 0;
+        float specAccumSpeedCorrected = 0;
         float curvature = 0;
         float virtualHistoryAmount = 0;
     #endif
@@ -905,33 +862,33 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             }
         #endif
 
-        // Sample history - surface motion
-        REBLUR_TYPE smbDiffHistory;
-        REBLUR_FAST_TYPE smbDiffFastHistory;
-        REBLUR_SH_TYPE smbDiffShHistory;
+        // Sample history
+        REBLUR_TYPE diffHistory;
+        REBLUR_FAST_TYPE diffFastHistory;
+        REBLUR_SH_TYPE diffShHistory;
 
         BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(
             saturate( smbPixelUv ) * gRectSizePrev, gResourceSizeInvPrev,
             smbOcclusionWeights, smbAllowCatRom,
-            gHistory_Diff, smbDiffHistory,
-            gHistory_DiffFast, smbDiffFastHistory
+            gHistory_Diff, diffHistory,
+            gHistory_DiffFast, diffFastHistory
             #if( NRD_MODE == SH )
-                , gHistory_DiffSh, smbDiffShHistory
+                , gHistory_DiffSh, diffShHistory
             #endif
         );
 
         // Avoid negative values
-        smbDiffHistory = ClampNegativeToZero( smbDiffHistory );
+        diffHistory = ClampNegativeToZero( diffHistory );
 
         // Accumulation
         float diffNonLinearAccumSpeed = 1.0 / ( 1.0 + diffAccumSpeed );
         if( !diffHasData )
             diffNonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, diffNonLinearAccumSpeed );
 
-        REBLUR_TYPE diffResult = MixHistoryAndCurrent( smbDiffHistory, diff, diffNonLinearAccumSpeed );
+        REBLUR_TYPE diffResult = MixHistoryAndCurrent( diffHistory, diff, diffNonLinearAccumSpeed );
         #if( NRD_MODE == SH )
             float4 diffSh = gIn_DiffSh[ diffPos ];
-            float4 diffShResult = MixHistoryAndCurrent( smbDiffShHistory, diffSh, diffNonLinearAccumSpeed );
+            float4 diffShResult = MixHistoryAndCurrent( diffShHistory, diffSh, diffNonLinearAccumSpeed );
         #endif
 
         // Firefly suppressor
@@ -942,7 +899,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             diffAntifireflyFactor /= 1.0 + diffAntifireflyFactor;
 
             float diffLumaResult = GetLuma( diffResult );
-            float diffLumaClamped = min( diffLumaResult, GetLuma( smbDiffHistory ) * diffMaxRelativeIntensity );
+            float diffLumaClamped = min( diffLumaResult, GetLuma( diffHistory ) * diffMaxRelativeIntensity );
             diffLumaClamped = lerp( diffLumaResult, diffLumaClamped, diffAntifireflyFactor );
 
             diffResult = ChangeLuma( diffResult, diffLumaClamped );
@@ -963,11 +920,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         if( !diffHasData )
             diffFastNonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, diffFastNonLinearAccumSpeed );
 
-        float diffFastResult = lerp( smbDiffFastHistory, GetLuma( diff ), diffFastNonLinearAccumSpeed );
+        float diffFastResult = lerp( diffFastHistory, GetLuma( diff ), diffFastNonLinearAccumSpeed );
 
         #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
             // Firefly suppressor ( fixes heavy crawling under camera rotation, test 99 )
-            float diffFastClamped = min( diffFastResult, GetLuma( smbDiffHistory ) * diffMaxRelativeIntensity * REBLUR_FIREFLY_SUPPRESSOR_FAST_RELATIVE_INTENSITY );
+            float diffFastClamped = min( diffFastResult, GetLuma( diffHistory ) * diffMaxRelativeIntensity * REBLUR_FIREFLY_SUPPRESSOR_FAST_RELATIVE_INTENSITY );
             diffFastResult = lerp( diffFastResult, diffFastClamped, diffAntifireflyFactor );
         #endif
 
@@ -977,5 +934,5 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #endif
 
     // Output
-    gOut_Data1[ pixelPos ] = PackData1( diffAccumSpeed, specAccumSpeed );
+    gOut_Data1[ pixelPos ] = PackData1( diffAccumSpeed, specAccumSpeedCorrected );
 }

@@ -141,20 +141,20 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         if( data1.x < gHistoryFixFrameNum )
             diffLuma = min( diffLuma, diffLumaM1 * ( 1.2 + 1.0 / ( 1.0 + data1.x ) ) );
 
-        // Sample history - surface motion
-        float smbDiffLumaHistory;
+        // Sample history
+        float diffLumaHistory;
 
         BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights1(
             saturate( smbPixelUv ) * gRectSizePrev, gResourceSizeInvPrev,
             smbOcclusionWeights, smbAllowCatRom,
-            gHistory_DiffLumaStabilized, smbDiffLumaHistory
+            gHistory_DiffLumaStabilized, diffLumaHistory
         );
 
         // Avoid negative values
-        smbDiffLumaHistory = max( smbDiffLumaHistory, 0.0 );
+        diffLumaHistory = max( diffLumaHistory, 0.0 );
 
         // Compute antilag
-        float diffAntilag = ComputeAntilag( smbDiffLumaHistory, diffLumaM1, diffLumaSigma, smbFootprintQuality * data1.x );
+        float diffAntilag = ComputeAntilag( diffLumaHistory, diffLumaM1, diffLumaSigma, smbFootprintQuality * data1.x );
 
         float diffMinAccumSpeed = min( data1.x, gHistoryFixFrameNum ) * REBLUR_USE_ANTILAG_NOT_INVOKING_HISTORY_FIX;
         data1.x = lerp( diffMinAccumSpeed, data1.x, diffAntilag );
@@ -166,9 +166,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         diffHistoryWeight *= float( pixelUv.x >= gSplitScreen );
         diffHistoryWeight *= float( smbPixelUv.x >= gSplitScreenPrev );
 
-        smbDiffLumaHistory = Color::Clamp( diffLumaM1, diffLumaSigma * diffTemporalAccumulationParams.y, smbDiffLumaHistory );
+        diffLumaHistory = Color::Clamp( diffLumaM1, diffLumaSigma * diffTemporalAccumulationParams.y, diffLumaHistory );
 
-        float diffLumaStabilized = lerp( diffLuma, smbDiffLumaHistory, min( diffHistoryWeight, gStabilizationStrength ) );
+        float diffLumaStabilized = lerp( diffLuma, diffLumaHistory, min( diffHistoryWeight, gStabilizationStrength ) );
 
         REBLUR_TYPE diff = gIn_Diff[ pixelPos ];
         diff = ChangeLuma( diff, diffLumaStabilized );
@@ -276,39 +276,32 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             }
         }
 
-        // Sample history - surface motion
-        float smbSpecLumaHistory;
-
-        BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights1(
-            saturate( smbPixelUv ) * gRectSizePrev, gResourceSizeInvPrev,
-            smbOcclusionWeights, smbAllowCatRom,
-            gHistory_SpecLumaStabilized, smbSpecLumaHistory
-        );
-
         // Virtual motion footprint
         Filtering::Bilinear vmbBilinearFilter = Filtering::GetBilinearFilter( vmbPixelUv, gRectSizePrev );
         float4 vmbOcclusion = float4( ( bits & uint4( 16, 32, 64, 128 ) ) != 0 );
         float4 vmbOcclusionWeights = Filtering::GetBilinearCustomWeights( vmbBilinearFilter, vmbOcclusion );
+
         bool vmbAllowCatRom = dot( vmbOcclusion, 1.0 ) > 3.5 && REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TS;
         vmbAllowCatRom = vmbAllowCatRom && smbAllowCatRom; // helps to reduce over-sharpening in disoccluded areas
+
         float vmbFootprintQuality = Filtering::ApplyBilinearFilter( vmbOcclusion.x, vmbOcclusion.y, vmbOcclusion.z, vmbOcclusion.w, vmbBilinearFilter );
         vmbFootprintQuality = Math::Sqrt01( vmbFootprintQuality );
 
-        // Sample history - virtual motion
-        float vmbSpecLumaHistory;
+        // Sample history
+        float2 uv = lerp( smbPixelUv, vmbPixelUv, virtualHistoryAmount );
+        float4 occlusionWeights = lerp( smbOcclusionWeights, vmbOcclusionWeights, virtualHistoryAmount );
+        bool allowCatRom = virtualHistoryAmount < 0.5 ? smbAllowCatRom : vmbAllowCatRom;
+
+        float specLumaHistory;
 
         BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights1(
-            saturate( vmbPixelUv ) * gRectSizePrev, gResourceSizeInvPrev,
-            vmbOcclusionWeights, vmbAllowCatRom,
-            gHistory_SpecLumaStabilized, vmbSpecLumaHistory
+            saturate( uv ) * gRectSizePrev, gResourceSizeInvPrev,
+            occlusionWeights, allowCatRom,
+            gHistory_SpecLumaStabilized, specLumaHistory
         );
 
         // Avoid negative values
-        smbSpecLumaHistory = max( smbSpecLumaHistory, 0.0 );
-        vmbSpecLumaHistory = max( vmbSpecLumaHistory, 0.0 );
-
-        // Combine surface and virtual motion
-        float specLumaHistory = lerp( smbSpecLumaHistory, vmbSpecLumaHistory, virtualHistoryAmount );
+        specLumaHistory = max( specLumaHistory, 0.0 );
 
         // Compute antilag
         float footprintQuality = lerp( smbFootprintQuality, vmbFootprintQuality, virtualHistoryAmount );

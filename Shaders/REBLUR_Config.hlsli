@@ -34,15 +34,11 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 // Switches ( default 0 )
 #define REBLUR_USE_SCREEN_SPACE_SAMPLING_FOR_SPECULAR           0 // specular is more complicated
 #define REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION      0 // compression helps to preserve "lobe important" values
-#define REBLUR_USE_OLD_SMB_FALLBACK_LOGIC                       0 // TODO: here to avoid regressions
 
 #if( NRD_MODE == OCCLUSION || NRD_MODE == DO )
     #undef NRD_SUPPORTS_ANTIFIREFLY
     #define NRD_SUPPORTS_ANTIFIREFLY                            0 // not needed in occlusion mode
 #endif
-
-// Switches ( default 2 )
-#define REBLUR_VIRTUAL_HISTORY_AMOUNT                           2 // 0 - debug surface motion, 1 - debug virtual motion
 
 // Show
 #define REBLUR_SHOW_FAST_HISTORY                                1 // requires "blurRadius" = 0
