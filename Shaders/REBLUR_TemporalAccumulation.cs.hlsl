@@ -653,7 +653,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         // Virtual history confidence
-        float virtualHistoryConfidenceForSmbRelaxation = virtualHistoryNormalBasedConfidence * virtualHistoryRoughnessBasedConfidence;
         float virtualHistoryConfidence = virtualHistoryNormalBasedConfidence * virtualHistoryRoughnessBasedConfidence * virtualHistoryParallaxBasedConfidence;
 
         // TODO: more fallback to "smb" needed in many cases if roughness changes
