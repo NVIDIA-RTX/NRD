@@ -27,7 +27,7 @@ Supported signal types:
   - Shadows with translucency
 
 Performance on RTX 4080 @ 1440p (native) with the following settings - default denoiser settings, `NormalEncoding::R10_G10_B10_A2_UNORM`, `HitDistanceReconstructionMode::AREA_3X3` (common for probabilistic lobe selection at the primary/PSR hit):
-- *REBLUR_DIFFUSE_SPECULAR* - 2.55 ms (3.50 ms in "SH" mode)
+- *REBLUR_DIFFUSE_SPECULAR* - 2.45 ms (3.35 ms in "SH" mode)
   - `enableAntifirefly = true` - +0-2% overhead
 - *RELAX_DIFFUSE_SPECULAR* - 3.15 ms (5.05 ms in "SH" mode)
   - `enableAntifirefly = true` - +7-10% overhead
