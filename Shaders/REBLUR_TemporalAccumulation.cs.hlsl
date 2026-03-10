@@ -600,8 +600,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Virtual history amount
         // Tests 65, 66, 103, 107, 111, 132, e9, e11
-        float virtualHistoryAmount = Math::SmoothStep( 0.05, 0.95, Dfactor ); // TODO: too much for high roughness under glancing angles ( test 81 )
-        virtualHistoryAmount *= virtualHistoryNormalBasedConfidence; // helps on bumpy surfaces, because virtual motion gets ruined by big curvature
+        // "Dfactor" is applied in "GetXvirtual" to "vmbPixelUv" making it closer to surface where needed ( test 236 )
+        float virtualHistoryAmount = virtualHistoryNormalBasedConfidence; // helps on bumpy surfaces, because virtual motion gets ruined by big curvature
 
         // Virtual motion - virtual parallax difference
         // Tests 3, 6, 8, 11, 14, 100, 103, 104, 106, 109, 110, 114, 120, 127, 130, 131, 132, 138, 139 and 9e
@@ -681,6 +681,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             float f = Math::LinearStep( a0, 0.0, a );
             surfaceHistoryConfidence = Math::Pow01( f, 4.0 );
+
+            // Lerp to "1" for very high roughness, where specular motion regresses to surface motion ( test 236 )
+            f = Math::LinearStep( 0.8, 0.9, roughnessModified );
+            surfaceHistoryConfidence = lerp( surfaceHistoryConfidence, 1.0, f );
         }
 
         // Responsive accumulation
@@ -715,6 +719,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         virtualHistoryAmount = saturate( virtualHistoryAmount * scale );
 
         // Choose one: "smb" or "vmb"
+        // TODO: dithering seems to be not needed, since "vmb" is dominating for any possible use cases ( roughness, NoV )
         virtualHistoryAmount = step( 0.5, virtualHistoryAmount );
 
         // Sample history
