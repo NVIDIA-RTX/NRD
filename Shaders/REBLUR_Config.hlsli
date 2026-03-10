@@ -46,10 +46,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_SHOW_CURVATURE_SIGN                              3
 #define REBLUR_SHOW_SURFACE_HISTORY_CONFIDENCE                  4
 #define REBLUR_SHOW_VIRTUAL_HISTORY_CONFIDENCE                  5
-#define REBLUR_SHOW_VIRTUAL_HISTORY_NORMAL_CONFIDENCE           6
-#define REBLUR_SHOW_VIRTUAL_HISTORY_ROUGHNESS_CONFIDENCE        7
-#define REBLUR_SHOW_VIRTUAL_HISTORY_PARALLAX_CONFIDENCE         8
-#define REBLUR_SHOW_HIT_DIST_FOR_TRACKING                       9
+#define REBLUR_SHOW_HIT_DIST_FOR_TRACKING                       6
 
 #define REBLUR_SHOW                                             0 // 0 or REBLUR_SHOW_X
 

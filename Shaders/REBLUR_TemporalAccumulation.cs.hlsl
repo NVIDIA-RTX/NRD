@@ -507,12 +507,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float4 roughnessWeight = ComputeNonExponentialWeightWithSigma( vmbRoughness * vmbRoughness, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y, roughnessSigma );
         roughnessWeight = lerp( Math::SmoothStep( 1.0, 0.0, smbParallaxInPixelsMax ), 1.0, roughnessWeight ); // jitter friendly
         float virtualHistoryRoughnessBasedConfidence = Filtering::ApplyBilinearFilter( roughnessWeight.x, roughnessWeight.y, roughnessWeight.z, roughnessWeight.w, vmbBilinearFilter );
+        float virtualHistoryConfidence = virtualHistoryRoughnessBasedConfidence;
 
         // Virtual motion - normal: parallax ( test 132 )
         float4 vmbNormalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.SampleLevel( STOCHASTIC_BILINEAR_FILTER, StochasticBilinear( vmbPixelUv, gRectSizePrev ) * gResolutionScalePrev, 0 ) );
         float3 vmbN = Geometry::RotateVector( gWorldPrevToWorld, vmbNormalAndRoughness.xyz );
         float Dfactor = ImportanceSampling::GetSpecularDominantFactor( NoV, roughness, ML_SPECULAR_DOMINANT_DIRECTION_G2 );
         float virtualHistoryNormalBasedConfidence = 1.0 / ( 1.0 + 0.5 * Dfactor * saturate( length( N - vmbN ) - REBLUR_NORMAL_ULP ) * vmbPixelsTraveled );
+        virtualHistoryConfidence *= virtualHistoryNormalBasedConfidence;
 
         // Patch "smbNavg" if "smb" motion is invalid ( make relative tests a NOP )
         smbNavg = smbFootprintQuality == 0.0 ? vmbN : smbNavg;
@@ -596,16 +598,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Virtual motion - normal: lobe overlapping ( test 107 )
         float normalWeight = GetEncodingAwareNormalWeight( N, vmbN, lobeHalfAngle, curvatureAngle, REBLUR_NORMAL_ULP );
         normalWeight = lerp( Math::SmoothStep( 1.0, 0.0, vmbPixelsTraveled ), 1.0, normalWeight ); // jitter friendly
-        virtualHistoryNormalBasedConfidence = min( virtualHistoryNormalBasedConfidence, normalWeight );
-
-        // Virtual history amount
-        // Tests 65, 66, 103, 107, 111, 132, e9, e11
-        // "Dfactor" is applied in "GetXvirtual" to "vmbPixelUv" making it closer to surface where needed ( test 236 )
-        float virtualHistoryAmount = virtualHistoryNormalBasedConfidence; // helps on bumpy surfaces, because virtual motion gets ruined by big curvature
+        virtualHistoryConfidence *= normalWeight;
 
         // Virtual motion - virtual parallax difference
         // Tests 3, 6, 8, 11, 14, 100, 103, 104, 106, 109, 110, 114, 120, 127, 130, 131, 132, 138, 139 and 9e
-        float virtualHistoryParallaxBasedConfidence;
         {
             float hitDistForTrackingPrev = gPrev_SpecHitDistForTracking.SampleLevel( gLinearClamp, vmbPixelUv * gResolutionScalePrev, 0 );
             float3 XvirtualPrev = GetXvirtual( hitDistForTrackingPrev, curvature, X, Xprev, N, V, roughness );
@@ -618,7 +614,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float d = length( ( vmbPixelUvPrev - vmbPixelUv ) * gRectSize );
 
             r = max( r, 0.1 ); // important, especially if "curvatureAngle" is not used
-            virtualHistoryParallaxBasedConfidence = Math::LinearStep( r, 0.0, d ); // TODO: using "r * 0.05" helps in tests 8 and 110, but worsens 192
+
+            float virtualHistoryParallaxBasedConfidence = Math::LinearStep( r, 0.0, d ); // TODO: using "r * 0.05" helps in tests 8 and 110, but worsens 192
+            virtualHistoryConfidence *= virtualHistoryParallaxBasedConfidence;
         }
 
         // Virtual motion - normal & roughness prev-prev tests
@@ -648,15 +646,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             w = IsInScreenNearest( vmbPixelUvPrev ) ? w : 1.0;
 
-            virtualHistoryNormalBasedConfidence = min( virtualHistoryNormalBasedConfidence, w.x );
-            virtualHistoryRoughnessBasedConfidence = min( virtualHistoryRoughnessBasedConfidence, w.y );
+            virtualHistoryConfidence *= w.x * w.y;
         }
-
-        // Virtual history confidence
-        float virtualHistoryConfidence = virtualHistoryNormalBasedConfidence * virtualHistoryRoughnessBasedConfidence * virtualHistoryParallaxBasedConfidence;
-
-        // TODO: more fallback to "smb" needed in many cases if roughness changes
-        virtualHistoryAmount *= virtualHistoryRoughnessBasedConfidence; // helps to preserve roughness details, which lies on surfaces
 
         // Surface history confidence ( test 9, 9e )
         // IMPORTANT: needs to be responsive, because "vmb" fails on bumpy surfaces for the following reasons:
@@ -712,10 +703,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         smbSpecAccumSpeed = min( smbSpecAccumSpeed, maxFrameNum.x );
         vmbSpecAccumSpeed = min( vmbSpecAccumSpeed, maxFrameNum.y );
 
-        // Fallback to the opposite if the history length is short ( test 218 ) // ***
+        // Virtual history amount ( tests 65, 66, 103, 107, 111, 132, e9, e11, 218 ) // ***
+        // OLD: virtualHistoryAmount = saturate( scale )
+        //      * Dfactor                                 - 1 is assumed now, because "Dfactor" is applied in "GetXvirtual" to "vmbPixelUv" making it closer to surface where needed ( test 236 )
+        //    Helped on bumpy surfaces, because virtual motion got ruined by big curvature
+        //      * virtualHistoryNormalBasedConfidence     - 1 is assumed now, because the selector below does the same and avoids "double applyment" ( was used before "prev-prev" test )
+        //    Helped to preserve "lied on surface" roughness details
+        //      * virtualHistoryRoughnessBasedConfidence  - 1 is assumed now, because the selector below does the same and avoids "double applyment"
         float magic = vmbSpecAccumSpeed > smbSpecAccumSpeed ? 8.0 : 0.5; // TODO: tune better?
         float scale = 1.0 + ( vmbSpecAccumSpeed - smbSpecAccumSpeed ) / ( 1.0 + magic * max( vmbSpecAccumSpeed, smbSpecAccumSpeed ) );
-        virtualHistoryAmount = saturate( virtualHistoryAmount * scale );
+        float virtualHistoryAmount = saturate( scale );
 
         // Choose one: "smb" or "vmb"
         // TODO: dithering seems to be not needed, since "vmb" is dominating for any possible use cases ( roughness, NoV )
@@ -809,12 +806,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             virtualHistoryAmount = surfaceHistoryConfidence;
         #elif( REBLUR_SHOW == REBLUR_SHOW_VIRTUAL_HISTORY_CONFIDENCE )
             virtualHistoryAmount = virtualHistoryConfidence;
-        #elif( REBLUR_SHOW == REBLUR_SHOW_VIRTUAL_HISTORY_NORMAL_CONFIDENCE )
-            virtualHistoryAmount = virtualHistoryNormalBasedConfidence;
-        #elif( REBLUR_SHOW == REBLUR_SHOW_VIRTUAL_HISTORY_ROUGHNESS_CONFIDENCE )
-            virtualHistoryAmount = virtualHistoryRoughnessBasedConfidence;
-        #elif( REBLUR_SHOW == REBLUR_SHOW_VIRTUAL_HISTORY_PARALLAX_CONFIDENCE )
-            virtualHistoryAmount = virtualHistoryParallaxBasedConfidence;
         #elif( REBLUR_SHOW == REBLUR_SHOW_HIT_DIST_FOR_TRACKING )
             float smc = GetSpecMagicCurve( roughness );
             virtualHistoryAmount = hitDistForTracking * lerp( 1.0, 5.0, smc ) / ( 1.0 + hitDistForTracking * lerp( 1.0, 5.0, smc ) );
