@@ -170,9 +170,9 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
         float invSum = Math::PositiveRcp( sum );
         diff *= invSum;
-    #if( NRD_MODE == SH )
-        diffSh *= invSum;
-    #endif
+        #if( NRD_MODE == SH )
+            diffSh *= invSum;
+        #endif
 
 #if( REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
     }
