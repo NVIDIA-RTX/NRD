@@ -492,14 +492,12 @@ float2 GetGeometryWeightParams( float planeDistSensitivity, float frustumSize, f
     return float2( a, -b );
 }
 
-float2 GetHitDistanceWeightParams( float hitDist, float nonLinearAccumSpeed, float roughness = 1.0 )
+float2 GetHitDistanceWeightParams( float hitDist, float nonLinearAccumSpeed )
 {
-    // This math is fragile: in non-occlusion modes hit distances are already under-denoised:
-    // - denoising less adds more graininess to radiance ( probably not as bad, a review is needed )
-    // - denoising more leads to "solarization" ( shadows banding )
-    float smc = max( GetSpecMagicCurve( roughness ), 1.0 / ( 1.0 + 64.0 ) );
-    float norm = min( nonLinearAccumSpeed, smc );
-    float a = 1.0 / norm; // dividing this to "[1; NRD_EXP_WEIGHT_DEFAULT_SCALE]" changes the behavior
+    // This math is fragile!
+    // - non-denoised ( only accumulated ) hit distances are needed to reduce bias and to avoid "banding" if history is long
+    // - firefly suppressor for hit distances is needed to minimize "sparse bright pixels" on specular lobe boundaries
+    float a = 1.0 / nonLinearAccumSpeed;
     float b = hitDist * a;
 
     return float2( a, -b );

@@ -288,7 +288,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             blurRadius = max(blurRadius, 1.0);
 
         float normalWeightParam = GetNormalWeightParam2(centerRoughness, 0.5 * gLobeAngleFraction);
-        float2 hitDistanceWeightParams = GetHitDistanceWeightParams(specularIllumination.w, 1.0 / 9.0, centerRoughness);
+        float2 hitDistanceWeightParams = GetHitDistanceWeightParams(specularIllumination.w, 1.0 / 9.0);
         float2 roughnessWeightParams = GetRoughnessWeightParams(centerRoughness, gRoughnessFraction);
 
         float specMinHitDistanceWeight = (specularIllumination.a == 0) ? 1.0 : gMinHitDistanceWeight * smc;

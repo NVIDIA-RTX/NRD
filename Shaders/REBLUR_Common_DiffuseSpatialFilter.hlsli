@@ -64,7 +64,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv );
         float normalWeightParam = GetNormalWeightParam( diffNonLinearAccumSpeed, gLobeAngleFraction ) / fractionScale;
 
-        float2 hitDistanceWeightParams = GetHitDistanceWeightParams( ExtractHitDist( diff ), diffNonLinearAccumSpeed ); // TODO: what if hitT == 0?
+        float2 hitDistanceWeightParams = GetHitDistanceWeightParams( ExtractHitDist( diff ), diffNonLinearAccumSpeed );
         float minHitDistWeight = gMinHitDistanceWeight * fractionScale;
 
         // ( Optional ) Gradually reduce "minHitDistWeight" to preserve contact details
@@ -173,6 +173,11 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         #if( NRD_MODE == SH )
             diffSh *= invSum;
         #endif
+
+        // Keep hit distances unprocessed to avoid bias and self-inference
+    #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && NRD_MODE != OCCLUSION && NRD_MODE != DO )
+        diff.w = hitDist / hitDistScale;
+    #endif
 
 #if( REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
     }

@@ -86,7 +86,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float normalWeightParam = GetNormalWeightParam( specNonLinearAccumSpeed, gLobeAngleFraction, roughness ) / fractionScale;
         float2 roughnessWeightParams = GetRoughnessWeightParams( roughness, roughnessFractionScaled );
 
-        float2 hitDistanceWeightParams = GetHitDistanceWeightParams( ExtractHitDist( spec ), specNonLinearAccumSpeed, roughness ); // TODO: what if hitT == 0?
+        float2 hitDistanceWeightParams = GetHitDistanceWeightParams( ExtractHitDist( spec ), specNonLinearAccumSpeed );
         float minHitDistWeight = gMinHitDistanceWeight * fractionScale * smc;
 
         // ( Optional ) Gradually reduce "minHitDistWeight" to preserve contact details
@@ -219,6 +219,11 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         #if( NRD_MODE == SH )
             specSh.xyz *= invSum;
         #endif
+
+        // Keep hit distances unprocessed to avoid bias and self-inference
+    #if( REBLUR_SPATIAL_MODE != REBLUR_PRE_BLUR && NRD_MODE != OCCLUSION && NRD_MODE != DO )
+        spec.w = hitDist / hitDistScale;
+    #endif
 
 #if( REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR )
         // Output

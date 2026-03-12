@@ -772,6 +772,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             #if( NRD_MODE == SH )
                 specShResult.xyz *= GetLumaScale( length( specShResult.xyz ), specLumaClamped );
             #endif
+
+            // This is required for "hit distance weight" to work
+            float specHitDistMaxRelativeIntensity = 1.2 + 1.0 / ( specAccumSpeed + 1.0 );
+            specResult.w = lerp( specResult.w, min( specResult.w, specHistory.w * specHitDistMaxRelativeIntensity ), specAntifireflyFactor );
         #endif
 
         // Output
@@ -901,6 +905,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             #if( NRD_MODE == SH )
                 diffShResult.xyz *= GetLumaScale( length( diffShResult.xyz ), diffLumaClamped );
             #endif
+
+            // This is required for "hit distance weight" to work
+            float diffHitDistMaxRelativeIntensity = 1.2 + 1.0 / ( diffAccumSpeed + 1.0 );
+            diffResult.w = lerp( diffResult.w, min( diffResult.w, diffHistory.w * diffHitDistMaxRelativeIntensity ), diffAntifireflyFactor );
         #endif
 
         // Output
