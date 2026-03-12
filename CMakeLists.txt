@@ -122,7 +122,7 @@ if(NOT TARGET ShaderMake)
     # ShaderMake
     option(SHADERMAKE_TOOL "" ON)
 
-    FetchContent_Declare(
+    fetchcontent_declare(
         shadermake
         DOWNLOAD_EXTRACT_TIMESTAMP 1
         DOWNLOAD_NO_PROGRESS 1
@@ -133,7 +133,7 @@ endif()
 
 if(NOT TARGET MathLib)
     # MathLib
-    FetchContent_Declare(
+    fetchcontent_declare(
         mathlib
         DOWNLOAD_EXTRACT_TIMESTAMP 1
         DOWNLOAD_NO_PROGRESS 1
@@ -152,7 +152,7 @@ if(NOT TARGET NRI AND NRD_NRI)
     cmake_dependent_option(NRI_ENABLE_D3D12_SUPPORT "" ON "NRD_EMBEDS_DXIL_SHADERS" OFF)
     cmake_dependent_option(NRI_ENABLE_D3D11_SUPPORT "" ON "NRD_EMBEDS_DXBC_SHADERS" OFF)
 
-    FetchContent_Declare(
+    fetchcontent_declare(
         nri
         DOWNLOAD_EXTRACT_TIMESTAMP 1
         DOWNLOAD_NO_PROGRESS 1
@@ -165,7 +165,7 @@ if(DEPS)
     message("NRD: downloading dependencies:")
     message(STATUS "${DEPS} ...")
 
-    FetchContent_MakeAvailable(${DEPS})
+    fetchcontent_makeavailable(${DEPS})
 endif()
 
 # NRD
