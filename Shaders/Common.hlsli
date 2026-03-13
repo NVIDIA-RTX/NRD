@@ -470,7 +470,7 @@ float2 GetKernelSampleCoordinates( float4x4 mToClip, float3 offset, float3 X, fl
 
 float GetNormalWeightParam( float nonLinearAccumSpeed, float lobeAngleFraction, float roughness = 1.0 )
 {
-    float percentOfVolume = NRD_MAX_PERCENT_OF_LOBE_VOLUME * lerp( lobeAngleFraction, 1.0, nonLinearAccumSpeed );
+    float percentOfVolume = NRD_MAX_PERCENT_OF_LOBE_VOLUME * lerp( saturate( lobeAngleFraction ), 1.0, nonLinearAccumSpeed );
     float tanHalfAngle = ImportanceSampling::GetSpecularLobeTanHalfAngle( roughness, percentOfVolume );
 
     // TODO: use gLobeAngleFraction = 0.1 ( non squared! ) and:
@@ -516,7 +516,7 @@ float2 GetRelaxedRoughnessWeightParams( float m, float fraction = 1.0, float sen
     // "m = roughness * roughness" makes test less sensitive to small deltas
 
     // https://www.desmos.com/calculator/wkvacka5za
-    float a = 1.0 / lerp( sensitivity, 1.0, lerp( m * m, m, fraction ) );
+    float a = 1.0 / lerp( sensitivity, 1.0, lerp( m * m, m, saturate( fraction ) ) );
     float b = m * a;
 
     return float2( a, -b );

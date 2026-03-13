@@ -115,42 +115,30 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float areaFactor = hitDistFactor * NON_LINEAR_ACCUM_SPEED;
     #endif
 
-        float blurRadius = MAX_BLUR_RADIUS;
-        blurRadius *= Math::Sqrt01( areaFactor ); // "areaFactor" affects area, not radius
-        blurRadius *= smc; // previously "sqrt( ROUGHNESS )" was used, it's wrong for "ROUGHNESS < 0.1"
+        float blurRadius = radiusScale * Math::Sqrt01( areaFactor ); // "areaFactor" affects area, not radius
+        blurRadius = saturate( blurRadius ) * MAX_BLUR_RADIUS * smc; // previously "sqrt( ROUGHNESS )" was used instead of "smc", it's wrong for "ROUGHNESS < 0.1"
+        blurRadius = max( blurRadius, gMinBlurRadius * smc );
 
     #if( REBLUR_SPATIAL_PASS == REBLUR_PRE_PASS && REBLUR_SPATIAL_LOBE == REBLUR_SPEC )
-        float hitDistForTracking = hitDist == 0.0 ? NRD_INF : hitDist;
-
-        // The "area factor" idea works well and offers linear progression of blur radiuses over time, but it makes
-        // the blur radius depend on "sqrt( ROUGHNESS )" not "ROUGHNESS". It hurts the pre pass, which can be very wide.
-        // The code below fixes completely wrong big blur radiuses.
+        // For "pre pass" we want to stay "in-lobe" because "MAX_BLUR_RADIUS" can be large
         float lobeTanHalfAngle = ImportanceSampling::GetSpecularLobeTanHalfAngle( ROUGHNESS, REBLUR_MAX_PERCENT_OF_LOBE_VOLUME_FOR_PRE_PASS );
-        float lobeRadius = hitDist * NoD * lobeTanHalfAngle;
-        float minBlurRadius = lobeRadius / PixelRadiusToWorld( gUnproject, gOrthoMode, 1.0, viewZ + hitDist * Dv.w );
+        float worldLobeRadius = hitDist * NoD * lobeTanHalfAngle;
+        float lobeRadius = worldLobeRadius / PixelRadiusToWorld( gUnproject, gOrthoMode, 1.0, viewZ + hitDist * Dv.w );
 
-        blurRadius = min( blurRadius, minBlurRadius );
+        blurRadius = min( blurRadius, lobeRadius );
     #endif
-
-        // Blur radius - scale
-        blurRadius *= radiusScale;
-
-        // Blur radius - addition to avoid underblurring
-        blurRadius = max( blurRadius, gMinBlurRadius * smc );
 
         // Weights
         float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv );
         float normalWeightParam = GetNormalWeightParam( NON_LINEAR_ACCUM_SPEED, gLobeAngleFraction, ROUGHNESS ) / fractionScale;
-        float2 roughnessWeightParams = GetRoughnessWeightParams( ROUGHNESS, saturate( gRoughnessFraction * fractionScale ) );
+        float2 roughnessWeightParams = GetRoughnessWeightParams( ROUGHNESS, gRoughnessFraction * fractionScale );
 
         float2 hitDistanceWeightParams = GetHitDistanceWeightParams( ExtractHitDist( result ), NON_LINEAR_ACCUM_SPEED );
         float minHitDistWeight = gMinHitDistanceWeight * fractionScale * smc;
 
-        // Gradually reduce "minHitDistWeight" to preserve contact details
-        // This is valid only for non-occlusion modes!
-        // This helps to squeeze more details for radiance by introducing more "graininess" in hit distances
+        // Gradually reduce "minHitDistWeight" to squeeze more shadow details
     #if( REBLUR_SPATIAL_PASS != REBLUR_PRE_PASS && NRD_MODE != OCCLUSION && NRD_MODE != DO )
-        minHitDistWeight *= NON_LINEAR_ACCUM_SPEED;
+        minHitDistWeight *= NON_LINEAR_ACCUM_SPEED; // this is valid only for non-occlusion modes!
     #endif
 
         // Screen-space settings
@@ -191,6 +179,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #endif
 
         // Sampling
+        float hitDistForTracking = hitDist == 0.0 ? NRD_INF : hitDist;
+
         [unroll]
         for( uint n = 0; n < POISSON_SAMPLE_NUM; n++ )
         {

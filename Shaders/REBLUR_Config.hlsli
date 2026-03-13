@@ -81,8 +81,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_BLUR_RADIUS_SCALE                                1.0
 
 #define REBLUR_POST_BLUR_ROTATOR_MODE                           NRD_FRAME
-#define REBLUR_POST_BLUR_FRACTION_SCALE                         0.5 // TODO: adjust based on sum of non-noisy data based weights...
-#define REBLUR_POST_BLUR_RADIUS_SCALE                           2.0 // ... ( normalized to number of taps ) from the blur pass?
+#define REBLUR_POST_BLUR_FRACTION_SCALE                         0.5
+#define REBLUR_POST_BLUR_RADIUS_SCALE                           2.0
 
 #define REBLUR_NORMAL_ULP                                       0.0 // was "NRD_NORMAL_ENCODING_ERROR"
 #define REBLUR_ALMOST_ZERO_ANGLE                                cos( Math::DegToRad( 89.0 ) )
