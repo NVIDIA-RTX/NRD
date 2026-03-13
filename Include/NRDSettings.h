@@ -204,7 +204,9 @@ namespace nrd
     const float REBLUR_DEFAULT_ACCUMULATION_TIME = 0.5f; // sec
 
     // "Normalized hit distance" = saturate( "hit distance" / f ), where:
-    // f = ( A + viewZ * B ) * lerp( 1.0, C, exp2( D * roughness ^ 2 ) ), see "NRD.hlsl/REBLUR_FrontEnd_GetNormHitDist"
+    // f = ( A + viewZ * B ) * lerp( C, 1.0, smc )
+    //  - smc = F( roughness ) - represents lobe spread
+    //  - see "NRD.hlsli/_REBLUR_GetHitDistanceNormalization"
     struct ReblurHitDistanceParameters
     {
         // (units > 0) - constant value
@@ -213,11 +215,8 @@ namespace nrd
         // (> 0) - viewZ based linear scale (1 m - 10 cm, 10 m - 1 m, 100 m - 10 m)
         float B = 0.1f;
 
-        // (>= 1) - roughness based scale, use values > 1 to get bigger hit distance for low roughness
+        // (>= 1) - roughness based scale, use values > 1 to clamp hit distance to a larger value for low roughness
         float C = 20.0f;
-
-        // (<= 0) - absolute value should be big enough to collapse "exp2( D * roughness ^ 2 )" to "~0" for roughness = 1
-        float D = -25.0f;
     };
 
     // Use the validation layer output to ensure that under complicated lighting conditions "diff/spec frames" visualization stays in the "violet" zone

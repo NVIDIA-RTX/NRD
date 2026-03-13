@@ -104,7 +104,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float NoD = abs( dot( Nv, Dv.xyz ) );
         float smc = GetSpecMagicCurve( ROUGHNESS, 0.5 ); // 0.5 matches previously used "sqrt( ROUGHNESS )" and fixes "roughnes < 0.1"
 
-        float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings, ROUGHNESS );
+        float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings.xyz, ROUGHNESS );
         float hitDist = ExtractHitDist( result ) * hitDistScale;
         float hitDistFactor = GetHitDistFactor( hitDist, frustumSize ); // using "hitDist * NoD" worsens denoising at glancing angles
 
@@ -247,7 +247,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         #if( REBLUR_SPATIAL_PASS == REBLUR_PRE_PASS && REBLUR_SPATIAL_LOBE == REBLUR_SPEC )
             // Min hit distance for tracking, ignoring 0 values ( which still can be produced by VNDF sampling )
             // TODO: if trimming is off min hitDist can come from samples with very low probabilities, it worsens reprojection
-            float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistSettings, Ns.w );
+            float hs = ExtractHitDist( s ) * _REBLUR_GetHitDistanceNormalization( zs, gHitDistSettings.xyz, Ns.w );
             float geometryWeight = w * NoV * float( hs != 0.0 );
             if( Rng::Hash::GetFloat( ) < geometryWeight )
                 hitDistForTracking = min( hitDistForTracking, hs );

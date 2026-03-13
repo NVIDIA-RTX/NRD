@@ -329,10 +329,7 @@ float2 ApplyCheckerboardShift( float2 pos, uint mode, uint counter, uint frameIn
 // https://www.desmos.com/calculator/xwq1nrawho
 float GetSpecMagicCurve( float roughness, float power = 0.25 )
 {
-    float f = 1.0 - exp2( -200.0 * roughness * roughness );
-    f *= Math::Pow01( roughness, power );
-
-    return f;
+    return _NRD_GetSpecMagicCurve( roughness, power );
 }
 
 float ComputeParallaxInPixels( float3 X, float2 uvForZeroParallax, float4x4 mWorldToClip, float2 rectSize )

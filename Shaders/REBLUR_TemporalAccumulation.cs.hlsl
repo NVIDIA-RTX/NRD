@@ -145,7 +145,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         hitDistForTracking = hitDistForTracking == NRD_INF ? 0.0 : hitDistForTracking;
 
-        float hitDistNormalization = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings, roughness );
+        float hitDistNormalization = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings.xyz, roughness );
         #if( NRD_MODE == OCCLUSION )
             hitDistForTracking *= hitDistNormalization;
         #else

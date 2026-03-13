@@ -543,9 +543,20 @@ float3 _NRD_EnvironmentTerm_Rtg( float3 Rf0, float NoV, float roughness )
 }
 
 // Hit distance normalization
-float _REBLUR_GetHitDistanceNormalization( float viewZ, float4 hitDistParams, float roughness )
+float _NRD_GetSpecMagicCurve( float roughness, float power )
 {
-    return ( hitDistParams.x + abs( viewZ ) * hitDistParams.y ) * lerp( 1.0, hitDistParams.z, saturate( exp2( hitDistParams.w * roughness * roughness ) ) );
+    // https://www.desmos.com/calculator/fb1h5kiouj
+    float f = 1.0 - exp2( -200.0 * roughness * roughness );
+    f *= pow( saturate( roughness ), power );
+
+    return f;
+}
+
+float _REBLUR_GetHitDistanceNormalization( float viewZ, float3 hitDistParams, float roughness )
+{
+    float smc = _NRD_GetSpecMagicCurve( roughness, 0.5 );
+
+    return ( hitDistParams.x + abs( viewZ ) * hitDistParams.y ) * lerp( hitDistParams.z, 1.0, smc );
 }
 
 // Is valid?
@@ -765,7 +776,7 @@ void NRD_FrontEnd_SpecHitDistAveraging_End( inout float accumulatedSpecHitDist )
 // FRONT-END
 
 // This function returns AO / SO which REBLUR can decode back to "hit distance" internally
-float REBLUR_FrontEnd_GetNormHitDist( float hitDist, float viewZ, float4 hitDistParams, float roughness )
+float REBLUR_FrontEnd_GetNormHitDist( float hitDist, float viewZ, float3 hitDistParams, float roughness )
 {
     float f = _REBLUR_GetHitDistanceNormalization( viewZ, hitDistParams, roughness );
 
@@ -1172,7 +1183,7 @@ bool NRD_IsValidRadiance( float3 radiance )
 }
 
 // Scales normalized hit distance back to real length
-float REBLUR_GetHitDist( float normHitDist, float viewZ, float4 hitDistParams, float roughness )
+float REBLUR_GetHitDist( float normHitDist, float viewZ, float3 hitDistParams, float roughness )
 {
     float scale = _REBLUR_GetHitDistanceNormalization( viewZ, hitDistParams, roughness );
 

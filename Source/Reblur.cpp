@@ -328,7 +328,7 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gFrustum = m_Frustum;
     consts->gFrustumPrev = m_FrustumPrev;
     consts->gCameraDelta = m_CameraDelta.xmm;
-    consts->gHitDistSettings = float4(settings.hitDistanceParameters.A, settings.hitDistanceParameters.B, settings.hitDistanceParameters.C, settings.hitDistanceParameters.D);
+    consts->gHitDistSettings = float4(settings.hitDistanceParameters.A, settings.hitDistanceParameters.B, settings.hitDistanceParameters.C, 0.0f);
     consts->gViewVectorWorld = m_ViewDirection.xmm;
     consts->gViewVectorWorldPrev = m_ViewDirectionPrev.xmm;
     consts->gMvScale = float4(m_CommonSettings.motionVectorScale[0], m_CommonSettings.motionVectorScale[1], m_CommonSettings.motionVectorScale[2], m_CommonSettings.isMotionVectorInWorldSpace ? 1.0f : 0.0f);

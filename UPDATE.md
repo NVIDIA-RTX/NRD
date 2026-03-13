@@ -340,6 +340,7 @@ A single NRD instance can now include any combination of denoisers, including re
   - added "HISTORY CONFIDENCE" section to README
 - *REBLUR*:
   - `HitDistanceParameters` renamed to `ReblurHitDistanceParameters` (no changes in meaning)
+  - removed `ReblurHitDistanceParameters::D`, which was a left over from antient times (`smc` is used instead under the hood, it's a remapped `roughness`)
   - `ReblurResponsiveAccumulationSettings` renamed to `ReblurReblurResponsiveAccumulationSettings` (no changes in meaning)
   - added `ReblurConvergenceSettings`
 
