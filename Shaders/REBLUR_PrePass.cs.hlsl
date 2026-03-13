@@ -47,7 +47,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float NoV = abs( dot( Nv, Vv ) );
 
     const float frustumSize = GetFrustumSize( gMinRectDimMulUnproject, gOrthoMode, viewZ );
-    const float4 rotator = GetBlurKernelRotation( REBLUR_PRE_BLUR_ROTATOR_MODE, pixelPos, gRotatorPre, gFrameIndex );
+    const float4 rotator = GetBlurKernelRotation( REBLUR_PRE_PASS_ROTATOR_MODE, pixelPos, gRotatorPre, gFrameIndex );
 
     // Checkerboard resolve
 #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
@@ -67,60 +67,20 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #endif
 
     // Non-linear accum speed
-    float2 nonLinearAccumSpeed = REBLUR_PRE_BLUR_NON_LINEAR_ACCUM_SPEED;
+    float2 nonLinearAccumSpeed = REBLUR_PRE_PASS_NON_LINEAR_ACCUM_SPEED;
 
     // Spatial filtering
-    #define REBLUR_SPATIAL_MODE REBLUR_PRE_BLUR
+    #define REBLUR_SPATIAL_PASS REBLUR_PRE_PASS
 
     #if( NRD_DIFF )
-    {
-        uint2 pos = pixelPos;
-        pos.x >>= gDiffCheckerboard == 2 ? 0 : 1;
-
-        float sum = 1.0;
-        REBLUR_TYPE diff = gIn_Diff[ pos ];
-        #if( NRD_MODE == SH )
-            float4 diffSh = gIn_DiffSh[ pos ];
-        #endif
-
-    #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
-        if( gDiffCheckerboard != 2 && checkerboard != gDiffCheckerboard )
-        {
-            sum = 0;
-            diff = 0;
-            #if( NRD_MODE == SH )
-                diffSh = 0;
-            #endif
-        }
-    #endif
-
-        #include "REBLUR_Common_DiffuseSpatialFilter.hlsli"
-    }
+        #define REBLUR_SPATIAL_LOBE REBLUR_DIFF
+        #define MAX_BLUR_RADIUS gDiffPrepassBlurRadius
+        #include "REBLUR_Common_SpatialFilter.hlsli"
     #endif
 
     #if( NRD_SPEC )
-    {
-        uint2 pos = pixelPos;
-        pos.x >>= gSpecCheckerboard == 2 ? 0 : 1;
-
-        float sum = 1.0;
-        REBLUR_TYPE spec = gIn_Spec[ pos ];
-        #if( NRD_MODE == SH )
-            float4 specSh = gIn_SpecSh[ pos ];
-        #endif
-
-    #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
-        if( gSpecCheckerboard != 2 && checkerboard != gSpecCheckerboard )
-        {
-            sum = 0;
-            spec = 0;
-            #if( NRD_MODE == SH )
-                specSh = 0;
-            #endif
-        }
-    #endif
-
-        #include "REBLUR_Common_SpecularSpatialFilter.hlsli"
-    }
+        #define REBLUR_SPATIAL_LOBE REBLUR_SPEC
+        #define MAX_BLUR_RADIUS gSpecPrepassBlurRadius
+        #include "REBLUR_Common_SpatialFilter.hlsli"
     #endif
 }

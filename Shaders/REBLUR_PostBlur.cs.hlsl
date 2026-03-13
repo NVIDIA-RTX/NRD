@@ -76,51 +76,15 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #endif
 
     // Spatial filtering
-    #define REBLUR_SPATIAL_MODE REBLUR_POST_BLUR
+    #define REBLUR_SPATIAL_PASS REBLUR_POST_BLUR
 
     #if( NRD_DIFF )
-    {
-        float sum = 1.0;
-        REBLUR_TYPE diff = gIn_Diff[ pixelPos ];
-        #if( NRD_MODE == SH )
-            float4 diffSh = gIn_DiffSh[ pixelPos ];
-        #endif
-
-        #include "REBLUR_Common_DiffuseSpatialFilter.hlsli"
-
-        #if( TEMPORAL_STABILIZATION == 0 )
-            #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
-                diff.w = gReturnHistoryLengthInsteadOfOcclusion ? data1.x : diff.w;
-            #endif
-
-            gOut_DiffCopy[ pixelPos ] = diff;
-            #if( NRD_MODE == SH )
-                gOut_DiffShCopy[ pixelPos ] = diffSh;
-            #endif
-        #endif
-    }
+        #define REBLUR_SPATIAL_LOBE REBLUR_DIFF
+        #include "REBLUR_Common_SpatialFilter.hlsli"
     #endif
 
     #if( NRD_SPEC )
-    {
-        float sum = 1.0;
-        REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
-        #if( NRD_MODE == SH )
-            float4 specSh = gIn_SpecSh[ pixelPos ];
-        #endif
-
-        #include "REBLUR_Common_SpecularSpatialFilter.hlsli"
-
-        #if( TEMPORAL_STABILIZATION == 0 )
-            #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
-                spec.w = gReturnHistoryLengthInsteadOfOcclusion ? data1.y : spec.w;
-            #endif
-
-            gOut_SpecCopy[ pixelPos ] = spec;
-            #if( NRD_MODE == SH )
-                gOut_SpecShCopy[ pixelPos ] = specSh;
-            #endif
-        #endif
-    }
+        #define REBLUR_SPATIAL_LOBE REBLUR_SPEC
+        #include "REBLUR_Common_SpatialFilter.hlsli"
     #endif
 }

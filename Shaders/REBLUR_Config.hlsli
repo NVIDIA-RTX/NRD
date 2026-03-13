@@ -51,9 +51,12 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_SHOW                                             0 // 0 or REBLUR_SHOW_X
 
 // Constants
-#define REBLUR_PRE_BLUR                                         0
+#define REBLUR_PRE_PASS                                         0
 #define REBLUR_BLUR                                             1
 #define REBLUR_POST_BLUR                                        2
+
+#define REBLUR_DIFF                                             0
+#define REBLUR_SPEC                                             1
 
 // Storage
 #define REBLUR_ACCUMSPEED_BITS                                  6
@@ -62,18 +65,20 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_MAX_MATERIALID_NUM                               ( ( 1 << REBLUR_MATERIALID_BITS ) - 1 )
 
 // Settings
-#define REBLUR_PRE_BLUR_POISSON_SAMPLE_NUM                      8
-#define REBLUR_PRE_BLUR_POISSON_SAMPLES( i )                    g_Special8[ i ]
+#define REBLUR_PRE_PASS_POISSON_SAMPLE_NUM                      8
+#define REBLUR_PRE_PASS_POISSON_SAMPLES( i )                    g_Special8[ i ]
 
 #define REBLUR_POISSON_SAMPLE_NUM                               8
 #define REBLUR_POISSON_SAMPLES( i )                             g_Special8[ i ]
 
-#define REBLUR_PRE_BLUR_ROTATOR_MODE                            NRD_FRAME
-#define REBLUR_PRE_BLUR_FRACTION_SCALE                          2.0
-#define REBLUR_PRE_BLUR_NON_LINEAR_ACCUM_SPEED                  ( 1.0 / ( 1.0 + 10.0 ) )
+#define REBLUR_PRE_PASS_ROTATOR_MODE                            NRD_FRAME
+#define REBLUR_PRE_PASS_FRACTION_SCALE                          2.0
+#define REBLUR_PRE_PASS_RADIUS_SCALE                            1.0
+#define REBLUR_PRE_PASS_NON_LINEAR_ACCUM_SPEED                  ( 1.0 / ( 1.0 + 10.0 ) )
 
 #define REBLUR_BLUR_ROTATOR_MODE                                NRD_FRAME
 #define REBLUR_BLUR_FRACTION_SCALE                              1.0
+#define REBLUR_BLUR_RADIUS_SCALE                                1.0
 
 #define REBLUR_POST_BLUR_ROTATOR_MODE                           NRD_FRAME
 #define REBLUR_POST_BLUR_FRACTION_SCALE                         0.5 // TODO: adjust based on sum of non-noisy data based weights...
@@ -224,14 +229,14 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #undef REBLUR_POISSON_SAMPLES
     #define REBLUR_POISSON_SAMPLES( i )                         g_Special6[ i ]
 
-    #undef REBLUR_PRE_BLUR_POISSON_SAMPLE_NUM
-    #define REBLUR_PRE_BLUR_POISSON_SAMPLE_NUM                  6
+    #undef REBLUR_PRE_PASS_POISSON_SAMPLE_NUM
+    #define REBLUR_PRE_PASS_POISSON_SAMPLE_NUM                  6
 
-    #undef REBLUR_PRE_BLUR_POISSON_SAMPLES
-    #define REBLUR_PRE_BLUR_POISSON_SAMPLES( i )                g_Special6[ i ]
+    #undef REBLUR_PRE_PASS_POISSON_SAMPLES
+    #define REBLUR_PRE_PASS_POISSON_SAMPLES( i )                g_Special6[ i ]
 
-    #undef REBLUR_PRE_BLUR_ROTATOR_MODE
-    #define REBLUR_PRE_BLUR_ROTATOR_MODE                        NRD_FRAME
+    #undef REBLUR_PRE_PASS_ROTATOR_MODE
+    #define REBLUR_PRE_PASS_ROTATOR_MODE                        NRD_FRAME
 
     #undef REBLUR_BLUR_ROTATOR_MODE
     #define REBLUR_BLUR_ROTATOR_MODE                            NRD_FRAME

@@ -69,29 +69,15 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #endif
 
     // Spatial filtering
-    #define REBLUR_SPATIAL_MODE REBLUR_BLUR
+    #define REBLUR_SPATIAL_PASS REBLUR_BLUR
 
     #if( NRD_DIFF )
-    {
-        float sum = 1.0;
-        REBLUR_TYPE diff = gIn_Diff[ pixelPos ];
-        #if( NRD_MODE == SH )
-            float4 diffSh = gIn_DiffSh[ pixelPos ];
-        #endif
-
-        #include "REBLUR_Common_DiffuseSpatialFilter.hlsli"
-    }
+        #define REBLUR_SPATIAL_LOBE REBLUR_DIFF
+        #include "REBLUR_Common_SpatialFilter.hlsli"
     #endif
 
     #if( NRD_SPEC )
-    {
-        float sum = 1.0;
-        REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
-        #if( NRD_MODE == SH )
-            float4 specSh = gIn_SpecSh[ pixelPos ];
-        #endif
-
-        #include "REBLUR_Common_SpecularSpatialFilter.hlsli"
-    }
+        #define REBLUR_SPATIAL_LOBE REBLUR_SPEC
+        #include "REBLUR_Common_SpatialFilter.hlsli"
     #endif
 }
