@@ -88,7 +88,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     {
         REBLUR_TYPE diff = gIn_Diff[ pixelPos ];
         #if( NRD_MODE == SH )
-            float4 diffSh = gIn_DiffSh[ pixelPos ];
+            REBLUR_SH_TYPE diffSh = gIn_DiffSh[ pixelPos ];
         #endif
 
         float diffNonLinearAccumSpeed = 1.0 / ( 1.0 + frameNum.x );
@@ -185,7 +185,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                     diff += s * w;
                     #if( NRD_MODE == SH )
-                        float4 sh = gIn_DiffSh[ pos ];
+                        REBLUR_SH_TYPE sh = gIn_DiffSh[ pos ];
                         sh = Denanify( w, sh );
                         diffSh += sh * w;
                     #endif
@@ -276,7 +276,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         diff = ChangeLuma( diff, diffLuma );
         #if( NRD_MODE == SH )
-            diffSh.xyz *= GetLumaScale( length( diffSh.xyz ), diffLuma );
+            diffSh *= GetLumaScale( length( diffSh ), diffLuma );
         #endif
 
         // Output
@@ -292,7 +292,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     {
         REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
         #if( NRD_MODE == SH )
-            float4 specSh = gIn_SpecSh[ pixelPos ];
+            REBLUR_SH_TYPE specSh = gIn_SpecSh[ pixelPos ];
         #endif
 
         float smc = GetSpecMagicCurve( roughness );
@@ -337,7 +337,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             spec *= sums;
             #if( NRD_MODE == SH )
-                specSh.xyz *= sums;
+                specSh *= sums;
             #endif
 
             [unroll]
@@ -397,9 +397,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                     spec += s * w;
                     #if( NRD_MODE == SH )
-                        float4 sh = gIn_SpecSh[ pos ];
+                        REBLUR_SH_TYPE sh = gIn_SpecSh[ pos ];
                         sh = Denanify( w, sh );
-                        specSh.xyz += sh.xyz * w;
+                        specSh += sh * w;
                     #endif
                 }
             }
@@ -407,7 +407,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             sums = Math::PositiveRcp( sums );
             spec *= sums;
             #if( NRD_MODE == SH )
-                specSh.xyz *= sums;
+                specSh *= sums;
             #endif
         }
 
@@ -493,7 +493,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         spec = ChangeLuma( spec, specLuma );
         #if( NRD_MODE == SH )
-            specSh.xyz *= GetLumaScale( length( specSh.xyz ), specLuma );
+            specSh *= GetLumaScale( length( specSh ), specLuma );
         #endif
 
         // Output

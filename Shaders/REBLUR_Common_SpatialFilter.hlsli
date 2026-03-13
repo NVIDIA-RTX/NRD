@@ -65,11 +65,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     float sum = 1.0;
     REBLUR_TYPE result = INPUT[ pos ];
     #if( NRD_MODE == SH )
-        float4 resultSh = INPUT_SH[ pos ];
+        REBLUR_SH_TYPE resultSh = INPUT_SH[ pos ];
     #endif
-
-    // 0.5 matches previously used "sqrt( ROUGHNESS )" and fixes "roughnes < 0.1"
-    float smc = GetSpecMagicCurve( ROUGHNESS, 0.5 );
 
 #if( REBLUR_SPATIAL_PASS == REBLUR_PRE_PASS )
     #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
@@ -105,23 +102,26 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         // Hit distance factor ( tests 53, 76, 95, 120 )
         float4 Dv = ImportanceSampling::GetSpecularDominantDirection( Nv, Vv, ROUGHNESS, ML_SPECULAR_DOMINANT_DIRECTION_G2 );
         float NoD = abs( dot( Nv, Dv.xyz ) );
+        float smc = GetSpecMagicCurve( ROUGHNESS, 0.5 ); // 0.5 matches previously used "sqrt( ROUGHNESS )" and fixes "roughnes < 0.1"
+
         float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings, ROUGHNESS );
         float hitDist = ExtractHitDist( result ) * hitDistScale;
         float hitDistFactor = GetHitDistFactor( hitDist, frustumSize ); // using "hitDist * NoD" worsens denoising at glancing angles
 
         // Blur radius
-        float blurRadius = MAX_BLUR_RADIUS;
     #if( REBLUR_SPATIAL_PASS == REBLUR_PRE_PASS )
-        float hitDistForTracking = hitDist == 0.0 ? NRD_INF : hitDist;
         float areaFactor = hitDistFactor;
     #else
         float areaFactor = hitDistFactor * NON_LINEAR_ACCUM_SPEED;
     #endif
 
+        float blurRadius = MAX_BLUR_RADIUS;
         blurRadius *= Math::Sqrt01( areaFactor ); // "areaFactor" affects area, not radius
         blurRadius *= smc; // previously "sqrt( ROUGHNESS )" was used, it's wrong for "ROUGHNESS < 0.1"
 
     #if( REBLUR_SPATIAL_PASS == REBLUR_PRE_PASS && REBLUR_SPATIAL_LOBE == REBLUR_SPEC )
+        float hitDistForTracking = hitDist == 0.0 ? NRD_INF : hitDist;
+
         // The "area factor" idea works well and offers linear progression of blur radiuses over time, but it makes
         // the blur radius depend on "sqrt( ROUGHNESS )" not "ROUGHNESS". It hurts the pre pass, which can be very wide.
         // The code below fixes completely wrong big blur radiuses.
@@ -139,15 +139,14 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         blurRadius = max( blurRadius, gMinBlurRadius * smc );
 
         // Weights
-        float roughnessFractionScaled = saturate( gRoughnessFraction * fractionScale );
         float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv );
         float normalWeightParam = GetNormalWeightParam( NON_LINEAR_ACCUM_SPEED, gLobeAngleFraction, ROUGHNESS ) / fractionScale;
-        float2 roughnessWeightParams = GetRoughnessWeightParams( ROUGHNESS, roughnessFractionScaled );
+        float2 roughnessWeightParams = GetRoughnessWeightParams( ROUGHNESS, saturate( gRoughnessFraction * fractionScale ) );
 
         float2 hitDistanceWeightParams = GetHitDistanceWeightParams( ExtractHitDist( result ), NON_LINEAR_ACCUM_SPEED );
         float minHitDistWeight = gMinHitDistanceWeight * fractionScale * smc;
 
-        // ( Optional ) Gradually reduce "minHitDistWeight" to preserve contact details
+        // Gradually reduce "minHitDistWeight" to preserve contact details
         // This is valid only for non-occlusion modes!
         // This helps to squeeze more details for radiance by introducing more "graininess" in hit distances
     #if( REBLUR_SPATIAL_PASS != REBLUR_PRE_PASS && NRD_MODE != OCCLUSION && NRD_MODE != DO )
@@ -172,11 +171,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #else
         // World-space settings
         #if( REBLUR_SPATIAL_LOBE == REBLUR_DIFF )
-            float2x3 TvBv = GetKernelBasis( Nv, Nv ); // D = N
-
-            float worldRadius = PixelRadiusToWorld( gUnproject, gOrthoMode, blurRadius, viewZ );
-            TvBv[ 0 ] *= worldRadius;
-            TvBv[ 1 ] *= worldRadius;
+            float skewFactor = 1.0;
+            float3 bentDv = Nv;
         #else
             float bentFactor = sqrt( hitDistFactor );
 
@@ -185,12 +181,13 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             skewFactor = lerp( 1.0, skewFactor, bentFactor );
 
             float3 bentDv = normalize( lerp( Nv.xyz, Dv.xyz, bentFactor ) );
-            float2x3 TvBv = GetKernelBasis( bentDv, Nv );
-
-            float worldRadius = PixelRadiusToWorld( gUnproject, gOrthoMode, blurRadius, viewZ );
-            TvBv[ 0 ] *= worldRadius * skewFactor;
-            TvBv[ 1 ] *= worldRadius / skewFactor;
         #endif
+
+        float worldRadius = PixelRadiusToWorld( gUnproject, gOrthoMode, blurRadius, viewZ );
+
+        float2x3 TvBv = GetKernelBasis( bentDv, Nv );
+        TvBv[ 0 ] *= worldRadius * skewFactor;
+        TvBv[ 1 ] *= worldRadius / skewFactor;
     #endif
 
         // Sampling
@@ -285,7 +282,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
             result += s * w;
             #if( NRD_MODE == SH )
-                float4 sh = INPUT_SH[ int2( checkerboardX, pos.y ) ];
+                REBLUR_SH_TYPE sh = INPUT_SH[ int2( checkerboardX, pos.y ) ];
                 sh = Denanify( w, sh );
                 resultSh += sh * w;
             #endif
@@ -323,8 +320,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             result = s0 * wc.x + s1 * wc.y;
 
             #if( NRD_MODE == SH )
-                float4 sh0 = INPUT_SH[ checkerboardPos.xz ];
-                float4 sh1 = INPUT_SH[ checkerboardPos.yz ];
+                REBLUR_SH_TYPE sh0 = INPUT_SH[ checkerboardPos.xz ];
+                REBLUR_SH_TYPE sh1 = INPUT_SH[ checkerboardPos.yz ];
 
                 sh0 = Denanify( wc.x, sh0 );
                 sh1 = Denanify( wc.y, sh1 );

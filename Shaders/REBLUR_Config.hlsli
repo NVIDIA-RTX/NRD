@@ -106,7 +106,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #define REBLUR_TYPE                                         float4
 #endif
 
-#define REBLUR_SH_TYPE                                          float4
+#define REBLUR_SH_TYPE                                          float3
 #define REBLUR_FAST_TYPE                                        float
 #define REBLUR_DATA1_TYPE                                       float2
 #define REBLUR_TILE_TYPE                                        float

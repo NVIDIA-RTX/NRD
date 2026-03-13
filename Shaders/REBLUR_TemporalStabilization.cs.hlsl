@@ -174,7 +174,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         diff = ChangeLuma( diff, diffLumaStabilized );
         #if( NRD_MODE == SH )
             REBLUR_SH_TYPE diffSh = gIn_DiffSh[ pixelPos ];
-            diffSh.xyz *= GetLumaScale( length( diffSh.xyz ), diffLumaStabilized );
+            diffSh *= GetLumaScale( length( diffSh ), diffLumaStabilized );
         #endif
 
         // Output
@@ -337,7 +337,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         spec = ChangeLuma( spec, specLumaStabilized );
         #if( NRD_MODE == SH )
             REBLUR_SH_TYPE specSh = gIn_SpecSh[ pixelPos ];
-            specSh.xyz *= GetLumaScale( length( specSh.xyz ), specLumaStabilized );
+            specSh *= GetLumaScale( length( specSh ), specLumaStabilized );
         #endif
 
         // Output

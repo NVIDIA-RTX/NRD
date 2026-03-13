@@ -750,11 +750,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         REBLUR_TYPE specResult = MixHistoryAndCurrent( specHistory, spec, specNonLinearAccumSpeed, roughnessModified );
 
         #if( NRD_MODE == SH )
-            float4 specSh = gIn_SpecSh[ specPos ];
-            float4 specShResult = lerp( specShHistory, specSh, specNonLinearAccumSpeed );
-
-            // ( Optional ) Output modified roughness to assist AA during SG resolve
-            specShResult.w = roughnessModified; // IMPORTANT: must not be blurred! this is why "specSh.xyz" is used ~everywhere
+            REBLUR_SH_TYPE specSh = gIn_SpecSh[ specPos ];
+            REBLUR_SH_TYPE specShResult = lerp( specShHistory, specSh, specNonLinearAccumSpeed );
         #endif
 
         // Firefly suppressor
@@ -886,8 +883,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         REBLUR_TYPE diffResult = MixHistoryAndCurrent( diffHistory, diff, diffNonLinearAccumSpeed );
         #if( NRD_MODE == SH )
-            float4 diffSh = gIn_DiffSh[ diffPos ];
-            float4 diffShResult = MixHistoryAndCurrent( diffShHistory, diffSh, diffNonLinearAccumSpeed );
+            REBLUR_SH_TYPE diffSh = gIn_DiffSh[ diffPos ];
+            REBLUR_SH_TYPE diffShResult = lerp( diffShHistory, diffSh, diffNonLinearAccumSpeed );
         #endif
 
         // Firefly suppressor
