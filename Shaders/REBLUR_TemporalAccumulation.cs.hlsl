@@ -528,6 +528,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float vmbSpecAccumSpeed;
         bool vmbAllowCatRom;
         {
+            // Disocclusion: roughness
+            float4 vmbOcclusion = step( 0.5, roughnessWeight );
+
             // Disocclusion: plane distance
             float4 vmbOcclusionThreshold = disocclusionThreshold * frustumSize;
             vmbOcclusionThreshold *= lerp( 0.25, 1.0, NoV ); // yes, "*" not "/" // TODO: it's from commit "fixed suboptimal "vmb" reprojection behavior in disocclusions", but is it really needed?
@@ -543,10 +546,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 NoXprev = ( Nv.x * vmbVv.x + Nv.y * vmbVv.y ) * ( gOrthoMode == 0 ? vmbViewZ : gOrthoMode ) + Nv.z * vmbVv.z * vmbViewZ;
             float4 vmbPlaneDist = abs( NoXprev - NoXcurr );
 
-            float4 vmbOcclusion = step( vmbPlaneDist, vmbOcclusionThreshold );
-
-            // Disocclusion: roughness
-            vmbOcclusion *= step( 0.5, roughnessWeight );
+            vmbOcclusion *= step( vmbPlaneDist, vmbOcclusionThreshold );
 
             // Prev data
             uint4 vmbInternalData = gPrev_InternalData.GatherRed( gNearestClamp, vmbBilinearGatherUv ).wzxy;
@@ -589,14 +589,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         // Estimate how many pixels are traveled by virtual motion - how many radians can it be?
-        float curvatureAngleTan;
+        float tanHalfAngle;
         float curvatureAngle;
-        float lobeTanHalfAngle;
         float lobeHalfAngle;
         {
             // IMPORTANT: if curvature angle is multiplied by path length then we can get an angle exceeding "2 * PI", what is impossible.
             // The max angle is PI ( most left and most right points on a hemisphere ), it can be achieved by using "tan" instead of angle.
-            curvatureAngleTan = pixelSize * abs( curvature ); // tana = pixelSize / curvatureRadius = pixelSize * curvature
+            float curvatureAngleTan = pixelSize * abs( curvature ); // tana = pixelSize / curvatureRadius = pixelSize * curvature
             curvatureAngleTan *= max( vmbPixelsTraveled / max( NoV, 0.01 ), 1.0 ); // path length
             curvatureAngleTan *= 2.0; // TODO: why it's here? but works well
 
@@ -604,13 +603,34 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             // Copied from "GetNormalWeightParam" but doesn't use "lobeAngleFraction"
             float percentOfVolume = NRD_MAX_PERCENT_OF_LOBE_VOLUME / ( 1.0 + vmbSpecAccumSpeed );
-            lobeTanHalfAngle = ImportanceSampling::GetSpecularLobeTanHalfAngle( roughnessModified, percentOfVolume );
+            float lobeTanHalfAngle = ImportanceSampling::GetSpecularLobeTanHalfAngle( roughnessModified, percentOfVolume );
 
             // TODO: use old code and sync with "GetNormalWeightParam"?
             //float lobeTanHalfAngle = ImportanceSampling::GetSpecularLobeTanHalfAngle( roughnessModified, NRD_MAX_PERCENT_OF_LOBE_VOLUME );
             //lobeTanHalfAngle /= 1.0 + vmbSpecAccumSpeed;
 
             lobeHalfAngle = max( atan( lobeTanHalfAngle ), NRD_NORMAL_ENCODING_ERROR );
+
+            tanHalfAngle = lobeTanHalfAngle + curvatureAngleTan;
+        }
+
+        // Virtual motion - confidence: parallax
+        // Tests 3, 6, 8, 11, 14, 100, 103, 104, 106, 109, 110, 114, 120, 127, 130, 131, 132, 138, 139 and 9e
+        float parallaxWeight;
+        {
+            float hitDistForTrackingPrev = gPrev_SpecHitDistForTracking.SampleLevel( gLinearClamp, vmbPixelUv * gResolutionScalePrev, 0 );
+            float3 XvirtualPrev = GetXvirtual( hitDistForTrackingPrev, curvature, X, Xprev, N, V, roughness );
+
+            float2 vmbPixelUvPrev = Geometry::GetScreenUv( gWorldToClipPrev, XvirtualPrev );
+            vmbPixelUvPrev = materialID == gCameraAttachedReflectionMaterialID ? smbPixelUv : vmbPixelUvPrev;
+
+            float pixelSizeAtXvirtual = PixelRadiusToWorld( gUnproject, gOrthoMode, 1.0, XvirtualLength );
+            float r = tanHalfAngle * min( hitDistForTracking, hitDistForTrackingPrev ) / pixelSizeAtXvirtual; // "pixelSize" at "XvirtualPrev" seems to be not needed
+            float d = length( ( vmbPixelUvPrev - vmbPixelUv ) * gRectSize );
+
+            r = max( r, 0.1 ); // important, especially if "curvatureAngle" is not used
+
+            parallaxWeight = Math::LinearStep( r, 0.0, d ); // TODO: using "r * 0.05" helps in tests 8 and 110, but worsens 192
         }
 
         // Virtual motion - confidence: normal
@@ -621,29 +641,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             virtualHistoryConfidence *= normalWeight;
         }
 
-        // Virtual motion - confidence: virtual parallax difference
-        // Tests 3, 6, 8, 11, 14, 100, 103, 104, 106, 109, 110, 114, 120, 127, 130, 131, 132, 138, 139 and 9e
-        {
-            float hitDistForTrackingPrev = gPrev_SpecHitDistForTracking.SampleLevel( gLinearClamp, vmbPixelUv * gResolutionScalePrev, 0 );
-            float3 XvirtualPrev = GetXvirtual( hitDistForTrackingPrev, curvature, X, Xprev, N, V, roughness );
-
-            float2 vmbPixelUvPrev = Geometry::GetScreenUv( gWorldToClipPrev, XvirtualPrev );
-            vmbPixelUvPrev = materialID == gCameraAttachedReflectionMaterialID ? smbPixelUv : vmbPixelUvPrev;
-
-            float pixelSizeAtXvirtual = PixelRadiusToWorld( gUnproject, gOrthoMode, 1.0, XvirtualLength );
-            float r = ( lobeTanHalfAngle + curvatureAngleTan ) * min( hitDistForTracking, hitDistForTrackingPrev ) / pixelSizeAtXvirtual; // "pixelSize" at "XvirtualPrev" seems to be not needed
-            float d = length( ( vmbPixelUvPrev - vmbPixelUv ) * gRectSize );
-
-            r = max( r, 0.1 ); // important, especially if "curvatureAngle" is not used
-
-            virtualHistoryConfidence *= Math::LinearStep( r, 0.0, d ); // TODO: using "r * 0.05" helps in tests 8 and 110, but worsens 192
-        }
-
         // Virtual motion - confidence: prev-prev tests
-        // IMPORTANT: 2 is needed because:
-        // - line *** allows fallback to laggy surface motion, which can be wrongly redistributed by virtual motion
-        // - we use at least linear filters, as the result a wider initial offset is needed
         {
+            // IMPORTANT: 2 is needed because:
+            // - line *** allows fallback to laggy surface motion, which can be wrongly redistributed by virtual motion
+            // - we use at least linear filters, as the result a wider initial offset is needed
             float stepBetweenTaps = min( vmbPixelsTraveled * gFramerateScale, 2.0 ) + vmbPixelsTraveled / REBLUR_VIRTUAL_MOTION_PREV_PREV_WEIGHT_ITERATION_NUM;
             vmbDelta *= Math::Rsqrt( Math::LengthSquared( vmbDelta ) );
             vmbDelta /= gRectSizePrev;
@@ -666,15 +668,19 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                 w = IsInScreenNearest( vmbPixelUvPrev ) ? w : 1.0;
 
-                virtualHistoryConfidence *= w;
+                // For "min" usage "virtualHistoryConfidence" must include only "roughness" and "normal" weights before this line
+                virtualHistoryConfidence = min( virtualHistoryConfidence, w );
             }
         }
+
+        // Virtual motion - confidence: apply parallax weight
+        virtualHistoryConfidence *= parallaxWeight;
 
         // Surface history confidence ( test 9, 9e )
         // IMPORTANT: needs to be responsive, because "vmb" fails on bumpy surfaces for the following reasons:
         //  - normal and prev-prev tests fail
         //  - curvature is so high that "vmb" regresses to "smb" and starts to lag
-        float surfaceHistoryConfidence = 1.0;
+        float surfaceHistoryConfidence;
         {
             float a = atan( smbParallaxInPixelsMax * pixelSize / length( X ) );
             //a = acos( saturate( dot( V, smbVprev ) ) ); // numerically unstable
@@ -698,9 +704,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             surfaceHistoryConfidence = lerp( surfaceHistoryConfidence, 1.0, f );
         }
 
-        // Responsive accumulation
-        float2 maxResponsiveFrameNum = gMaxAccumulatedFrameNum;
+        // Limit number of accumulated frames
+        float smbSpecAccumSpeed_NoHistoryFix;
+        float vmbSpecAccumSpeed_NoHistoryFix;
         {
+            // Responsive accumulation
             float responsiveFactor = RemapRoughnessToResponsiveFactor( roughness );
             float smc = GetSpecMagicCurve( roughnessModified );
 
@@ -709,20 +717,22 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             f.y = dot( N, vmbN );
             f = lerp( smc, 1.0, responsiveFactor ) * Math::Pow01( f, lerp( 32.0, 1.0, smc ) * ( 1.0 - responsiveFactor ) );
 
+            float2 maxResponsiveFrameNum = gMaxAccumulatedFrameNum;
             maxResponsiveFrameNum *= f;
             maxResponsiveFrameNum = max( maxResponsiveFrameNum, gResponsiveAccumulationMinAccumulatedFrameNum );
+
+            // Apply limits
+            float2 maxFrameNum = gMaxAccumulatedFrameNum * float2( surfaceHistoryConfidence, virtualHistoryConfidence );
+            float2 maxFrameNum_NoHistoryFix = min( maxFrameNum, max( maxResponsiveFrameNum, gHistoryFixFrameNum ) );
+
+            smbSpecAccumSpeed_NoHistoryFix = min( smbSpecAccumSpeed, maxFrameNum_NoHistoryFix.x );
+            vmbSpecAccumSpeed_NoHistoryFix = min( vmbSpecAccumSpeed, maxFrameNum_NoHistoryFix.y );
+
+            maxFrameNum = min( maxFrameNum, maxResponsiveFrameNum );
+
+            smbSpecAccumSpeed = min( smbSpecAccumSpeed, maxFrameNum.x );
+            vmbSpecAccumSpeed = min( vmbSpecAccumSpeed, maxFrameNum.y );
         }
-
-        // Limit number of accumulated frames
-        float2 maxFrameNum = gMaxAccumulatedFrameNum * float2( surfaceHistoryConfidence, virtualHistoryConfidence );
-
-        float2 maxFrameNum_NoHistoryFix = min( maxFrameNum, max( maxResponsiveFrameNum, gHistoryFixFrameNum ) );
-        float smbSpecAccumSpeed_NoHistoryFix = min( smbSpecAccumSpeed, maxFrameNum_NoHistoryFix.x );
-        float vmbSpecAccumSpeed_NoHistoryFix = min( vmbSpecAccumSpeed, maxFrameNum_NoHistoryFix.y );
-
-        maxFrameNum = min( maxFrameNum, maxResponsiveFrameNum );
-        smbSpecAccumSpeed = min( smbSpecAccumSpeed, maxFrameNum.x );
-        vmbSpecAccumSpeed = min( vmbSpecAccumSpeed, maxFrameNum.y );
 
         // Virtual history amount ( tests 65, 66, 103, 107, 111, 132, e9, e11, 218 ) // ***
         // OLD: virtualHistoryAmount = saturate( scale )
@@ -770,6 +780,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float specAccumSpeedCorrected = lerp( smbSpecAccumSpeed_NoHistoryFix, vmbSpecAccumSpeed_NoHistoryFix, virtualHistoryAmount ); // avoid "HistoryFix" in responsive accumulation
         float specAccumSpeed = lerp( smbSpecAccumSpeed, vmbSpecAccumSpeed, virtualHistoryAmount );
         float specNonLinearAccumSpeed = 1.0 / ( 1.0 + specAccumSpeed );
+
         if( !specHasData )
             specNonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, specNonLinearAccumSpeed );
 
@@ -908,6 +919,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Accumulation
         float diffNonLinearAccumSpeed = 1.0 / ( 1.0 + diffAccumSpeed );
+
         if( !diffHasData )
             diffNonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, diffNonLinearAccumSpeed );
 
@@ -947,6 +959,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Fast history
         float diffFastAccumSpeed = min( diffAccumSpeed, gMaxFastAccumulatedFrameNum );
         float diffFastNonLinearAccumSpeed = 1.0 / ( 1.0 + diffFastAccumSpeed );
+
         if( !diffHasData )
             diffFastNonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, diffFastNonLinearAccumSpeed );
 
