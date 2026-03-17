@@ -129,6 +129,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float4, gViewVectorWorld ) \
     NRD_CONSTANT( float4, gViewVectorWorldPrev ) \
     NRD_CONSTANT( float4, gMvScale ) \
+    NRD_CONSTANT( float4, gConvergenceSettings ) \
     NRD_CONSTANT( float2, gAntilagSettings ) \
     NRD_CONSTANT( float2, gResourceSize ) \
     NRD_CONSTANT( float2, gResourceSizeInv ) \
@@ -139,9 +140,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float2, gResolutionScale ) \
     NRD_CONSTANT( float2, gResolutionScalePrev ) \
     NRD_CONSTANT( float2, gRectOffset ) \
-    NRD_CONSTANT( float2, gSpecProbabilityThresholdsForMvModification ) \
     NRD_CONSTANT( float2, gJitter ) \
-    NRD_CONSTANT( float4, gConvergenceSettings ) \
     NRD_CONSTANT( uint2, gPrintfAt ) \
     NRD_CONSTANT( uint2, gRectOrigin ) \
     NRD_CONSTANT( int2, gRectSizeMinusOne ) \

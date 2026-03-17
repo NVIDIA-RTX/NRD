@@ -290,39 +290,34 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularSh(DenoiserData& denoiserData) 
         }
     }
 
-    for (int i = 0; i < REBLUR_TEMPORAL_STABILIZATION_PERMUTATION_NUM; i++) {
-        bool hasRf0AndMetalness = (((i >> 0) & 0x1) != 0);
+    PushPass("Temporal stabilization");
+    {
+        // Inputs
+        PushInput(AsUint(Transient::TILES));
+        PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
+        PushInput(AsUint(Permanent::PREV_VIEWZ));
+        PushInput(AsUint(Transient::DATA1));
+        PushInput(AsUint(Transient::DATA2));
+        PushInput(AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PONG), AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PING));
+        PushInput(AsUint(Permanent::DIFF_HISTORY));
+        PushInput(AsUint(Permanent::SPEC_HISTORY));
+        PushInput(AsUint(Permanent::DIFF_HISTORY_STABILIZED_PING), AsUint(Permanent::DIFF_HISTORY_STABILIZED_PONG));
+        PushInput(AsUint(Permanent::SPEC_HISTORY_STABILIZED_PING), AsUint(Permanent::SPEC_HISTORY_STABILIZED_PONG));
+        PushInput(AsUint(Permanent::DIFF_SH_HISTORY));
+        PushInput(AsUint(Permanent::SPEC_SH_HISTORY));
 
-        PushPass("Temporal stabilization");
-        {
-            // Inputs
-            PushInput(AsUint(Transient::TILES));
-            PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
-            PushInput(AsUint(Permanent::PREV_VIEWZ));
-            PushInput(AsUint(Transient::DATA1));
-            PushInput(AsUint(Transient::DATA2));
-            PushInput(hasRf0AndMetalness ? AsUint(ResourceType::IN_BASECOLOR_METALNESS) : REBLUR_DUMMY);
-            PushInput(AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PONG), AsUint(Permanent::SPEC_HITDIST_FOR_TRACKING_PING));
-            PushInput(AsUint(Permanent::DIFF_HISTORY));
-            PushInput(AsUint(Permanent::SPEC_HISTORY));
-            PushInput(AsUint(Permanent::DIFF_HISTORY_STABILIZED_PING), AsUint(Permanent::DIFF_HISTORY_STABILIZED_PONG));
-            PushInput(AsUint(Permanent::SPEC_HISTORY_STABILIZED_PING), AsUint(Permanent::SPEC_HISTORY_STABILIZED_PONG));
-            PushInput(AsUint(Permanent::DIFF_SH_HISTORY));
-            PushInput(AsUint(Permanent::SPEC_SH_HISTORY));
+        // Outputs
+        PushOutput(AsUint(ResourceType::IN_MV));
+        PushOutput(AsUint(Permanent::PREV_INTERNAL_DATA));
+        PushOutput(AsUint(ResourceType::OUT_DIFF_SH0));
+        PushOutput(AsUint(ResourceType::OUT_SPEC_SH0));
+        PushOutput(AsUint(Permanent::DIFF_HISTORY_STABILIZED_PONG), AsUint(Permanent::DIFF_HISTORY_STABILIZED_PING));
+        PushOutput(AsUint(Permanent::SPEC_HISTORY_STABILIZED_PONG), AsUint(Permanent::SPEC_HISTORY_STABILIZED_PING));
+        PushOutput(AsUint(ResourceType::OUT_DIFF_SH1));
+        PushOutput(AsUint(ResourceType::OUT_SPEC_SH1));
 
-            // Outputs
-            PushOutput(AsUint(ResourceType::IN_MV));
-            PushOutput(AsUint(Permanent::PREV_INTERNAL_DATA));
-            PushOutput(AsUint(ResourceType::OUT_DIFF_SH0));
-            PushOutput(AsUint(ResourceType::OUT_SPEC_SH0));
-            PushOutput(AsUint(Permanent::DIFF_HISTORY_STABILIZED_PONG), AsUint(Permanent::DIFF_HISTORY_STABILIZED_PING));
-            PushOutput(AsUint(Permanent::SPEC_HISTORY_STABILIZED_PONG), AsUint(Permanent::SPEC_HISTORY_STABILIZED_PING));
-            PushOutput(AsUint(ResourceType::OUT_DIFF_SH1));
-            PushOutput(AsUint(ResourceType::OUT_SPEC_SH1));
-
-            // Shaders
-            AddDispatch(REBLUR_TemporalStabilization, commonDefines);
-        }
+        // Shaders
+        AddDispatch(REBLUR_TemporalStabilization, commonDefines);
     }
 
     PushPass("Split screen");

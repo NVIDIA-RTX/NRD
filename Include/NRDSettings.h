@@ -165,7 +165,6 @@ namespace nrd
 
         // (Optional) (pixels) - viewport origin
         // IMPORTANT: gets applied only to non-noisy guides (aka g-buffer):
-        // - including: "IN_BASECOLOR_METALNESS"
         // - excluding: "IN_DIFF_CONFIDENCE", "IN_SPEC_CONFIDENCE" and "IN_DISOCCLUSION_THRESHOLD_MIX"
         // Used only if "NRD_SUPPORTS_VIEWPORT_OFFSET = 1"
         uint32_t rectOrigin[2] = {};
@@ -188,9 +187,6 @@ namespace nrd
 
         // If "true" "IN_DISOCCLUSION_THRESHOLD_MIX" is available
         bool isDisocclusionThresholdMixAvailable = false;
-
-        // If "true" "IN_BASECOLOR_METALNESS" is available
-        bool isBaseColorMetalnessAvailable = false;
 
         // Enables debug overlay in OUT_VALIDATION
         bool enableValidation = false;

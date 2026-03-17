@@ -341,6 +341,7 @@ A single NRD instance can now include any combination of denoisers, including re
 - *REBLUR*:
   - `HitDistanceParameters` renamed to `ReblurHitDistanceParameters` (no changes in meaning)
   - removed `ReblurHitDistanceParameters::D`, which was a left over from antient times (`smc` is used instead under the hood, it's a remapped `roughness`)
+  - removed `NRD_SUPPORTS_BASECOLOR_METALNESS`, `CommonSettings::isBaseColorMetalnessAvailable` and `ResourceType::IN_BASECOLOR_METALNESS` (modern upscaling techniques work well with common (surface) motion, the idea of MV patching was largely misunderstood and misused, additionally, patching was not optimal for pixels containing 50% diffuse and 50% of specular)
   - `ReblurResponsiveAccumulationSettings` renamed to `ReblurReblurResponsiveAccumulationSettings` (no changes in meaning)
   - added `ReblurConvergenceSettings`
 

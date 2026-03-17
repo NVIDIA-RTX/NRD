@@ -239,43 +239,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float2 vmbPixelUv = Geometry::GetScreenUv( gWorldToClipPrev, Xvirtual );
         vmbPixelUv = materialID == gCameraAttachedReflectionMaterialID ? pixelUv : vmbPixelUv;
 
-        // Modify MVs if requested
-        if( gSpecProbabilityThresholdsForMvModification.x < 1.0 && NRD_SUPPORTS_BASECOLOR_METALNESS )
-        {
-            float4 baseColorMetalness = gIn_BaseColor_Metalness[ WithRectOrigin( pixelPos ) ];
-
-            float3 albedo, Rf0;
-            BRDF::ConvertBaseColorMetalnessToAlbedoRf0( baseColorMetalness.xyz, baseColorMetalness.w, albedo, Rf0 );
-
-            float3 Fenv = BRDF::EnvironmentTerm_Rtg( Rf0, NoV, roughness );
-
-            float lumSpec = Color::Luminance( Fenv );
-            float lumDiff = Color::Luminance( albedo * ( 1.0 - Fenv ) );
-            float specProb = lumSpec / ( lumDiff + lumSpec + NRD_EPS );
-
-            float f = Math::SmoothStep( gSpecProbabilityThresholdsForMvModification.x, gSpecProbabilityThresholdsForMvModification.y, specProb );
-            f *= 1.0 - GetSpecMagicCurve( roughness );
-            f *= 1.0 - Math::Sqrt01( abs( curvature ) );
-
-            if( f != 0.0 )
-            {
-                float3 specMv = Xvirtual - X; // world-space delta fits badly into FP16! Prefer 2.5D motion!
-                if( gMvScale.w == 0.0 )
-                {
-                    specMv.xy = vmbPixelUv - pixelUv;
-                    specMv.z = Geometry::AffineTransform( gWorldToViewPrev, Xvirtual ).z - viewZ; // TODO: is it useful?
-                }
-
-                // Modify only .xy for 2D and .xyz for 2.5D and 3D MVs
-                mv.xy = specMv.xy / gMvScale.xy;
-                mv.z = gMvScale.z == 0.0 ? inMv.z : specMv.z / gMvScale.z;
-
-                inMv.xyz = lerp( inMv.xyz, mv, f );
-
-                gInOut_Mv[ WithRectOrigin( pixelPos ) ] = inMv;
-            }
-        }
-
         // Virtual motion footprint
         Filtering::Bilinear vmbBilinearFilter = Filtering::GetBilinearFilter( vmbPixelUv, gRectSizePrev );
         float4 vmbOcclusion = float4( ( bits & uint4( 16, 32, 64, 128 ) ) != 0 );

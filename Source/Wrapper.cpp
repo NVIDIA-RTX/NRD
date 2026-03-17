@@ -66,7 +66,6 @@ const char* g_NrdResourceTypeNames[] = {
     "IN_DIFF_CONFIDENCE",
     "IN_SPEC_CONFIDENCE",
     "IN_DISOCCLUSION_THRESHOLD_MIX",
-    "IN_BASECOLOR_METALNESS",
     "IN_PENUMBRA",
     "IN_TRANSLUCENCY",
     "IN_SIGNAL",

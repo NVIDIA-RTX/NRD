@@ -327,9 +327,6 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
     isValid &= NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX || !m_CommonSettings.isDisocclusionThresholdMixAvailable;
     assert("'isDisocclusionThresholdMixAvailable' must be 'false' if 'NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX = 0'" && isValid);
 
-    isValid &= NRD_SUPPORTS_BASECOLOR_METALNESS || !m_CommonSettings.isBaseColorMetalnessAvailable;
-    assert("'isBaseColorMetalnessAvailable' must be 'false' if 'NRD_SUPPORTS_BASECOLOR_METALNESS = 0'" && isValid);
-
     // Rotators (respecting sample patterns symmetry)
     float angle1 = Sequence::Weyl1D(0.5f, m_CommonSettings.frameIndex) * radians(90.0f);
     m_RotatorPre = Geometry::GetRotator(angle1);

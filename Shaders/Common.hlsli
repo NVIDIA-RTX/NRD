@@ -65,10 +65,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #define NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX             1
 #endif
 
-#ifndef NRD_SUPPORTS_BASECOLOR_METALNESS
-    #define NRD_SUPPORTS_BASECOLOR_METALNESS                    1
-#endif
-
 #ifndef NRD_SUPPORTS_ANTIFIREFLY
     #define NRD_SUPPORTS_ANTIFIREFLY                            1
 #endif

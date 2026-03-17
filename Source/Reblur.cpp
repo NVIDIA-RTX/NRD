@@ -27,7 +27,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_PREPASS_PERMUTATION_NUM                          2
 #define REBLUR_TEMPORAL_ACCUMULATION_PERMUTATION_NUM            8
 #define REBLUR_POST_BLUR_PERMUTATION_NUM                        2
-#define REBLUR_TEMPORAL_STABILIZATION_PERMUTATION_NUM           2
 #define REBLUR_OCCLUSION_HITDIST_RECONSTRUCTION_PERMUTATION_NUM 2
 #define REBLUR_OCCLUSION_TEMPORAL_ACCUMULATION_PERMUTATION_NUM  8
 
@@ -106,7 +105,7 @@ void nrd::InstanceImpl::Update_Reblur(const DenoiserData& denoiserData) {
         BLUR = HISTORY_FIX + REBLUR_NO_PERMUTATIONS,
         POST_BLUR = BLUR + REBLUR_NO_PERMUTATIONS,
         TEMPORAL_STABILIZATION = POST_BLUR + REBLUR_POST_BLUR_PERMUTATION_NUM,
-        SPLIT_SCREEN = TEMPORAL_STABILIZATION + REBLUR_TEMPORAL_STABILIZATION_PERMUTATION_NUM,
+        SPLIT_SCREEN = TEMPORAL_STABILIZATION + REBLUR_NO_PERMUTATIONS,
         VALIDATION = SPLIT_SCREEN + REBLUR_NO_PERMUTATIONS,
     };
 
@@ -179,8 +178,7 @@ void nrd::InstanceImpl::Update_Reblur(const DenoiserData& denoiserData) {
 
     // TEMPORAL_STABILIZATION
     if (!skipTemporalStabilization) {
-        uint32_t passIndex = AsUint(Dispatch::TEMPORAL_STABILIZATION)
-            + (m_CommonSettings.isBaseColorMetalnessAvailable ? 1 : 0);
+        uint32_t passIndex = AsUint(Dispatch::TEMPORAL_STABILIZATION);
         void* consts = PushDispatch(denoiserData, passIndex);
         AddSharedConstants_Reblur(settings, consts);
     }
@@ -332,6 +330,7 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gViewVectorWorld = m_ViewDirection.xmm;
     consts->gViewVectorWorldPrev = m_ViewDirectionPrev.xmm;
     consts->gMvScale = float4(m_CommonSettings.motionVectorScale[0], m_CommonSettings.motionVectorScale[1], m_CommonSettings.motionVectorScale[2], m_CommonSettings.isMotionVectorInWorldSpace ? 1.0f : 0.0f);
+    consts->gConvergenceSettings = float4(settings.convergenceSettings.s, settings.convergenceSettings.b, settings.convergenceSettings.p, 0.0f);
     consts->gAntilagSettings = float2(settings.antilagSettings.luminanceSigmaScale, settings.antilagSettings.luminanceSensitivity);
     consts->gResourceSize = float2(float(resourceW), float(resourceH));
     consts->gResourceSizeInv = float2(1.0f / float(resourceW), 1.0f / float(resourceH));
@@ -342,9 +341,7 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gResolutionScale = float2(float(rectW) / float(resourceW), float(rectH) / float(resourceH));
     consts->gResolutionScalePrev = float2(float(rectWprev) / float(resourceWprev), float(rectHprev) / float(resourceHprev));
     consts->gRectOffset = float2(float(m_CommonSettings.rectOrigin[0]) / float(resourceW), float(m_CommonSettings.rectOrigin[1]) / float(resourceH));
-    consts->gSpecProbabilityThresholdsForMvModification = float2(m_CommonSettings.isBaseColorMetalnessAvailable ? settings.specularProbabilityThresholdsForMvModification[0] : 2.0f, m_CommonSettings.isBaseColorMetalnessAvailable ? settings.specularProbabilityThresholdsForMvModification[1] : 3.0f);
     consts->gJitter = float2(m_CommonSettings.cameraJitter[0], m_CommonSettings.cameraJitter[1]);
-    consts->gConvergenceSettings = float4(settings.convergenceSettings.s, settings.convergenceSettings.b, settings.convergenceSettings.p, 0.0f);
     consts->gPrintfAt = uint2(m_CommonSettings.printfAt[0], m_CommonSettings.printfAt[1]);
     consts->gRectOrigin = uint2(m_CommonSettings.rectOrigin[0], m_CommonSettings.rectOrigin[1]);
     consts->gRectSizeMinusOne = int2(rectW - 1, rectH - 1);

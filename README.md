@@ -87,7 +87,6 @@ See *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* project for all det
   - `NRD_SUPPORTS_CHECKERBOARD` - enable `checkerboardMode` support (ON by default)
   - `NRD_SUPPORTS_HISTORY_CONFIDENCE` - enable `IN_DIFF_CONFIDENCE` and `IN_SPEC_CONFIDENCE` support (ON by default)
   - `NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX` - enable `IN_DISOCCLUSION_THRESHOLD_MIX` support (ON by default)
-  - `NRD_SUPPORTS_BASECOLOR_METALNESS` - enable `IN_BASECOLOR_METALNESS` support (ON by default)
   - `NRD_SUPPORTS_ANTIFIREFLY` - enable `enableAntiFirefly` support (ON by default)
   - `REBLUR_PERFORMANCE_MODE` - better performance and worse image quality, can be useful for consoles (OFF by default)
 
@@ -466,10 +465,6 @@ else
 
   A optional input used only if `CommonSettings::isDisocclusionThresholdMixAvailable = true` and `NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX = 1`. The resulting disocclusion threshold value is a linear interpolation between `CommonSettings::disocclusionThreshold` and `CommonSettings::disocclusionThresholdAlternate` values.
 
-* **IN\_BASECOLOR\_METALNESS** - (optional) base color (`.xyz`) and metalness (`.w`) input
-
-  This optional input is used only if `CommonSettings::isBaseColorMetalnessAvailable = true` and `NRD_SUPPORTS_BASECOLOR_METALNESS = 1`. Currently used only by *REBLUR* (if `stabilizationStrength != 0`) to patch motion vectors if specular (virtual) motion prevails on diffuse (surface) motion. This may improve upscaler/TAA behavior.
-
 The illustration below shows expected inputs for a primary hit `A`:
 
 ![Input without PSR](Images/InputsWithoutPsr.png)
@@ -629,8 +624,6 @@ The resolve process takes place on the application side and has the following mo
 - (optionally) or just extract unresolved color (fully matches the output of a corresponding non-SH denoiser)
 
 Re-jittering math with minorly modified inputs can also be used with RESTIR produced sampling without involving SH denoisers. You only need to get light direction in the current pixel from RESTIR. Despite that RESTIR produces noisy light selections, its low variations can be easily handled by DLSS or other upscaling techs.
-
-If `IN_BASECOLOR_METALNESS` input is provided and enabled, then *REBLUR* patches `IN_MV` input for surfaces where the specular motion prevails on the surface motion. It may improve upscaling behavior.
 
 <details>
 <summary>(CLICK) Shader code:</summary>

@@ -64,12 +64,6 @@ namespace nrd
         // Used only if "CommonSettings::isDisocclusionThresholdMixAvailable = true" and "NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX = 1"
         IN_DISOCCLUSION_THRESHOLD_MIX,
 
-        // (Optional) Base color (can be decoupled to diffuse and specular albedo based on metalness) and metalness (RGBA8+)
-        // Used only if "CommonSettings::isBaseColorMetalnessAvailable = true" and "NRD_SUPPORTS_BASECOLOR_METALNESS = 1".
-        // Currently used only by REBLUR (if Temporal Stabilization pass is available and "stabilizationStrength != 0")
-        // to patch MV if specular (virtual) motion prevails on diffuse (surface) motion
-        IN_BASECOLOR_METALNESS,
-
         //=============================================================================================================================
         // NOISY INPUTS
         //=============================================================================================================================
@@ -188,7 +182,7 @@ namespace nrd
         // OUTPUTS - OUT_DIFF_SH0, OUT_DIFF_SH1
         REBLUR_DIFFUSE_SH,
 
-        // INPUTS - IN_SPEC_RADIANCE_HITDIST (IN_SPEC_CONFIDENCE, IN_DISOCCLUSION_THRESHOLD_MIX, IN_BASECOLOR_METALNESS)
+        // INPUTS - IN_SPEC_RADIANCE_HITDIST (IN_SPEC_CONFIDENCE, IN_DISOCCLUSION_THRESHOLD_MIX)
         // OUTPUTS - OUT_SPEC_RADIANCE_HITDIST
         REBLUR_SPECULAR,
 
@@ -196,11 +190,11 @@ namespace nrd
         // OUTPUTS - OUT_SPEC_HITDIST
         REBLUR_SPECULAR_OCCLUSION,
 
-        // INPUTS - IN_SPEC_SH0, IN_SPEC_SH1 (IN_SPEC_CONFIDENCE, IN_DISOCCLUSION_THRESHOLD_MIX, IN_BASECOLOR_METALNESS)
+        // INPUTS - IN_SPEC_SH0, IN_SPEC_SH1 (IN_SPEC_CONFIDENCE, IN_DISOCCLUSION_THRESHOLD_MIX)
         // OUTPUTS - OUT_SPEC_SH0, OUT_SPEC_SH1
         REBLUR_SPECULAR_SH,
 
-        // INPUTS - IN_DIFF_RADIANCE_HITDIST, IN_SPEC_RADIANCE_HITDIST (IN_DIFF_CONFIDENCE, IN_SPEC_CONFIDENCE, IN_DISOCCLUSION_THRESHOLD_MIX, IN_BASECOLOR_METALNESS)
+        // INPUTS - IN_DIFF_RADIANCE_HITDIST, IN_SPEC_RADIANCE_HITDIST (IN_DIFF_CONFIDENCE, IN_SPEC_CONFIDENCE, IN_DISOCCLUSION_THRESHOLD_MIX)
         // OUTPUTS - OUT_DIFF_RADIANCE_HITDIST, OUT_SPEC_RADIANCE_HITDIST
         REBLUR_DIFFUSE_SPECULAR,
 
@@ -208,7 +202,7 @@ namespace nrd
         // OUTPUTS - OUT_DIFF_HITDIST, OUT_SPEC_HITDIST
         REBLUR_DIFFUSE_SPECULAR_OCCLUSION,
 
-        // INPUTS - IN_DIFF_SH0, IN_DIFF_SH1, IN_SPEC_SH0, IN_SPEC_SH1 (IN_DIFF_CONFIDENCE, IN_SPEC_CONFIDENCE, IN_DISOCCLUSION_THRESHOLD_MIX, IN_BASECOLOR_METALNESS)
+        // INPUTS - IN_DIFF_SH0, IN_DIFF_SH1, IN_SPEC_SH0, IN_SPEC_SH1 (IN_DIFF_CONFIDENCE, IN_SPEC_CONFIDENCE, IN_DISOCCLUSION_THRESHOLD_MIX)
         // OUTPUTS - OUT_DIFF_SH0, OUT_DIFF_SH1, OUT_SPEC_SH0, OUT_SPEC_SH1
         REBLUR_DIFFUSE_SPECULAR_SH,
 

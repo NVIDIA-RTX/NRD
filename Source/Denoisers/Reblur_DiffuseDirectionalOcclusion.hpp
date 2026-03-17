@@ -210,27 +210,25 @@ void nrd::InstanceImpl::Add_ReblurDiffuseDirectionalOcclusion(DenoiserData& deno
         }
     }
 
-    for (int i = 0; i < REBLUR_TEMPORAL_STABILIZATION_PERMUTATION_NUM; i++) {
-        PushPass("Temporal stabilization");
-        {
-            // Inputs
-            PushInput(AsUint(Transient::TILES));
-            PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
-            PushInput(AsUint(Permanent::PREV_VIEWZ));
-            PushInput(AsUint(Transient::DATA1));
-            PushInput(AsUint(Transient::DATA2));
-            PushInput(AsUint(Permanent::DIFF_HISTORY));
-            PushInput(AsUint(Permanent::DIFF_HISTORY_STABILIZED_PING), AsUint(Permanent::DIFF_HISTORY_STABILIZED_PONG));
+    PushPass("Temporal stabilization");
+    {
+        // Inputs
+        PushInput(AsUint(Transient::TILES));
+        PushInput(AsUint(ResourceType::IN_NORMAL_ROUGHNESS));
+        PushInput(AsUint(Permanent::PREV_VIEWZ));
+        PushInput(AsUint(Transient::DATA1));
+        PushInput(AsUint(Transient::DATA2));
+        PushInput(AsUint(Permanent::DIFF_HISTORY));
+        PushInput(AsUint(Permanent::DIFF_HISTORY_STABILIZED_PING), AsUint(Permanent::DIFF_HISTORY_STABILIZED_PONG));
 
-            // Outputs
-            PushOutput(AsUint(ResourceType::IN_MV));
-            PushOutput(AsUint(Permanent::PREV_INTERNAL_DATA));
-            PushOutput(AsUint(ResourceType::OUT_DIFF_DIRECTION_HITDIST));
-            PushOutput(AsUint(Permanent::DIFF_HISTORY_STABILIZED_PONG), AsUint(Permanent::DIFF_HISTORY_STABILIZED_PING));
+        // Outputs
+        PushOutput(AsUint(ResourceType::IN_MV));
+        PushOutput(AsUint(Permanent::PREV_INTERNAL_DATA));
+        PushOutput(AsUint(ResourceType::OUT_DIFF_DIRECTION_HITDIST));
+        PushOutput(AsUint(Permanent::DIFF_HISTORY_STABILIZED_PONG), AsUint(Permanent::DIFF_HISTORY_STABILIZED_PING));
 
-            // Shaders
-            AddDispatch(REBLUR_TemporalStabilization, commonDefines);
-        }
+        // Shaders
+        AddDispatch(REBLUR_TemporalStabilization, commonDefines);
     }
 
     PushPass("Split screen");
