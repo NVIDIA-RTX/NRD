@@ -512,12 +512,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Virtual motion - normal: parallax ( test 132 )
         float4 vmbNormalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.SampleLevel( STOCHASTIC_BILINEAR_FILTER, StochasticBilinear( vmbPixelUv, gRectSizePrev ) * gResolutionScalePrev, 0 ) );
         float3 vmbN = Geometry::RotateVector( gWorldPrevToWorld, vmbNormalAndRoughness.xyz );
-    if( gDebug == 0.0 )
-    {
         float Dfactor = ImportanceSampling::GetSpecularDominantFactor( NoV, roughness, ML_SPECULAR_DOMINANT_DIRECTION_G2 );
         float virtualHistoryNormalBasedConfidence = 1.0 / ( 1.0 + 0.5 * Dfactor * saturate( length( N - vmbN ) - REBLUR_NORMAL_ULP ) * vmbPixelsTraveled );
         virtualHistoryConfidence *= virtualHistoryNormalBasedConfidence;
-    }
 
         // Patch "smbNavg" if "smb" motion is invalid ( make relative tests a NOP )
         smbNavg = smbFootprintQuality == 0.0 ? vmbN : smbNavg;
