@@ -662,7 +662,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 w *= ComputeNonExponentialWeightWithSigma( vmbNormalAndRoughnessPrev.w * vmbNormalAndRoughnessPrev.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y, roughnessSigma );
 
                 #if( REBLUR_USE_STF == 1 && NRD_NORMAL_ENCODING == NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
-                    // Cures issues of "StochasticBilinear", produces closer look to the linear filter
+                    // Cures issues of "StochasticBilinear" and produces closer look to the linear filter
                     w = lerp( 1.0, w, saturate( stepBetweenTaps ) );
                 #endif
 
@@ -738,19 +738,17 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // OLD: virtualHistoryAmount = saturate( scale )
         //      * Dfactor                   - 1 is assumed now, because "Dfactor" is applied in "GetXvirtual" to "vmbPixelUv" making it closer to surface where needed ( test 236 )
         //    Helped on bumpy surfaces, because virtual motion got ruined by big curvature
-        //      * normalBasedConfidence     - 1 is assumed now, because the selector below does the same and avoids "double applyment" ( was used before "prev-prev" test )
-        //    Helped to preserve "lied on surface" roughness details
-        //      * roughnessBasedConfidence  - 1 is assumed now, because the selector below does the same and avoids "double applyment"
+        //      * normalBasedConfidence     - 1 is assumed now, because the selector below does the same and avoids "double applying" ( was used before "prev-prev" test )
+        //    Helped to preserve "lying-on-surface" roughness details
+        //      * roughnessBasedConfidence  - 1 is assumed now, because the selector below does the same and avoids "double applying"
         float virtualHistoryAmount;
         {
-            float magic = vmbSpecAccumSpeed > smbSpecAccumSpeed ? 8.0 : 0.5; // TODO: tune better?
-            float scale = 1.0 + ( vmbSpecAccumSpeed - smbSpecAccumSpeed ) / ( 1.0 + magic * max( vmbSpecAccumSpeed, smbSpecAccumSpeed ) );
-
-            virtualHistoryAmount = saturate( scale );
+            // "1" if "vmb" >= "smb", pull towards "smb" based on delta otherwise
+            virtualHistoryAmount = 1.0 + ( vmbSpecAccumSpeed - smbSpecAccumSpeed ) / ( 1.0 + 0.5 * max( vmbSpecAccumSpeed, smbSpecAccumSpeed ) ); // TODO: 0.5 => 0.25?
+            virtualHistoryAmount = saturate( virtualHistoryAmount );
 
             // Choose one: "smb" or "vmb"
-            // TODO: dithering seems to be not needed, since "vmb" is dominating for any possible use cases ( roughness, NoV )
-            virtualHistoryAmount = step( 0.5, virtualHistoryAmount );
+            virtualHistoryAmount = step( 0.5, virtualHistoryAmount ); // TODO: dithering seems to be not needed, since "vmb" is dominating for any possible "roughness, NoV"
         }
 
         // Sample history
