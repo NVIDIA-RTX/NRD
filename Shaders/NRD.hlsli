@@ -95,7 +95,7 @@ NOISY INPUTS:
 #endif
 
 #ifndef NRD_REJITTER_AMPLITUDE
-    #define NRD_REJITTER_AMPLITUDE                                                      NRD_PI // [1 / x; x]
+    #define NRD_REJITTER_AMPLITUDE                                                      2.0 // [1 / x; x]
 #endif
 
 #ifndef NRD_MATERIAL_FACTOR_MIN_SCALE
