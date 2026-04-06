@@ -42,8 +42,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #endif
 
 // NRI-based NRD integration layer
-#define NRD_INTEGRATION_VERSION 21
-#define NRD_INTEGRATION_DATE "25 February 2026"
+#define NRD_INTEGRATION_VERSION 22
+#define NRD_INTEGRATION_DATE "6 April 2026"
 
 namespace nrd {
 
@@ -173,6 +173,9 @@ struct ResourceSnapshot {
 struct IntegrationCreationDesc {
     // Not so long name
     char name[64] = "";
+
+    // Resource allocation priority (most likely 1 allocation per integration instance)
+    float residencyPriority; // [-1; 1]: low < 0, normal = 0, high > 0
 
     // Resource dimensions
     uint16_t resourceWidth = 0;

@@ -17,7 +17,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #endif
 
 static_assert(NRD_VERSION_MAJOR >= 4 && NRD_VERSION_MINOR >= 17, "Unsupported NRD version!");
-static_assert(NRI_VERSION >= 178, "Unsupported NRI version!");
+static_assert(NRI_VERSION >= 179, "Unsupported NRI version!");
 
 #define NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(expr) \
     if ((expr) != nri::Result::SUCCESS) \
@@ -331,6 +331,7 @@ bool Integration::_CreateResources() {
         resourceGroupDesc.memoryLocation = nri::MemoryLocation::DEVICE;
         resourceGroupDesc.textureNum = (uint32_t)textures.size();
         resourceGroupDesc.textures = textures.data();
+        resourceGroupDesc.residencyPriority = m_Desc.residencyPriority;
 
         size_t baseAllocation = m_MemoryAllocations.size();
         size_t allocationNum = iHelper.CalculateAllocationNumber(*m_Device, resourceGroupDesc);
