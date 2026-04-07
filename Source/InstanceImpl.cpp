@@ -327,17 +327,18 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
     isValid &= NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX || !m_CommonSettings.isDisocclusionThresholdMixAvailable;
     assert("'isDisocclusionThresholdMixAvailable' must be 'false' if 'NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX = 0'" && isValid);
 
-    // Rotators (respecting sample patterns symmetry)
-    float angle1 = Sequence::Weyl1D(0.5f, m_CommonSettings.frameIndex) * radians(90.0f);
-    m_RotatorPre = Geometry::GetRotator(angle1);
+    { // Rotators (respecting sample patterns symmetry)
+        // Square roots of primes provide excellent decorrelation for Weyl sequences
+        float anglePre = Sequence::Weyl1D(1.0f / sqrt(2.0f), m_CommonSettings.frameIndex);
+        float angle = Sequence::Weyl1D(1.0f / sqrt(3.0f), m_CommonSettings.frameIndex);
 
-    float a0 = Sequence::Weyl1D(0.0f, m_CommonSettings.frameIndex * 2) * radians(90.0f);
-    float a1 = Sequence::Bayer4x4(uint2(0, 0), m_CommonSettings.frameIndex * 2) * radians(360.0f);
-    m_Rotator = Geometry::CombineRotators(Geometry::GetRotator(a0), Geometry::GetRotator(a1));
+        // "PostBlur" rotator is rotated to avoid mapping to same directions after "Blur"
+        constexpr float minNonSymmetryAngle = 22.5f; // see the kernel: 90 - symmetry angle, 45 - same directions
 
-    float a2 = Sequence::Weyl1D(0.0f, m_CommonSettings.frameIndex * 2 + 1) * radians(90.0f);
-    float a3 = Sequence::Bayer4x4(uint2(0, 0), m_CommonSettings.frameIndex * 2 + 1) * radians(360.0f);
-    m_RotatorPost = Geometry::CombineRotators(Geometry::GetRotator(a2), Geometry::GetRotator(a3));
+        m_RotatorPre = Geometry::GetRotator(anglePre * radians(90.0f));
+        m_Rotator = Geometry::GetRotator(angle * radians(90.0f));
+        m_RotatorPost = Geometry::GetRotator(angle * radians(90.0f) + radians(minNonSymmetryAngle));
+    }
 
     // Main matrices
     m_ViewToClip = float4x4(
