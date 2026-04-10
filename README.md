@@ -574,7 +574,9 @@ Use `NRD.hlsli/NRD_MaterialFactors` helper to compute material demodulation fact
 
 ## INTERACTION WITH LOW DISCREPANCY SAMPLERS (BLUE NOISE)
 
-*NRD* is designed to handle "white" noise as the baseline. However, using "blue" noise can improve results by ensuring high-frequency error that is easier for spatial kernels to resolve. The only exception is *SIGMA* which works better with "blue" noise.
+*NRD* is designed to handle "white" noise as the baseline. To suppress residual boiling with "white" noise, *NRD* history length can be bumped up to 60 frames relatively safely, if [History Confidence](#history-confidence) is provided.
+
+However, using "blue" noise can improve results by ensuring high-frequency error that is easier for spatial kernels to resolve. The only exception is *SIGMA* which works better with "blue" noise.
 
 Best practices:
 - the sequence length `spp` should ideally match or be a bit below the NRD max history length (`32 spp` is a solid baseline). Ensure that noise in the reference accumulation settles down or almost stops after `spp` frames
