@@ -1,4 +1,4 @@
-# NVIDIA REAL-TIME DENOISERS (NRD) v4.17.2
+# NVIDIA REAL-TIME DENOISERS (NRD) v4.17.3
 
 [![Build NRD SDK](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml/badge.svg)](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml)
 
@@ -571,6 +571,26 @@ where:
     Denoising( specularRadiance * BRDF ) → NRD( specularRadiance * BRDF / envBRDF ) * envBRDF
 
 Use `NRD.hlsli/NRD_MaterialFactors` helper to compute material demodulation factors.
+
+## INTERACTION WITH LOW DISCREPANCY SAMPLERS (BLUE NOISE)
+
+*NRD* is designed to handle "white" noise as the baseline. However, using "blue" noise can improve results by ensuring high-frequency error that is easier for spatial kernels to resolve. The only exception is *SIGMA* which works better with "blue" noise.
+
+Best practices:
+- the sequence length `spp` should ideally match or be a bit below the NRD max history length (`32 spp` is a solid baseline). Ensure that noise in the reference accumulation settles down or almost stops after `spp` frames
+- the sequence must be at least 64x64 in screen space to guarantee better spatial randomization (i.e. should be at least "2x" larger than the default blur radius)
+- Heitz’s Owen-Scrambled Sobol [LDS](https://belcour.github.io/blog/research/publication/2019/06/17/sampling-bluenoise.html) is recommended over [STBN](https://github.com/NVIDIA-RTX/STBN) at least because its memory usage doesn't depend on `spp`
+- to get unique sequences for `{pathIndex; bounceIndex; sampleIndex}`, use a global shift (e.g., `Weyl` sequence) to rotate the blue noise values (Cranley-Patterson Rotation). The shift must be constant across the screen to preserve spatial blue noise properties. Adding an offset to `pixelPos` works too. A generic advice is always to keep an eye on undesired correlations by comparing "blue" or "white" noise based reference accumulations
+- probabilistic selection of diffuse or specular lobes "pokes holes" in the temporal sequence, which can introduce directional bias. A global temporal jitter needs to be added to a Bayer-based random number. This converts static bias into high-frequency temporal variance that *NRD* can filter (see lobe selection in the [NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample/blob/8de213c73abe394a94f593b18a42ca1e3a7941ce/Shaders/TraceOpaque.cs.hlsl#L175))
+
+"Blue noise" expectations:
+- no changes in areas with good sampling quality
+- reduced residual boiling in areas with acceptable sampling quality
+- static "blobs" or patterns may appear in heavily undersampled areas (since blue noise sequence has limited number of samples), they will start to shimmer under motion
+- may be helpful when *NRD* works in conjunction with upscalers (since they may amplify noise)
+- IMPORTANT: under camera or object motion, the screen-space blue noise grid effectively "scans" across the world, which naturally prevents samples from getting "stuck" but at the same time may temporarily increase variance
+
+Example: "blue" noise [implementation](https://github.com/NVIDIA-RTX/NRD-Sample/blob/dc7bd65b43aac7b5fe807ca8f3e3ab87d5e78ff2/Shaders/Include/RaytracingShared.hlsli#L676) in the NRD sample (search for `USE_BLUE_NOISE_FOR_RADIANCE` and `USE_BLUE_NOISE_FOR_SHADOWS`).
 
 ## INTERACTION WITH PRIMARY SURFACE REPLACEMENTS
 
