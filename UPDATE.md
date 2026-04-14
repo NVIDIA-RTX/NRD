@@ -344,6 +344,7 @@ A single NRD instance can now include any combination of denoisers, including re
   - removed `NRD_SUPPORTS_BASECOLOR_METALNESS`, `CommonSettings::isBaseColorMetalnessAvailable` and `ResourceType::IN_BASECOLOR_METALNESS` (modern upscaling techniques work well with common (surface) motion, the idea of MV patching was largely misunderstood and misused, additionally, patching was not optimal for pixels containing 50% diffuse and 50% of specular)
   - `ReblurResponsiveAccumulationSettings` renamed to `ReblurReblurResponsiveAccumulationSettings` (no changes in meaning)
   - added `ReblurConvergenceSettings`
+  - explained that `REBLUR_FrontEnd_GetNormHitDist` must be used only if a diffuse or specular lobe is not skipped due to probabilistic selection because `0` is reserved for "no data". Passing `0` inside this function is fine, it will be offset a bit under the hood
 
 ## Custom shader compilation
 - since v4.16 `NRDConfig.hlsli` is included into every shader (including `NRD.hlsli`), delivering shared compile-time options. So there is no need to "copy-paste" anything from CMake
