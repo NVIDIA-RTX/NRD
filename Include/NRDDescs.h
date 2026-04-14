@@ -75,7 +75,7 @@ namespace nrd
         IN_SPEC_RADIANCE_HITDIST,
 
         // Hit distance (R8+)
-        //      REBLUR: use "REBLUR_FrontEnd_GetNormHitDist" for encoding
+        //      REBLUR: use "REBLUR_FrontEnd_GetNormHitDist" for encoding (only if a diffuse or specular lobe was not skipped due to probabilistic selection)
         IN_DIFF_HITDIST,
         IN_SPEC_HITDIST,
 

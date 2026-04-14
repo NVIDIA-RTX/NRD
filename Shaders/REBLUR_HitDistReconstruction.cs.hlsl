@@ -130,6 +130,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             data.x = Denanify( ww.x, data.x );
             data.y = Denanify( ww.y, data.y );
+
+            // Ignore "no data"
             ww *= float2( data.xy != 0.0 );
 
             // Accumulate

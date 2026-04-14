@@ -341,7 +341,7 @@ NOISY INPUTS:
 // Constants
 #define NRD_FP16_MAX                                                                    65504.0
 #define NRD_PI                                                                          3.14159265358979323846
-#define NRD_EPS                                                                         1e-6
+#define NRD_EPS                                                                         1e-6 // must fit into FP16
 #define NRD_INF                                                                         1e6
 
 // Misc
@@ -775,12 +775,16 @@ void NRD_FrontEnd_SpecHitDistAveraging_End( inout float accumulatedSpecHitDist )
 
 // FRONT-END
 
-// This function returns AO / SO which REBLUR can decode back to "hit distance" internally
+// This function returns AO / SO which REBLUR can decode back to "hit distance" internally.
+// Use this function only if a diffuse or specular lobe was not skipped due to probabilistic selection
 float REBLUR_FrontEnd_GetNormHitDist( float hitDist, float viewZ, float3 hitDistParams, float roughness )
 {
     float f = _REBLUR_GetHitDistanceNormalization( viewZ, hitDistParams, roughness );
+    hitDist = saturate( hitDist / f );
 
-    return saturate( hitDist / f );
+    // "hitDist = 0" means "no data", i.e. the lobe is skipped due to probabilistic selection of diffuse or specular.
+    // But if this function is called, we assume that the lobe was not skipped, thus we need to avoid 0
+    return max( hitDist, NRD_EPS );
 }
 
 // X => IN_DIFF_RADIANCE_HITDIST
