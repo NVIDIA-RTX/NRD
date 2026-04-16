@@ -22,3 +22,7 @@ cp "${SELF}/README.md" "${SDK}"
 cp "${SELF}/UPDATE.md" "${SDK}"
 
 cp -H "${ROOT}/_Bin/libNRD.so" "${SDK}/Lib"
+
+if [ -f "_Build/_deps/nri-src/3-PrepareSDK.sh" ]; then
+    bash "_Build/_deps/nri-src/3-PrepareSDK.sh"
+fi
