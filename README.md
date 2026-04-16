@@ -448,7 +448,11 @@ else
 
   *NRD* computes local curvature using provided normals. Less accurate normals can lead to banding in curvature and local flatness. `RGBA8` normals is a good baseline, but `R10G10B10A10` oct-packed normals improve curvature calculations and specular tracking as the result.
 
-  If `materialID` is provided and supported by encoding, *NRD* diffuse and specular denoisers won't mix up surfaces with different material IDs.
+  If `materialID` is provided and `normalEncoding` is set to `R10_G10_B10_A2_UNORM`, *NRD* diffuse and specular denoisers won't mix up surfaces with different material IDs. The comparison formula is:
+  ```c++
+  max(m0, minMaterial) == max(m1, minMaterial)
+  ```
+  , where `minMaterial` can be different for diffuse and specular (see `minMaterialForDiffuse` and `minMaterialForSpecular` in a denoiser settings). `CommonSettings` has extra "materialID"-related features: `strandMaterialID`, `historyFixAlternatePixelStrideMaterialID` and `cameraAttachedReflectionMaterialID`.
 
 * **IN\_VIEWZ** - view-space Z coordinate of primary hits (linearized g-buffer depth)
 
