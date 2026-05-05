@@ -308,9 +308,6 @@ namespace nrd
         // (normalized %) - represents maximum allowed deviation from the local tangent plane
         float planeDistanceSensitivity = 0.02f;
 
-        // "IN_MV = lerp(IN_MV, specularMotion, smoothstep(this[0], this[1], specularProbability))"
-        float specularProbabilityThresholdsForMvModification[2] = {0.5f, 0.9f};
-
         // [1; 3] - undesired sporadic outliers suppression to keep output stable (smaller values maximize suppression in exchange of bias)
         float fireflySuppressorMinRelativeScale = 2.0f;
 
