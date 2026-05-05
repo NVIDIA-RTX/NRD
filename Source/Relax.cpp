@@ -161,7 +161,6 @@ void nrd::InstanceImpl::AddSharedConstants_Relax(const RelaxSettings& settings, 
     consts->gUnproject = 1.0f / (0.5f * rectH * m_ProjectY);
     consts->gFramerateScale = clamp(16.66f / m_TimeDelta, 0.25f, 4.0f); // TODO: use m_FrameRateScale?
     consts->gCheckerboardResolveAccumSpeed = m_CheckerboardResolveAccumSpeed;
-    consts->gJitterDelta = m_JitterDelta;
     consts->gHistoryFixFrameNum = settings.historyFixFrameNum + 1.0f;
     consts->gHistoryFixBasePixelStride = (float)settings.historyFixBasePixelStride;
     consts->gHistoryFixAlternatePixelStride = (float)settings.historyFixAlternatePixelStride;
