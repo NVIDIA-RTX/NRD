@@ -210,11 +210,19 @@ bool Integration::RecreatePipelines() {
 
     for (uint32_t i = 0; i < instanceDesc.pipelinesNum; i++) {
         const PipelineDesc& nrdPipelineDesc = instanceDesc.pipelines[i];
-        const ComputeShaderDesc& nrdComputeShader = (&nrdPipelineDesc.computeShaderDXBC)[std::max((int32_t)deviceDesc.graphicsAPI - 1, 0)];
+        
+        const ComputeShaderDesc* nrdComputeShader = nullptr;
+        if (deviceDesc.graphicsAPI == nri::GraphicsAPI::D3D12)
+            nrdComputeShader = &nrdPipelineDesc.computeShaderDXIL;
+        else if (deviceDesc.graphicsAPI == nri::GraphicsAPI::VK)
+            nrdComputeShader = &nrdPipelineDesc.computeShaderSPIRV;
+        else if (deviceDesc.graphicsAPI == nri::GraphicsAPI::D3D11)
+            nrdComputeShader = &nrdPipelineDesc.computeShaderDXBC;
+        NRD_INTEGRATION_ASSERT(nrdComputeShader, "Unsupported GAPI!");
 
         nri::ShaderDesc computeShader = {};
-        computeShader.bytecode = nrdComputeShader.bytecode;
-        computeShader.size = nrdComputeShader.size;
+        computeShader.bytecode = nrdComputeShader->bytecode;
+        computeShader.size = nrdComputeShader->size;
         computeShader.entryPointName = instanceDesc.shaderEntryPoint;
         computeShader.stage = nri::StageBits::COMPUTE_SHADER;
 
