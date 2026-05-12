@@ -194,10 +194,10 @@ NOISY INPUTS:
 
     #define numthreads                                                                  NUM_THREADS
     #define groupshared                                                                 thread_group_memory
-    #define SV_GroupId                                                                  S_GROUP_ID
+    #define SV_GroupID                                                                  S_GROUP_ID
     #define SV_GroupIndex                                                               S_GROUP_INDEX
-    #define SV_GroupThreadId                                                            S_GROUP_THREAD_ID
-    #define SV_DispatchThreadId                                                         S_DISPATCH_THREAD_ID
+    #define SV_GroupThreadID                                                            S_GROUP_THREAD_ID
+    #define SV_DispatchThreadID                                                         S_DISPATCH_THREAD_ID
     #define GroupMemoryBarrierWithGroupSync                                             ThreadGroupMemoryBarrierSync
     #define GroupMemoryBarrier                                                          ThreadGroupMemoryBarrier
     #define RWTexture2D                                                                 RW_Texture2D
