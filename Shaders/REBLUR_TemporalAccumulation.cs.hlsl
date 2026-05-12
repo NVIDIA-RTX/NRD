@@ -432,11 +432,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             }
 
             // Mix
-            float2 w = abs( deltaUv ) + 1.0 / 256.0;
-            w /= w.x + w.y; // TODO: perspective correction?
+            float2 ww = abs( deltaUv ) + 1.0 / 256.0;
+            ww /= ww.x + ww.y; // TODO: perspective correction?
 
-            float3 x = x10 * w.x + x01 * w.y;
-            float3 n = normalize( n10 * w.x + n01 * w.y );
+            float3 x = x10 * ww.x + x01 * ww.y;
+            float3 n = normalize( n10 * ww.x + n01 * ww.y );
 
             // High parallax - flattens surface on high motion ( test 132, 172, 173, 174, 190, 201, 202, 203, e9 )
             // IMPORTANT: a must for 8-bit and 10-bit normals ( tests b7, b10, b33, 202 )
