@@ -8,40 +8,8 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-//==================================================================================================================
-// Naming convention
-//==================================================================================================================
-// g[In/Prev/History/Out]_[A]_[B]
-// gIn_         - an input
-// gPrev_       - an input from the previous frame ( looks better than "gInPrev_" )
-// gHistory_    - an input from the previous frame, which is a history buffer ( looks better than "gInHistory_" )
-// gOut_        - an output
-// _            - means "and" ( when used in-between A and B )
-// s_           - shared memory
-// Fast         - fast history
-// Noisy        - noisy input, where an emphasis needed
-
-#include "Poisson.hlsli"
-
-// Constants
-
-#define NRD_NONE                                                0 // bad
-#define NRD_FRAME                                               1 // good
-#define NRD_PIXEL                                               2 // better, but leads to divergence
-#define NRD_RANDOM                                              3 // for experiments only
-
-// FP16
-
-#ifdef __hlsl_dx_compiler
-    #define half_float float16_t
-    #define half_float2 float16_t2
-    #define half_float3 float16_t3
-    #define half_float4 float16_t4
-#else
-    #define half_float float
-    #define half_float2 float2
-    #define half_float3 float3
-    #define half_float4 float4
+#ifndef NRD_INTERNAL
+    #error "'NRD_INTERNAL' is not defined, but expected!"
 #endif
 
 //==================================================================================================================
@@ -98,6 +66,39 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #define NRD_NORMAL_ENCODING_ERROR                           ( 0.40 / 255.0 ) // TODO: tweak!
     #define STOCHASTIC_BILINEAR_FILTER                          gLinearClamp
 #endif
+
+// Constants
+#define NRD_NONE                                                0 // bad
+#define NRD_FRAME                                               1 // good
+#define NRD_PIXEL                                               2 // better, but leads to divergence
+#define NRD_RANDOM                                              3 // for experiments only
+
+// FP16
+#ifdef __hlsl_dx_compiler
+    #define half_float float16_t
+    #define half_float2 float16_t2
+    #define half_float3 float16_t3
+    #define half_float4 float16_t4
+#else
+    #define half_float float
+    #define half_float2 float2
+    #define half_float3 float3
+    #define half_float4 float4
+#endif
+
+//==================================================================================================================
+// Naming convention
+//==================================================================================================================
+
+// g[In/Prev/History/Out]_[A]_[B]
+// gIn_         - an input
+// gPrev_       - an input from the previous frame ( looks better than "gInPrev_" )
+// gHistory_    - an input from the previous frame, which is a history buffer ( looks better than "gInHistory_" )
+// gOut_        - an output
+// _            - means "and" ( when used in-between A and B )
+// s_           - shared memory
+// Fast         - fast history
+// Noisy        - noisy input, where an emphasis needed
 
 //==================================================================================================================
 // CTA & preloading
@@ -175,6 +176,8 @@ Usage:
 //==================================================================================================================
 // KERNELS
 //==================================================================================================================
+
+#include "Poisson.hlsli"
 
 static const float3 g_Special6[ 6 ] =
 {

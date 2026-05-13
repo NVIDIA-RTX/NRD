@@ -320,6 +320,7 @@ NOISY INPUTS:
 // PRIVATE
 //=================================================================================================================================
 
+// Defined in CMake
 #ifdef NRD_INTERNAL
     // Explicitly set matrix layout for shader compilation outside of NRD environment
     #pragma pack_matrix( column_major )
