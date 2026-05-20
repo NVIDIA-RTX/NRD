@@ -710,7 +710,7 @@ NRD_MaterialFactors( N, V, albedo, Rf0, roughness, diffFactor, specFactor );
 
 ## INTERACTION WITH FRAME GENERATION
 
-Frame generation (FG) techniques boost FPS by interpolating between 2 last available frames. *NRD* works better when frame rate increases, because it gets more data per second. It's not the case for FG, because all rendering pipeline underlying passes (like, denoising) continue to work on the original non-boosted framerate. `GetMaxAccumulatedFrameNum` helper should get a real FPS, not a fake one.
+Frame generation (*FG*) techniques boost perceived *FPS* by generating intermediate frames. While *NRD* performs better at higher frame rates because it receives more data per second, this benefit does not apply to FG. This is because all underlying rendering pipeline passes (such as denoising) continue to operate at the original, unboosted frame rate. Consequently, the `GetMaxAccumulatedFrameNum` helper must receive the *FPS*, not the generated one. Failing to do so results in an $X$ increase in temporal lag, where $X$ is the frame rate scaling factor.
 
 ## HISTORY CONFIDENCE
 
