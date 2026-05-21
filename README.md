@@ -708,6 +708,22 @@ NRD_MaterialFactors( N, V, albedo, Rf0, roughness, diffFactor, specFactor );
 
 </details>
 
+## CAVITY SHADOW
+
+![Cavity shadows](Images/CavityShadow.jpg)
+*"Dark Souls 2: Scholar of The First Sin (DSLE mod with path tracing)"*
+
+In addition to *SG/SH* resolve and re-jittering, the cavity shadow feature can be applied on top to further enhance realism if cavity information is available. If not explicitly provided, it can be derived from a prebaked ambient occlusion map or a height map. This feature is highly recommended for parallax mapping. Shader code:
+
+```c++
+// Tunable
+const float cosLightAngle = cos( radians( 40.0 ) );
+const float shadowStrength = 0.85;
+
+diff.xyz *= NRD_ComputeCavityShadow( diffSg, N, cavity, cosLightAngle, shadowStrength );
+spec.xyz *= NRD_ComputeCavityShadow( specSg, N, cavity, cosLightAngle, shadowStrength );
+```
+
 ## INTERACTION WITH FRAME GENERATION
 
 Frame generation (*FG*) techniques boost perceived *FPS* by generating intermediate frames. While *NRD* performs better at higher frame rates because it receives more data per second, this benefit does not apply to FG. This is because all underlying rendering pipeline passes (such as denoising) continue to operate at the original, unboosted frame rate. Consequently, the `GetMaxAccumulatedFrameNum` helper must receive the *FPS*, not the generated one. Failing to do so results in an $X$ increase in temporal lag, where $X$ is the frame rate scaling factor.

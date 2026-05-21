@@ -1175,7 +1175,7 @@ float3 NRD_SH_ResolveSpecular( NRD_SG sh, float3 N, float3 V, float roughness )
 // CAVITY SHADOW RESOLVE
 //=================================================================================================================================
 
-float _NRD_ConeCosAngleToSolidAngle( float coneCosAngle )
+float _NRD_SolidAngle( float coneCosAngle )
 {
     return 2.0 * NRD_PI * ( 1.0 - coneCosAngle );
 }
@@ -1207,7 +1207,7 @@ float3 _NRD_RotateTowards( float3 a, float3 b, float cosAngle )
     return sinTheta < NRD_EPS ? a : rotated;
 }
 
-float4 _NRD_SphericalCapIntersection( float3 axisA, float cosA, float3 axisB, float cosB )
+float4 _NRD_GetSphericalCapIntersection( float3 axisA, float cosA, float3 axisB, float cosB )
 {
     float radiusA = _NRD_AcosApproxSphere( cosA );
     float radiusB = _NRD_AcosApproxSphere( cosB );
@@ -1241,15 +1241,16 @@ float4 _NRD_SphericalCapIntersection( float3 axisA, float cosA, float3 axisB, fl
     return float4( L, intersectionAngle );
 }
 
+// Source: "Dark Souls 2: Scholar of The First Sin ( DSLE mod with path tracing )"
 // Defaults: cosLightAngle = 0.707106, shadowStrength = 0.85
 float NRD_ComputeCavityShadow( NRD_SG sg, float3 N, float cavity, float cosLightAngle, float shadowStrength )
 {
     float coneCosAngle = sqrt( saturate( 1.0 - cavity ) );
     float3 lightDir = NRD_SG_ExtractDirection( sg );
-    float4 coneIntersection = _NRD_SphericalCapIntersection( N, coneCosAngle, lightDir, cosLightAngle );
+    float4 coneIntersection = _NRD_GetSphericalCapIntersection( N, coneCosAngle, lightDir, cosLightAngle );
 
-    float lightSolidAngle = _NRD_ConeCosAngleToSolidAngle( cosLightAngle );
-    float shadow = saturate( _NRD_ConeCosAngleToSolidAngle( coneIntersection.w ) / max( lightSolidAngle, NRD_EPS ) );
+    float lightSolidAngle = _NRD_SolidAngle( cosLightAngle );
+    float shadow = saturate( _NRD_SolidAngle( coneIntersection.w ) / max( lightSolidAngle, NRD_EPS ) );
 
     return lerp( 1.0, shadow, shadowStrength );
 }
