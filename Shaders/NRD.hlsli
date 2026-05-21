@@ -604,11 +604,6 @@ NRD_SG _NRD_SG_Create( float3 radiance, float3 direction, float normHitDist )
     return sg;
 }
 
-float3 _NRD_SG_ExtractDirection( NRD_SG sg )
-{
-    return sg.c1 / max( length( sg.c1 ), NRD_EPS );
-}
-
 float _NRD_SG_IntegralApprox( NRD_SG sg )
 {
     return 2.0 * NRD_PI * ( sg.c0 / sg.sharpness );
@@ -1003,7 +998,7 @@ float3 NRD_SG_ExtractColor( NRD_SG sg )
 
 float3 NRD_SG_ExtractDirection( NRD_SG sg )
 {
-    return _NRD_SG_ExtractDirection( sg );
+    return sg.c1 / max( length( sg.c1 ), NRD_EPS );
 }
 
 void NRD_SG_Rotate( inout NRD_SG sg, float3x3 rotation )
@@ -1014,7 +1009,7 @@ void NRD_SG_Rotate( inout NRD_SG sg, float3x3 rotation )
 // https://therealmjp.github.io/posts/sg-series-part-3-diffuse-lighting-from-an-sg-light-source/
 float3 NRD_SG_ResolveDiffuse( NRD_SG sg, float3 N, float3 V, float roughness )
 {
-    float3 L = _NRD_SG_ExtractDirection( sg );
+    float3 L = NRD_SG_ExtractDirection( sg );
     float NoL = saturate( dot( N, L ) );
 
     // SG light
@@ -1062,7 +1057,7 @@ float3 NRD_SG_ResolveSpecular( NRD_SG sg, float3 N, float3 V, float roughness )
     float m = roughness * roughness;
     float m2 = m * m;
 
-    float3 L = _NRD_SG_ExtractDirection( sg );
+    float3 L = NRD_SG_ExtractDirection( sg );
     float NoL = saturate( dot( N, L ) );
 
     float3 H = normalize( L + V );
@@ -1119,8 +1114,8 @@ float2 NRD_SG_ReJitter(
 )
 {
     // Extract dominant light directions
-    float3 Ld = _NRD_SG_ExtractDirection( diffSg );
-    float3 Ls = _NRD_SG_ExtractDirection( specSg );
+    float3 Ld = NRD_SG_ExtractDirection( diffSg );
+    float3 Ls = NRD_SG_ExtractDirection( specSg );
 
     // Fix instabilities
     Ls = normalize( lerp( V, Ls, roughness ) );
@@ -1193,13 +1188,12 @@ float _NRD_AcosApproxSphere( float x )
     return x >= 0 ? b : ( NRD_PI - b );
 }
 
-// cos( A - B )
 float _NRD_CosDifference( float cosA, float cosB )
 {
     float sqSinA = saturate( 1.0 - cosA * cosA );
     float sqSinB = saturate( 1.0 - cosB * cosB );
 
-    return cosA * cosB + sqrt( sqSinA * sqSinB );
+    return cosA * cosB + sqrt( sqSinA * sqSinB ); // cos( A - B )
 }
 
 float3 _NRD_RotateTowards( float3 a, float3 b, float cosAngle )
@@ -1220,17 +1214,16 @@ float4 _NRD_SphericalCapIntersection( float3 axisA, float cosA, float3 axisB, fl
     float dist = _NRD_AcosApproxSphere( cosDist );
 
     // Early out if angle between the cones is larger than the sum of their angles, which indicates no intersection
-    if( dist > ( radiusA + radiusB ) )
-        return 0.0;
+    if( dist > radiusA + radiusB )
+        return float4( axisA, 1.0 ); // using "axisA" is safe, because the cos is 1 ( i.e. 0 angle )
 
     // Cone A fully inside cone B, return cone A
-    if (radiusB > (radiusA + dist))
-        return float4(axisA, cosA);
-
+    if( radiusB > radiusA + dist )
+        return float4( axisA, cosA );
 
     // Cone B fully inside cone A, return cone B
-    if (radiusA > (radiusB + dist))
-        return float4(axisB, cosB);
+    if( radiusA > radiusB + dist )
+        return float4( axisB, cosB );
 
     // Intersection angle
     float diff = abs( radiusA - radiusB );
@@ -1246,15 +1239,15 @@ float4 _NRD_SphericalCapIntersection( float3 axisA, float cosA, float3 axisB, fl
     return float4( L, intersectionAngle );
 }
 
-// Defaults: cosLightAngle = 0.707106, contactShadowStrength = 0.85
+// Defaults: cosLightAngle = 0.707106, shadowStrength = 0.85
 float NRD_ComputeCavityShadow( NRD_SG sg, float3 N, float cavity, float cosLightAngle, float shadowStrength )
 {
     float coneCosAngle = sqrt( saturate( 1.0 - cavity ) );
     float3 lightDir = NRD_SG_ExtractDirection( sg );
-    float lightSolidAngle = _NRD_ConeCosAngleToSolidAngle( cosLightAngle );
     float cosPhi = dot( N, lightDir );
-
     float4 coneIntersection = _NRD_SphericalCapIntersection( N, coneCosAngle, lightDir, cosLightAngle, cosPhi );
+
+    float lightSolidAngle = _NRD_ConeCosAngleToSolidAngle( cosLightAngle );
     float shadow = saturate( _NRD_ConeCosAngleToSolidAngle( coneIntersection.w ) / max( lightSolidAngle, NRD_EPS ) );
 
     return lerp( 1.0, shadow, shadowStrength );
