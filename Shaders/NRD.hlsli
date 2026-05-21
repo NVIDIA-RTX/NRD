@@ -1207,10 +1207,12 @@ float3 _NRD_RotateTowards( float3 a, float3 b, float cosAngle )
     return sinTheta < NRD_EPS ? a : rotated;
 }
 
-float4 _NRD_SphericalCapIntersection( float3 axisA, float cosA, float3 axisB, float cosB, float cosDist )
+float4 _NRD_SphericalCapIntersection( float3 axisA, float cosA, float3 axisB, float cosB )
 {
     float radiusA = _NRD_AcosApproxSphere( cosA );
     float radiusB = _NRD_AcosApproxSphere( cosB );
+
+    float cosDist = dot( axisA, axisB );
     float dist = _NRD_AcosApproxSphere( cosDist );
 
     // Early out if angle between the cones is larger than the sum of their angles, which indicates no intersection
@@ -1244,8 +1246,7 @@ float NRD_ComputeCavityShadow( NRD_SG sg, float3 N, float cavity, float cosLight
 {
     float coneCosAngle = sqrt( saturate( 1.0 - cavity ) );
     float3 lightDir = NRD_SG_ExtractDirection( sg );
-    float cosPhi = dot( N, lightDir );
-    float4 coneIntersection = _NRD_SphericalCapIntersection( N, coneCosAngle, lightDir, cosLightAngle, cosPhi );
+    float4 coneIntersection = _NRD_SphericalCapIntersection( N, coneCosAngle, lightDir, cosLightAngle );
 
     float lightSolidAngle = _NRD_ConeCosAngleToSolidAngle( cosLightAngle );
     float shadow = saturate( _NRD_ConeCosAngleToSolidAngle( coneIntersection.w ) / max( lightSolidAngle, NRD_EPS ) );
