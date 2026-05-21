@@ -175,7 +175,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float3 sampleV = -normalize(sampleWorldPos + gRoughnessEdgeStoppingRelaxation * centerWorldPos);
 
             // Calculating weights for specular
-            float angles = Math::AcosApprox(dot(centerNormal, sampleNormal));
+            float angles = Math::AcosApproxPositive(dot(centerNormal, sampleNormal));
             float normalWSpecularSimplified = ComputeWeight(angles, specularNormalWeightParamSimplified, 0.0);
             float normalWSpecular = GetSpecularNormalWeight_ATrous(specularNormalWeightParams, centerNormal, sampleNormal, centerV, sampleV);
             float roughnessWSpecular = ComputeWeight(sampleRoughness, roughnessWeightParams.x, roughnessWeightParams.y);
@@ -204,7 +204,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
 #if( NRD_DIFF )
             // Calculating weights for diffuse
-            float angled = Math::AcosApprox(dot(centerNormal, sampleNormal));
+            float angled = Math::AcosApproxPositive(dot(centerNormal, sampleNormal));
             float normalWDiffuse = ComputeWeight(angled, diffuseNormalWeightParam, 0.0);
 
             // Summing up diffuse

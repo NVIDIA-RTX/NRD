@@ -145,7 +145,7 @@ float GetSpecularNormalWeight_ATrous(float2 params0, float3 n0, float3 n, float3
     float cosaN = dot(n0, n);
     float cosaV = dot(v0, v);
     float cosa = min(cosaN, cosaV);
-    float a = Math::AcosApprox(cosa);
+    float a = Math::AcosApproxPositive(cosa);
     a = Math::SmoothStep(0.0, params0.x, a);
 
     return saturate(1.0 - a * params0.y);

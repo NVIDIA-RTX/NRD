@@ -168,7 +168,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     Ns = NRD_FrontEnd_UnpackNormalAndRoughness( Ns, materialIDs );
 
                     // Weight
-                    float angle = Math::AcosApprox( dot( Ns.xyz, N ) );
+                    float angle = Math::AcosApproxPositive( dot( Ns.xyz, N ) );
                     float NoX = dot( Nv, Xvs );
 
                     float w = CompareMaterials( materialID, materialIDs, gDiffMinMaterial );
@@ -371,7 +371,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     Ns = NRD_FrontEnd_UnpackNormalAndRoughness( Ns, materialIDs );
 
                     // Weight
-                    float angle = Math::AcosApprox( dot( Ns.xyz, N ) );
+                    float angle = Math::AcosApproxPositive( dot( Ns.xyz, N ) );
                     float NoX = dot( Nv, Xvs );
 
                     float w = CompareMaterials( materialID, materialIDs, gSpecMinMaterial );

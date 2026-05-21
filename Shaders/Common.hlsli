@@ -567,7 +567,7 @@ float GetGaussianWeight( float r )
 float GetEncodingAwareNormalWeight( float3 Ncurr, float3 Nprev, float maxAngle, float curvatureAngle, float thresholdAngle )
 {
     float cosa = dot( Ncurr, Nprev );
-    float angle = Math::AcosApprox( cosa );
+    float angle = Math::AcosApproxPositive( cosa );
     float w = Math::SmoothStep01( 1.0 - ( angle - curvatureAngle - thresholdAngle ) / maxAngle );
 
     // Needed to mitigate potential issues due to encoding mismatch, small "maxAngle" or imprecise "acos" ( test 3, 43 if roughness is low )

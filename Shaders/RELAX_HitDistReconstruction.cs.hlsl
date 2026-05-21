@@ -108,7 +108,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float3 sampleHitdistViewZ = s_HitDist_ViewZ[pos.y][pos.x];
             float sampleViewZ = sampleHitdistViewZ.z;
             float cosa = dot(centerNormal, sampleNormal);
-            float angle = Math::AcosApprox(cosa);
+            float angle = Math::AcosApproxPositive(cosa);
 
             float w = IsInScreenNearest(pixelUv + o * gRectSizeInv);
             w *= IsInDenoisingRange( sampleViewZ );

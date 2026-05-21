@@ -225,7 +225,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             Ns = NRD_FrontEnd_UnpackNormalAndRoughness( Ns, materialIDs );
 
             // Weight
-            float angle = Math::AcosApprox( dot( N, Ns.xyz ) );
+            float angle = Math::AcosApproxPositive( dot( N, Ns.xyz ) );
             float NoX = dot( Nv, Xvs );
 
             w *= CompareMaterials( materialID, materialIDs, MIN_MATERIAL );

@@ -184,7 +184,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 sampleWorldPos,
                 gDepthThreshold);
 
-            float angle = Math::AcosApprox(dot(centerNormal, sampleNormal));
+            float angle = Math::AcosApproxPositive(dot(centerNormal, sampleNormal));
             sampleWeight *= ComputeWeight(angle, normalWeightParam, 0.0);
 
             float4 sampleDiffuseIllumination = gIn_Diff.SampleLevel(gNearestClamp, checkerboardUvScaled, 0);
@@ -335,7 +335,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             sampleWeight *= CompareMaterials(centerMaterialID, sampleMaterialID, gSpecMinMaterial);
             sampleWeight *= ComputeWeight(sampleRoughness, roughnessWeightParams.x, roughnessWeightParams.y);
 
-            float angle = Math::AcosApprox(dot(centerNormal, sampleNormal));
+            float angle = Math::AcosApproxPositive(dot(centerNormal, sampleNormal));
             sampleWeight *= ComputeWeight(angle, normalWeightParam, 0.0);
 
             float3 sampleWorldPos = GetCurrentWorldPosFromClipSpaceXY(uv * 2.0 - 1.0, sampleViewZ);

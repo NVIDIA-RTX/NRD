@@ -296,7 +296,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 // Getting sample view vector closer to center view vector
                 // by adding gRoughnessEdgeStoppingRelaxation * centerWorldPos
                 // relaxes view direction based rejection
-                float angles = Math::AcosApprox(dot(centerNormal, sampleNormal));
+                float angles = Math::AcosApproxPositive(dot(centerNormal, sampleNormal));
                 float3 sampleV = -normalize(sampleWorldPos + gRoughnessEdgeStoppingRelaxation * centerWorldPos);
                 float normalWSpecularSimplified = ComputeWeight(angles, specularNormalWeightParamSimplified, 0.0);
                 float normalWSpecular = GetSpecularNormalWeight_ATrous(specularNormalWeightParams, centerNormal, sampleNormal, centerV, sampleV);
@@ -324,7 +324,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #endif
 #if( NRD_DIFF )
                 // Calculating weights for diffuse
-                float angled = Math::AcosApprox(dot(centerNormal, sampleNormal));
+                float angled = Math::AcosApproxPositive(dot(centerNormal, sampleNormal));
                 float normalWDiffuse = ComputeWeight(angled, diffuseNormalWeightParam, 0.0);
 
                 // Summing up diffuse
@@ -413,7 +413,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                 // Calculating weights
                 float depthW = 1.0;// TODO: should we take in account depth here?
-                float angle = Math::AcosApprox(dot(centerNormal, sampleNormal));
+                float angle = Math::AcosApproxPositive(dot(centerNormal, sampleNormal));
                 float normalW = ComputeWeight(angle, diffuseNormalWeightParam, 0.0);
 
 #if( NRD_SPEC )

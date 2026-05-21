@@ -119,7 +119,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float4 normalAndRoughness = s_Normal_Roughness[ pos.y ][ pos.x ];
 
                 float cosa = dot( N, normalAndRoughness.xyz );
-                float angle = Math::AcosApprox( cosa );
+                float angle = Math::AcosApproxPositive( cosa );
 
                 // These weights have infinite exponential tails, because with strict weights we are reducing a chance to find a valid sample in 3x3 or 5x5 area
                 ww.x *= ComputeExponentialWeight( angle, diffNormalWeightParam, 0.0 );
