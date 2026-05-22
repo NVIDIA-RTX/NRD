@@ -355,7 +355,7 @@ NOISY INPUTS:
 #define NRD_FP16_MAX                                                                    65504.0
 #define NRD_PI                                                                          3.14159265358979323846
 #define NRD_EPS                                                                         1e-6 // must fit into FP16
-#define NRD_INF                                                                         1e6
+#define NRD_INF                                                                         1e6  // why it's here? mostly for compatibility with existing code
 
 // Misc
 float3 _NRD_SafeNormalize( float3 v )
@@ -745,9 +745,11 @@ void NRD_MaterialFactors( float3 N, float3 V, float3 albedo, float3 Rf0, float r
 
 // SPECULAR HIT DISTANCE AVERAGING ( in case of rpp > 1 )
 
+#define _NRD_INF_INTERNAL 3.40282347e+38
+
 float NRD_FrontEnd_SpecHitDistAveraging_Begin( )
 {
-    return NRD_INF;
+    return _NRD_INF_INTERNAL;
 }
 
 float NRD_FrontEnd_TrimHitDistance( float hitDist, float threshold ) // optional
@@ -761,12 +763,12 @@ float NRD_FrontEnd_TrimHitDistance( float hitDist, float threshold ) // optional
 void NRD_FrontEnd_SpecHitDistAveraging_Add( inout float accumulatedSpecHitDist, float hitDist )
 {
     // TODO: for high roughness it can be blended to average
-    accumulatedSpecHitDist = min( accumulatedSpecHitDist, hitDist == 0.0 ? NRD_INF : hitDist );
+    accumulatedSpecHitDist = min( accumulatedSpecHitDist, hitDist == 0.0 ? _NRD_INF_INTERNAL : hitDist );
 }
 
 void NRD_FrontEnd_SpecHitDistAveraging_End( inout float accumulatedSpecHitDist )
 {
-    accumulatedSpecHitDist = accumulatedSpecHitDist == NRD_INF ? 0.0 : accumulatedSpecHitDist;
+    accumulatedSpecHitDist = accumulatedSpecHitDist == _NRD_INF_INTERNAL ? 0.0 : accumulatedSpecHitDist;
 }
 
 //=================================================================================================================================
