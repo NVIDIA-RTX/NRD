@@ -636,7 +636,7 @@ float _NRD_SG_InnerProduct( NRD_SG a, NRD_SG b )
 }
 
 //=================================================================================================================================
-// FRONT-END - GENERAL
+// FRONT-END - NORMAL AND ROUGHNESS
 //=================================================================================================================================
 
 // Used to decode linear roughness accessed via "Gather" instructions
@@ -727,7 +727,9 @@ float4 NRD_FrontEnd_PackNormalAndRoughness( float3 N, float roughness, float mat
     return p;
 }
 
-// MATERIAL DEMODULATION
+//=================================================================================================================================
+// FRONT-END - MATERIAL DEMODULATION
+//=================================================================================================================================
 
 //   Front-end usage ( before NRD, convert irradiance into radiance ):
 //      diffIrradiance /= diffFactor
@@ -749,7 +751,29 @@ void NRD_MaterialFactors( float3 N, float3 V, float3 albedo, float3 Rf0, float r
     specFactor = lerp( NRD_MATERIAL_FACTOR_MIN_SCALE.xxx, float3( 1.0, 1.0, 1.0 ), specFactor );
 }
 
-// SPECULAR HIT DISTANCE AVERAGING ( in case of rpp > 1 )
+//=================================================================================================================================
+// FRONT-END - SPECULAR HIT DISTANCE AVERAGING ( paths / pixel > 1 )
+//=================================================================================================================================
+
+// NRD uses hit distances:
+// - to guide denoising
+//   - REBLUR: throughout the entire pipeline
+//   - RELAX: in the "Pre Pass" only
+// - to compute specular motion
+// To compute specular motion "Pre Pass" outputs "min hit distance in some area" to the "Temporal Accumulation" pass for further processing.
+// This information dosn't affect the original hit distances, which are needed for denoising guidance. This works as expected.
+
+// PROBLEM: If multiple paths are computed on the application side, the only thing we can do without changing the API is to find the
+// "min hit distance" on the fly. It's a lesser evil that still offers proper specular motion. "Min hit distance" is suboptimal for denoising
+// guidance, but it's acceptable. It's an interim solution for now, because NRD in its current form was designed to work with 1 path / pixel.
+
+// TODO: the problem above may be solved in two ways:
+// - use hit distances only for denoising guidance and introduce "IN_SPEC_MV" inputs coming from the application side
+//   - PROS: simple for NRD
+//   - CONS: a major pain for the application ( even if some helpers are provided )
+// - introduce a new input "IN_MIN_HIT_DISTANCE" ( use current hit distance input, encoded into the ".w" channel, for denoising guidance as usual )
+//   - PROS: flexible and easy to use ( assuming simple helpers are provided )
+//   - CONS: negligible overhead from the new input
 
 #define _NRD_INF_INTERNAL 3.40282347e+38
 
