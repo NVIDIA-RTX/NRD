@@ -139,7 +139,9 @@ float loadSurfaceMotionBasedPrevData(
     // Using bilinear to average 4 normal samples
     float2 uv = (float2(bilinearOrigin)+float2(1.0, 1.0)) * gResourceSizeInvPrev;
     float3 prevNormalFlat = UnpackPrevNormalRoughness(gPrev_Normal_Roughness.SampleLevel(gLinearClamp, uv, 0)).xyz;
-    prevNormalFlat = Geometry::RotateVector(gWorldPrevToWorld, prevNormalFlat);
+    #if( NRD_USE_PREV_WORLD_SPACE_MATRIX == 1 )
+        prevNormalFlat = Geometry::RotateVector(gWorldPrevToWorld, prevNormalFlat);
+    #endif
 
     // Reject backfacing history: if angle between current normal and previous normal is larger than 90 deg
     [flatten]
@@ -342,7 +344,9 @@ float loadVirtualMotionBasedPrevData(
 
         float4 prevNormalRoughness = UnpackPrevNormalRoughness(gPrev_Normal_Roughness.SampleLevel(gLinearClamp, prevUVVMB * gResolutionScalePrev, 0));
         prevNormal = prevNormalRoughness.xyz;
-        prevNormal = Geometry::RotateVector(gWorldPrevToWorld, prevNormal);
+        #if( NRD_USE_PREV_WORLD_SPACE_MATRIX == 1 )
+            prevNormal = Geometry::RotateVector(gWorldPrevToWorld, prevNormal);
+        #endif
         prevRoughness = prevNormalRoughness.w;
     }
     // Using all() marks entire virtual motion based specular history footprint
@@ -808,8 +812,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float2 backUV2 = prevUVVMB + 2.0 * uvDiff;
     float4 backNormalRoughness1 = UnpackPrevNormalRoughness(gPrev_Normal_Roughness.SampleLevel(gLinearClamp, backUV1 * gResolutionScalePrev, 0));
     float4 backNormalRoughness2 = UnpackPrevNormalRoughness(gPrev_Normal_Roughness.SampleLevel(gLinearClamp, backUV2 * gResolutionScalePrev, 0));
-    backNormalRoughness1.rgb = Geometry::RotateVector(gWorldPrevToWorld, backNormalRoughness1.rgb);
-    backNormalRoughness2.rgb = Geometry::RotateVector(gWorldPrevToWorld, backNormalRoughness2.rgb);
+    #if( NRD_USE_PREV_WORLD_SPACE_MATRIX == 1 )
+        backNormalRoughness1.rgb = Geometry::RotateVector(gWorldPrevToWorld, backNormalRoughness1.rgb);
+        backNormalRoughness2.rgb = Geometry::RotateVector(gWorldPrevToWorld, backNormalRoughness2.rgb);
+    #endif
     float prevPrevNormalWeight = IsInScreenNearest(backUV1) ? GetEncodingAwareNormalWeight(prevNormalVMB, backNormalRoughness1.rgb, lobeHalfAngle, curvatureAngle * 2.0, RELAX_NORMAL_ULP) : 1.0;
     prevPrevNormalWeight *= IsInScreenNearest(backUV2) ? GetEncodingAwareNormalWeight(prevNormalVMB, backNormalRoughness2.rgb, lobeHalfAngle, curvatureAngle * 3.0, RELAX_NORMAL_ULP) : 1.0;
     virtualHistoryAmount *= 0.33 + 0.67 * prevPrevNormalWeight;

@@ -204,30 +204,29 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Previous normal averaged for all "in-range" pixels in 2x2 footprint
     Filtering::Bilinear smbBilinearFilter = Filtering::GetBilinearFilter( smbPixelUv, gRectSizePrev );
-    float3 smbNavg = 0; // TODO: the sum works well, but probably there is a potential to use just "1 smart sample" (see test 168)
+    float smbNoN;
+    float4 smbNoN2x2;
     {
-        uint2 p = uint2( smbBilinearFilter.origin );
-        float sum = NRD_EPS; // avoid 0
+        // TODO: currently "N" can't be used here, because of potential rejection of the entire footprint. See tests 17 and 18 at least ( under the frames on the wall )
+        float3 Nt = Navg; // IMPORTANT: yes, "Navg" // TODO: that's the only usage of "Navg"
 
-        float w = float( IsInDenoisingRange( prevViewZ0.z ) );
-        smbNavg = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness[ p ] ).xyz * w;
-        sum += w;
+        #if( NRD_USE_PREV_WORLD_SPACE_MATRIX == 1 )
+            Nt = Geometry::RotateVectorInverse( gWorldPrevToWorld, Nt ); // to "prev" world space
+        #endif
 
-        w = float( IsInDenoisingRange( prevViewZ1.y ) );
-        smbNavg += NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness[ p + uint2( 1, 0 ) ] ).xyz * w;
-        sum += w;
+        int3 p = int3( smbBilinearFilter.origin, 0 );
+        float3 n00 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p ) ).xyz;
+        float3 n10 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p, int2( 1, 0 ) ) ).xyz;
+        float3 n01 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p, int2( 0, 1 ) ) ).xyz;
+        float3 n11 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p, int2( 1, 1 ) ) ).xyz;
 
-        w = float( IsInDenoisingRange( prevViewZ2.y ) );
-        smbNavg += NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness[ p + uint2( 0, 1 ) ] ).xyz * w;
-        sum += w;
+        smbNoN2x2.x = dot( n00, Nt );
+        smbNoN2x2.y = dot( n10, Nt );
+        smbNoN2x2.z = dot( n01, Nt );
+        smbNoN2x2.w = dot( n11, Nt );
 
-        w = float( IsInDenoisingRange( prevViewZ3.x ) );
-        smbNavg += NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness[ p + uint2( 1, 1 ) ] ).xyz * w;
-        sum += w;
-
-        smbNavg /= sum;
+        smbNoN = Filtering::ApplyBilinearFilter( smbNoN2x2.x, smbNoN2x2.y, smbNoN2x2.z, smbNoN2x2.w, smbBilinearFilter );
     }
-    smbNavg = Geometry::RotateVector( gWorldPrevToWorld, smbNavg );
 
     // Parallax
     float smbParallaxInPixels1 = ComputeParallaxInPixels( Xprev + gCameraDelta.xyz, gOrthoMode == 0.0 ? smbPixelUv : pixelUv, gWorldToClipPrev, gRectSize );
@@ -263,9 +262,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 V = GetViewVector( X );
     float NoV = abs( dot( N, V ) );
     float NoVstrict = lerp( NoV, 1.0, saturate( smbParallaxInPixelsMax / 30.0 ) );
-    float4 smbDisocclusionThreshold = GetDisocclusionThreshold( disocclusionThreshold, frustumSize, NoVstrict );
-    smbDisocclusionThreshold *= float( dot( smbNavg, Navg ) > thresholdAngle ); // good for smb
+
+    float4 smbDisocclusionThreshold = float4( smbNoN2x2 > thresholdAngle );
     smbDisocclusionThreshold *= IsInScreenBilinear( smbBilinearFilter.origin, gRectSizePrev );
+    smbDisocclusionThreshold *= GetDisocclusionThreshold( disocclusionThreshold, frustumSize, NoVstrict );
     smbDisocclusionThreshold -= NRD_EPS;
 
     // Disocclusion: plane distance
@@ -331,7 +331,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Footprint quality
     float3 smbVprev = GetViewVectorPrev( Xprev, gCameraDelta.xyz );
-    float NoVprev = abs( dot( N, smbVprev ) ); // TODO: should be smbNavg ( normalized? ), but jittering breaks logic
+    float NoVprev = abs( dot( N, smbVprev ) ); // TODO: should be "smbN", but jittering breaks logic
     float sizeQuality = ( NoVprev + 1e-3 ) / ( NoV + 1e-3 ); // this order because we need to fix stretching only, shrinking is OK
     sizeQuality *= sizeQuality;
     sizeQuality = lerp( 0.1, 1.0, saturate( sizeQuality ) );
@@ -516,11 +516,36 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             virtualHistoryConfidence = Filtering::ApplyBilinearFilter( roughnessWeight.x, roughnessWeight.y, roughnessWeight.z, roughnessWeight.w, vmbBilinearFilter );
         }
 
-        // Patch "smbNavg" if "smb" motion is invalid ( make relative tests a NOP )
-        float4 vmbNormalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.SampleLevel( STOCHASTIC_BILINEAR_FILTER, StochasticBilinear( vmbPixelUv, gRectSizePrev ) * gResolutionScalePrev, 0 ) );
-        float3 vmbN = Geometry::RotateVector( gWorldPrevToWorld, vmbNormalAndRoughness.xyz );
+        float4 vmbN;
+        float4 vmbNoN2x2;
+        float vmbNoN;
+        {
+            float3 Nt = N; // IMPORTANT: yes, "N"
 
-        smbNavg = smbFootprintQuality == 0.0 ? vmbN : smbNavg;
+            #if( NRD_USE_PREV_WORLD_SPACE_MATRIX == 1 )
+                Nt = Geometry::RotateVectorInverse( gWorldPrevToWorld, Nt ); // to "prev" world space
+            #endif
+
+            int3 p = int3( vmbBilinearFilter.origin, 0 );
+            float4 n00 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p ) );
+            float4 n10 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p, int2( 1, 0 ) ) );
+            float4 n01 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p, int2( 0, 1 ) ) );
+            float4 n11 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p, int2( 1, 1 ) ) );
+
+            vmbNoN2x2.x = dot( n00.xyz, Nt );
+            vmbNoN2x2.y = dot( n10.xyz, Nt );
+            vmbNoN2x2.z = dot( n01.xyz, Nt );
+            vmbNoN2x2.w = dot( n11.xyz, Nt );
+
+            vmbNoN = Filtering::ApplyBilinearFilter( vmbNoN2x2.x, vmbNoN2x2.y, vmbNoN2x2.z, vmbNoN2x2.w, vmbBilinearFilter );
+
+            vmbN = Filtering::ApplyBilinearFilter( n00, n10, n01, n11, vmbBilinearFilter );
+            vmbN.xyz = _NRD_SafeNormalize( vmbN.xyz );
+
+            #if( NRD_USE_PREV_WORLD_SPACE_MATRIX == 1 )
+                vmbN.xyz = Geometry::RotateVector( gWorldPrevToWorld, vmbN.xyz ); // from "prev" world space
+            #endif
+        }
 
         // Virtual motion - disocclusion
         float4 vmbOcclusionWeights;
@@ -531,11 +556,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 vmbOcclusion = step( 0.5, roughnessWeight );
 
             // Disocclusion: plane distance
-            float4 vmbOcclusionThreshold = disocclusionThreshold * frustumSize;
-            vmbOcclusionThreshold *= lerp( 0.25, 1.0, NoV ); // yes, "*" not "/" // TODO: it's from commit "fixed suboptimal "vmb" reprojection behavior in disocclusions", but is it really needed?
-            vmbOcclusionThreshold *= float( dot( vmbN, N ) > thresholdAngle ); // good for vmb
-            vmbOcclusionThreshold *= float( dot( vmbN, smbNavg ) > thresholdAngle ); // bonus check for test 168
+            float4 vmbOcclusionThreshold = float4( vmbNoN2x2 > thresholdAngle ); // TODO: use lobe angle?
             vmbOcclusionThreshold *= IsInScreenBilinear( vmbBilinearFilter.origin, gRectSizePrev );
+            vmbOcclusionThreshold *= disocclusionThreshold * frustumSize;
+            vmbOcclusionThreshold *= lerp( 0.1, 1.0, NoV ); // IMPORTANT: yes, "*" not "/"! This is a must for test 168 ( see contact shadow behind the heating radiator ), without this rare bright samples may stretch
             vmbOcclusionThreshold -= NRD_EPS;
 
             float4 vmbViewZ = UnpackViewZ( gPrev_ViewZ.GatherRed( gNearestClamp, vmbBilinearGatherUv ).wzxy );
@@ -634,7 +658,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Virtual motion - confidence: normal
         {
-            float normalWeight = GetEncodingAwareNormalWeight( N, vmbN, lobeHalfAngle, curvatureAngle, REBLUR_NORMAL_ULP );
+            float normalWeight = GetEncodingAwareNormalWeight( N, vmbN.xyz, lobeHalfAngle, curvatureAngle, REBLUR_NORMAL_ULP );
             normalWeight = lerp( Math::SmoothStep( 1.0, 0.0, vmbPixelsTraveled ), 1.0, normalWeight ); // jitter friendly
 
             virtualHistoryConfidence *= normalWeight;
@@ -649,7 +673,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             vmbDelta *= Math::Rsqrt( Math::LengthSquared( vmbDelta ) );
             vmbDelta /= gRectSizePrev;
 
-            float2 relaxedRoughnessWeightParams = GetRelaxedRoughnessWeightParams( vmbNormalAndRoughness.w * vmbNormalAndRoughness.w, gRoughnessFraction, REBLUR_ROUGHNESS_SENSITIVITY_IN_TA ); // TODO: GetRoughnessWeightParams with 0.05 sensitivity?
+            float2 relaxedRoughnessWeightParams = GetRelaxedRoughnessWeightParams( vmbN.w * vmbN.w, gRoughnessFraction, REBLUR_ROUGHNESS_SENSITIVITY_IN_TA ); // TODO: GetRoughnessWeightParams with 0.05 sensitivity?
 
             [unroll]
             for( i = 1; i <= REBLUR_VIRTUAL_MOTION_PREV_PREV_WEIGHT_ITERATION_NUM; i++ )
@@ -657,7 +681,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float2 vmbPixelUvPrev = vmbPixelUv + vmbDelta * i * stepBetweenTaps;
                 float4 vmbNormalAndRoughnessPrev = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.SampleLevel( STOCHASTIC_BILINEAR_FILTER, StochasticBilinear( vmbPixelUvPrev, gRectSizePrev ) * gResolutionScalePrev, 0 ) );
 
-                float w = GetEncodingAwareNormalWeight( vmbNormalAndRoughness.xyz, vmbNormalAndRoughnessPrev.xyz, lobeHalfAngle, curvatureAngle * ( 1.0 + i * stepBetweenTaps ), REBLUR_NORMAL_ULP );
+                #if( NRD_USE_PREV_WORLD_SPACE_MATRIX == 1 )
+                    vmbNormalAndRoughnessPrev.xyz = Geometry::RotateVector( gWorldPrevToWorld, vmbNormalAndRoughnessPrev.xyz ); // from "prev" world space
+                #endif
+
+                float w = GetEncodingAwareNormalWeight( vmbN.xyz, vmbNormalAndRoughnessPrev.xyz, lobeHalfAngle, curvatureAngle * ( 1.0 + i * stepBetweenTaps ), REBLUR_NORMAL_ULP );
                 w *= ComputeNonExponentialWeightWithSigma( vmbNormalAndRoughnessPrev.w * vmbNormalAndRoughnessPrev.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y, roughnessSigma );
 
                 #if( REBLUR_USE_STF == 1 && NRD_NORMAL_ENCODING == NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
@@ -712,8 +740,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float smc = GetSpecMagicCurve( roughnessModified );
 
             float2 f;
-            f.x = dot( N, _NRD_SafeNormalize( smbNavg ) );
-            f.y = dot( N, vmbN );
+            f.x = smbNoN;
+            f.y = vmbNoN;
             f = lerp( smc, 1.0, responsiveFactor ) * Math::Pow01( f, lerp( 32.0, 1.0, smc ) * ( 1.0 - responsiveFactor ) );
 
             float2 maxResponsiveFrameNum = gMaxAccumulatedFrameNum;
@@ -757,7 +785,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         {
             float2 uv = lerp( smbPixelUv, vmbPixelUv, virtualHistoryAmount );
             float4 occlusionWeights = lerp( smbOcclusionWeights, vmbOcclusionWeights, virtualHistoryAmount );
-            bool allowCatRom = virtualHistoryAmount < 0.5 ? smbAllowCatRom : vmbAllowCatRom;
+            bool allowCatRom = virtualHistoryAmount < 0.5 ? ( smbAllowCatRom && smbSpecAccumSpeed > gHistoryFixFrameNum ) : ( vmbAllowCatRom && vmbSpecAccumSpeed > gHistoryFixFrameNum );
 
             BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(
                 saturate( uv ) * gRectSizePrev, gResourceSizeInvPrev,

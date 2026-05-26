@@ -44,6 +44,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 // Switches ( default 0 )
 #define NRD_USE_QUADRATIC_DISTRIBUTION                          0
 #define NRD_USE_EXPONENTIAL_WEIGHTS                             0
+#define NRD_USE_PREV_WORLD_SPACE_MATRIX                         0 // was added for Portal RTX to support entering / leaving portals without a full history reset ( not needed )
 
 // Settings
 #define NRD_DISOCCLUSION_THRESHOLD                              0.02 // normalized % // TODO: use CommonSettings::disocclusionThreshold?

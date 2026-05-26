@@ -99,9 +99,9 @@ namespace nrd
         // If coordinate system moves with the camera, camera delta must be included to reflect camera motion
         float worldToViewMatrixPrev[16] = {};
 
-        // (Optional) previous world-space to current world-space matrix. It is for virtual normals, where a coordinate
-        // system of the virtual space changes frame to frame, such as in a case of animated intermediary reflecting
-        // surfaces when primary surface replacement is used for them.
+        // (Optional) previous world-space to current world-space matrix. It was added for Portal RTX to
+        // support entering / leaving portals without a full history reset. Not needed in 100% of cases.
+        // Used only if "NRD_USE_PREV_WORLD_SPACE_MATRIX = 1" ("0" by default)
         float worldPrevToWorldMatrix[16] = {
             1.0f, 0.0f, 0.0f, 0.0f,
             0.0f, 1.0f, 0.0f, 0.0f,
