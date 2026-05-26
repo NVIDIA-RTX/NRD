@@ -268,6 +268,8 @@ NOISY INPUTS:
 
 // Wave intrinsics
 // ( Optional ) used only to enhance image quality
+// - only "quad" intrinsics are used
+// - "VK_KHR_compute_shader_derivatives" extension is required for Vulkan
 #ifndef NRD_SUPPORTS_WAVE_INTRINSICS
     #if( defined( NRD_COMPILER_DXC ) || defined( NRD_COMPILER_PSSLC ) || defined( NRD_COMPILER_UNREAL_ENGINE ) )
         #define NRD_SUPPORTS_WAVE_INTRINSICS 1
