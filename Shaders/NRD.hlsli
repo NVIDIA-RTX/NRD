@@ -315,9 +315,9 @@ NOISY INPUTS:
         #define rcp( x )                                                                ( 1.0 / ( x ) )
     #endif
     #ifndef any
-        bool any( float value )
+        bool any( bool value )
         {
-            return value != 0.0;
+            return value;
         }
     #endif
 #endif
@@ -1169,10 +1169,10 @@ float2 NRD_SG_ReJitter(
     // Z weights
     float NoV = abs( dot( N, V ) );
     float zThreshold = NRD_REJITTER_VIEWZ_THRESHOLD * abs( Z ) / ( NoV * 0.95 + 0.05 );
-    float4 w = step( abs( float4( Ze, Zw, Zn, Zs ) - Z ), zThreshold );
+    float4 w = step( abs( float4( Ze, Zw, Zn, Zs ) - Z ), zThreshold.xxxx );
     bool isSymmetrical = dot( w, float4( 1.0, 1.0, 1.0, 1.0 ) ) > 3.5;
 
-    return isSymmetrical ? j : 1.0;
+    return isSymmetrical ? j : float2( 1.0, 1.0 );
 }
 
 //=================================================================================================================================
