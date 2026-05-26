@@ -326,19 +326,10 @@ float2 GetTemporalAccumulationParams( float isInScreenMulFootprintQuality, float
 
 // Filtering
 
-void BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights1(
-    float2 samplePos, float2 invResourceSize,
-    float4 bilinearCustomWeights, bool useBicubic,
-    Texture2D<float> tex0, out float c0 ) // CatRom
-{
-    _BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights_Init;
-    _BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights_Color( c0, tex0 );
-}
-
 void BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(
     float2 samplePos, float2 invResourceSize,
     float4 bilinearCustomWeights, bool useBicubic,
-    Texture2D<REBLUR_TYPE> tex0, out REBLUR_TYPE c0 ) // CatRom
+    Texture2D<float> tex0, out float c0 ) // CatRom
 {
     _BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights_Init;
     _BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights_Color( c0, tex0 );

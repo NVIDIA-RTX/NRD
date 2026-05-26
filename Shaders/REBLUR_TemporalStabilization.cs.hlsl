@@ -144,7 +144,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Sample history
         float diffLumaHistory;
 
-        BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights1(
+        BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(
             saturate( smbPixelUv ) * gRectSizePrev, gResourceSizeInvPrev,
             smbOcclusionWeights, smbAllowCatRom,
             gHistory_DiffLumaStabilized, diffLumaHistory
@@ -257,7 +257,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float specLumaHistory;
 
-        BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights1(
+        BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(
             saturate( uv ) * gRectSizePrev, gResourceSizeInvPrev,
             occlusionWeights, allowCatRom,
             gHistory_SpecLumaStabilized, specLumaHistory
