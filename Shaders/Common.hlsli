@@ -37,6 +37,19 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #define NRD_SUPPORTS_ANTIFIREFLY                            1
 #endif
 
+#ifndef NRD_SUPPORTS_QUAD_INTRINSICS
+    #if( defined( NRD_COMPILER_DXC ) || defined( NRD_COMPILER_PSSLC ) )
+        #define NRD_SUPPORTS_QUAD_INTRINSICS                    1
+    #else
+        #define NRD_SUPPORTS_QUAD_INTRINSICS                    0
+    #endif
+#else
+    #if( defined( NRD_COMPILER_FXC ) )
+        #undef NRD_SUPPORTS_QUAD_INTRINSICS
+        #define NRD_SUPPORTS_QUAD_INTRINSICS                    0
+    #endif
+#endif
+
 // Switches ( default 1 )
 #define NRD_USE_TILE_CHECK                                      1 // significantly improves performance by skipping computations in "empty" regions
 #define NRD_USE_DENANIFICATION                                  1 // needed only if inputs have NAN / INF outside of viewport or denoising range

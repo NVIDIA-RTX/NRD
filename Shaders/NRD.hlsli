@@ -262,20 +262,12 @@ NOISY INPUTS:
 
     #define NRD_EXPORT
 
+    #ifndef NRD_COMPILER_FXC
+        #define NRD_COMPILER_FXC
+    #endif
+
     #pragma warning( disable: 3577 ) // value cannot be NaN, isnan() may not be necessary. /Gis may force isnan() to be performed
 
-#endif
-
-// Wave intrinsics
-// ( Optional ) used only to enhance image quality
-// - only "quad" intrinsics are used
-// - "VK_KHR_compute_shader_derivatives" extension is required for Vulkan
-#ifndef NRD_SUPPORTS_WAVE_INTRINSICS
-    #if( defined( NRD_COMPILER_DXC ) || defined( NRD_COMPILER_PSSLC ) || defined( NRD_COMPILER_UNREAL_ENGINE ) )
-        #define NRD_SUPPORTS_WAVE_INTRINSICS 1
-    #else
-        #define NRD_SUPPORTS_WAVE_INTRINSICS 0
-    #endif
 #endif
 
 //=================================================================================================================================
