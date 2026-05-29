@@ -499,7 +499,7 @@ Hit distance (*REBLUR* and *RELAX*):
   - *MIS/RIS/RESTIR* require probabilities to describe "how good is the choosen ray direction for diffuse and specular lobes"
 - `hitT` can't be negative
 - `hitT` must be `0` for skipped lobe in case of probabilistic lobe selection (specular selected and diffuse skipped and vice versa)
-  - `HitDistanceReconstructionMode` must be set to something other than `OFF`, but bear in mind that the search area is limited to 3x3 (or 5x5). In other words, it's the application's responsibility to guarantee a valid sample in this area. It can be achieved by clamping probabilities and using Bayer-like dithering (see [NRD sample/clamping lobe selection probability](https://github.com/NVIDIA-RTX/NRD-Sample/blob/6f1a294333dd32dd5ea404845354d76315824add/Shaders/TraceOpaque.cs.hlsl#L223))
+  - `HitDistanceReconstructionMode` must be set to something other than `OFF`, but bear in mind that the search area is limited to 3x3 (or 5x5). In other words, it's the application's responsibility to guarantee a valid sample in this area. It can be achieved by clamping probabilities and using Bayer-like dithering (see [NRD sample/clamping lobe selection probability](https://github.com/NVIDIA-RTX/NRD-Sample/blob/4d035a59c63d55f9bb97eafce530963eda85d7bd/Shaders/TraceOpaque.cs.hlsl#L184))
   - "Pre-pass" must be enabled (i.e. `diffusePrepassBlurRadius` and `specularPrepassBlurRadius` must be non-0) to compensate entropy increase, since radiance in valid samples is divided by probability to compensate 0 values in some neighbors
   - `hitT` should not be `0` in other cases (avoid rays pointing inside a solid surface)
 - `hitT` must approach `0` at contact points
@@ -587,7 +587,7 @@ Best practices:
 - the sequence must be at least 64x64 in screen space to guarantee better spatial randomization (i.e. should be at least "2x" larger than the default blur radius)
 - Heitz’s Owen-Scrambled Sobol [LDS](https://belcour.github.io/blog/research/publication/2019/06/17/sampling-bluenoise.html) is recommended over [STBN](https://github.com/NVIDIA-RTX/STBN) at least because its memory usage doesn't depend on `spp`
 - to get unique sequences for `{pathIndex; bounceIndex; sampleIndex}`, use a global shift (e.g., `Weyl` sequence) to rotate the blue noise values (Cranley-Patterson Rotation). The shift must be constant across the screen to preserve spatial blue noise properties. Adding an offset to `pixelPos` works too. A generic advice is always to keep an eye on undesired correlations by comparing "blue" or "white" noise based reference accumulations
-- probabilistic selection of diffuse or specular lobes "pokes holes" in the temporal sequence, which can introduce directional bias. A global temporal jitter needs to be added to a Bayer-based random number. This converts static bias into high-frequency temporal variance that *NRD* can filter (see lobe selection in the [NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample/blob/8de213c73abe394a94f593b18a42ca1e3a7941ce/Shaders/TraceOpaque.cs.hlsl#L175))
+- probabilistic selection of diffuse or specular lobes "pokes holes" in the temporal sequence, which can introduce directional bias. A global temporal jitter needs to be added to a Bayer-based random number. This converts static bias into high-frequency temporal variance that *NRD* can filter (see lobe selection in the [NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample/blob/8de213c73abe394a94f593b18a42ca1e3a7941ce/Shaders/TraceOpaque.cs.hlsl#L189))
 
 "Blue noise" expectations:
 - no changes in areas with good sampling quality
@@ -636,7 +636,7 @@ IN_MV = GetMotionAt( Bvirtual );
 
 Implementation details:
 - Jumping through "delta" events [code](https://github.com/NVIDIA-RTX/NRD-Sample/blob/0e4242ef553ac66c179d975322c7d18aaa14e3b5/Shaders/TraceOpaque.cs.hlsl#L452)
-- MV calculation [code](https://github.com/NVIDIA-RTX/NRD-Sample/blob/0e4242ef553ac66c179d975322c7d18aaa14e3b5/Shaders/TraceOpaque.cs.hlsl#L509)
+- MV calculation [code](https://github.com/NVIDIA-RTX/NRD-Sample/blob/6f1a294333dd32dd5ea404845354d76315824add/Shaders/TraceOpaque.cs.hlsl#L644)
 
 ## INTERACTION WITH UPSCALING (DLSS/FSR/XESS/TAAU)
 
