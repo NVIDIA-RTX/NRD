@@ -439,17 +439,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float3 n = normalize( n10 * ww.x + n01 * ww.y );
 
             // High parallax - flattens surface on high motion ( test 132, 172, 173, 174, 190, 201, 202, 203, e9 )
-            // IMPORTANT: a must for 8-bit and 10-bit normals ( tests b7, b10, b33, 202 )
-            float dither = Sequence::Bayer4x4( pixelPos, gFrameIndex ); // dithering is needed to avoid a hard-border
-            float edgeFix = 1.0 - BRDF::Pow5( NoV );
-
-            float deltaUvLenFixed = smbParallaxInPixelsMin; // "min" because not needed for objects attached to the camera!
-            deltaUvLenFixed *= 1.0 + edgeFix * ( 1.0 + gFramerateScale * dither );
-
-            float2 motionUvHigh = pixelUv + deltaUvLenFixed * deltaUv * gRectSizeInv;
+            // - "smbParallaxInPixelsMin" is used to get "0" ( ignore "high parallax" ) on objects attached to the camera
+            // - increasing stride helps in corner cases due to better flattening, but on average it works worse ( test 1 if FPS <= 60 )
+            float2 motionUvHigh = pixelUv + smbParallaxInPixelsMin * deltaUv * gRectSizeInv;
             motionUvHigh = ( floor( motionUvHigh * gRectSize ) + 0.5 ) * gRectSizeInv; // Snap to the pixel center!
 
-            if( deltaUvLenFixed > 1.0 && IsInScreenNearest( motionUvHigh ) )
+            if( smbParallaxInPixelsMin > 1.0 && IsInScreenNearest( motionUvHigh ) )
             {
                 float2 uvScaled = WithRectOffset( ClampUvToViewport( motionUvHigh ) );
 
@@ -488,6 +483,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Virtual motion - coordinates
         float3 Xvirtual = GetXvirtual( hitDistForTracking, curvature, X, Xprev, N, V, roughness );
         float XvirtualLength = length( Xvirtual );
+        float hitDistanceToLobeSpreadInPixels = 1.0 / PixelRadiusToWorld( gUnproject, gOrthoMode, 1.0, XvirtualLength );
 
         float2 vmbPixelUv = Geometry::GetScreenUv( gWorldToClipPrev, Xvirtual );
         vmbPixelUv = materialID == gCameraAttachedReflectionMaterialID ? smbPixelUv : vmbPixelUv;
@@ -612,7 +608,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         // Estimate how many pixels are traveled by virtual motion - how many radians can it be?
-        float tanHalfAngle;
         float curvatureAngle;
         float lobeHalfAngle;
         {
@@ -632,9 +627,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             //float lobeTanHalfAngle = ImportanceSampling::GetSpecularLobeTanHalfAngle( roughnessModified, NRD_MAX_PERCENT_OF_LOBE_VOLUME );
             //lobeTanHalfAngle /= 1.0 + vmbSpecAccumSpeed;
 
-            lobeHalfAngle = max( atan( lobeTanHalfAngle ), NRD_NORMAL_ENCODING_ERROR );
+            lobeTanHalfAngle = max( lobeTanHalfAngle, NRD_NORMAL_ENCODING_ERROR );
+            hitDistanceToLobeSpreadInPixels *= lobeTanHalfAngle;
 
-            tanHalfAngle = lobeTanHalfAngle + curvatureAngleTan;
+            lobeHalfAngle = atan( lobeTanHalfAngle );
         }
 
         // Virtual motion - confidence: parallax
@@ -647,13 +643,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float2 vmbPixelUvPrev = Geometry::GetScreenUv( gWorldToClipPrev, XvirtualPrev );
             vmbPixelUvPrev = materialID == gCameraAttachedReflectionMaterialID ? smbPixelUv : vmbPixelUvPrev;
 
-            float pixelSizeAtXvirtual = PixelRadiusToWorld( gUnproject, gOrthoMode, 1.0, XvirtualLength );
-            float r = tanHalfAngle * min( hitDistForTracking, hitDistForTrackingPrev ) / pixelSizeAtXvirtual; // "pixelSize" at "XvirtualPrev" seems to be not needed
+            float r = min( hitDistForTracking, hitDistForTrackingPrev ) * hitDistanceToLobeSpreadInPixels;
+            r *= 0.5; // strengthen the test
+            r = max( r, 0.1 * roughness ); // clean up dirt for high roughness
+
             float d = length( ( vmbPixelUvPrev - vmbPixelUv ) * gRectSize );
 
-            r = max( r, 0.1 ); // important, especially if "curvatureAngle" is not used
+            parallaxWeight = Math::LinearStep( r, 0.0, d );
 
-            parallaxWeight = Math::LinearStep( r, 0.0, d ); // "r" can be scaled down to strengthen the test
         }
 
         // Virtual motion - confidence: normal
