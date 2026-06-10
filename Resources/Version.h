@@ -8,6 +8,8 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#include "../Shaders/NRDConfig.hlsli"
+
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
