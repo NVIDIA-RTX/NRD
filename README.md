@@ -501,7 +501,7 @@ Hit distance (*REBLUR* and *RELAX*):
 - `hitT` must be `0` for skipped lobe in case of probabilistic lobe selection (specular selected and diffuse skipped and vice versa)
   - `HitDistanceReconstructionMode` must be set to something other than `OFF`, but bear in mind that the search area is limited to 3x3 (or 5x5). In other words, it's the application's responsibility to guarantee a valid sample in this area. It can be achieved by clamping probabilities and using Bayer-like dithering (see [NRD sample/clamping lobe selection probability](https://github.com/NVIDIA-RTX/NRD-Sample/blob/4d035a59c63d55f9bb97eafce530963eda85d7bd/Shaders/TraceOpaque.cs.hlsl#L184))
   - "Pre-pass" must be enabled (i.e. `diffusePrepassBlurRadius` and `specularPrepassBlurRadius` must be non-0) to compensate entropy increase, since radiance in valid samples is divided by probability to compensate 0 values in some neighbors
-  - `hitT` should not be `0` in other cases (avoid rays pointing inside a solid surface)
+- `hitT` may be `0` for rays pointing inside the surface, *NRD* tries to ignore `0` hit distances if there is a `non-0` nearby
 - `hitT` must approach `0` at contact points
 - `hitT` must not include primary `hitT`
 - `hitT` must not be divided by *PDF* or *BRDF terms* (probability-based *acceptance/rejection* should be used instead, if needed)

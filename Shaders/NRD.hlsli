@@ -801,16 +801,12 @@ void NRD_FrontEnd_SpecHitDistAveraging_End( inout float accumulatedSpecHitDist )
 
 // FRONT-END
 
-// This function returns AO / SO which REBLUR can decode back to "hit distance" internally.
-// Use this function only if a diffuse or specular lobe was not skipped due to probabilistic selection
+// Normalized hit distance for REBLUR, which can be decoded back to "units" internally
 float REBLUR_FrontEnd_GetNormHitDist( float hitDist, float viewZ, float3 hitDistParams, float roughness )
 {
     float f = _REBLUR_GetHitDistanceNormalization( viewZ, hitDistParams, roughness );
-    hitDist = saturate( hitDist / f );
 
-    // "hitDist = 0" means "no data", i.e. the lobe is skipped due to probabilistic selection of diffuse or specular.
-    // But if this function is called, we assume that the lobe was not skipped, thus we need to avoid 0
-    return max( hitDist, NRD_EPS );
+    return saturate( hitDist / f );
 }
 
 // X => IN_DIFF_RADIANCE_HITDIST
