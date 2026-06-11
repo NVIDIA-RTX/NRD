@@ -18,8 +18,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "REBLUR_Common.hlsli"
 
-groupshared float4 s_Normal_Roughness[ BUFFER_Y ][ BUFFER_X ];
-groupshared float s_HitDistForTracking[ BUFFER_Y ][ BUFFER_X ];
+groupshared float4 s_Normal_HitDistForTracking[ BUFFER_Y ][ BUFFER_X ];
 
 float2 StochasticBilinear( float2 uv, float2 texSize )
 {
@@ -40,7 +39,8 @@ void Preload( uint2 sharedPos, int2 globalPos )
 {
     globalPos = clamp( globalPos, 0, gRectSizeMinusOne );
 
-    s_Normal_Roughness[ sharedPos.y ][ sharedPos.x ] = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( globalPos ) ] );
+    float3 N = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( globalPos ) ] ).xyz;
+    float hitDistForTracking = 0.0;
 
     #if( NRD_SPEC )
         #if( NRD_MODE == OCCLUSION )
@@ -59,8 +59,10 @@ void Preload( uint2 sharedPos, int2 globalPos )
 
         float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( globalPos ) ] );
 
-        s_HitDistForTracking[ sharedPos.y ][ sharedPos.x ] = ( hitDist == 0.0 || !IsInDenoisingRange( viewZ ) ) ? NRD_INF : hitDist; // for "min"
+        hitDistForTracking = ( hitDist == 0.0 || !IsInDenoisingRange( viewZ ) ) ? NRD_INF : hitDist; // for "min"
     #endif
+
+    s_Normal_HitDistForTracking[ sharedPos.y ][ sharedPos.x ] = float4( N, hitDistForTracking );
 }
 
 [numthreads( GROUP_X, GROUP_Y, 1 )]
@@ -87,11 +89,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 X = Geometry::RotateVector( gViewToWorld, Xv );
 
     // Find hit distance for tracking, averaged normal and roughness variance
-    float3 Navg = 0.0;
+    float3 Navg = 0.0; // needs to be unnormalized!
     #if( NRD_SPEC )
         float hitDistForTracking = NRD_INF;
-        float roughnessM1 = 0.0;
-        float roughnessM2 = 0.0;
     #endif
 
     [unroll]
@@ -101,27 +101,18 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         for( i = 0; i <= NRD_BORDER * 2; i++ )
         {
             int2 pos = threadPos + int2( i, j );
-            float4 normalAndRoughness = s_Normal_Roughness[ pos.y ][ pos.x ];
+            float4 data = s_Normal_HitDistForTracking[ pos.y ][ pos.x ];
 
             // Average normal
-            if( i < 2 && j < 2 )
-                Navg += normalAndRoughness.xyz;
+            if( i < 2 && j < 2 ) // TODO: 3x3?
+                Navg += data.xyz * 0.25;
 
             #if( NRD_SPEC )
                 // Min hit distance for tracking, ignoring 0 values ( which still can be produced by VNDF sampling )
-                float h = s_HitDistForTracking[ pos.y ][ pos.x ];
-                hitDistForTracking = min( hitDistForTracking, h );
-
-                // Roughness variance
-                // IMPORTANT: squared because the test uses "roughness ^ 2"
-                float roughnessSq = normalAndRoughness.w * normalAndRoughness.w;
-                roughnessM1 += roughnessSq;
-                roughnessM2 += roughnessSq * roughnessSq;
+                hitDistForTracking = min( hitDistForTracking, data.w );
             #endif
         }
     }
-
-    Navg /= 4.0; // needs to be unnormalized!
 
     // Normal and roughness
     float materialID;
@@ -130,15 +121,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float roughness = normalAndRoughness.w;
 
     #if( NRD_SPEC )
-        float roughnessModified = Filtering::GetModifiedRoughnessFromNormalVariance( roughness, Navg ); // TODO: needed?
+        // Modified roughness is essential for "smb" specular motion
+        float roughnessModified = Filtering::GetModifiedRoughnessFromNormalVariance( roughness, Navg );
 
-        roughnessM1 /= ( 1 + NRD_BORDER * 2 ) * ( 1 + NRD_BORDER * 2 );
-        roughnessM2 /= ( 1 + NRD_BORDER * 2 ) * ( 1 + NRD_BORDER * 2 );
-        float roughnessSigma = GetStdDev( roughnessM1, roughnessM2 );
-    #endif
-
-    // Hit distance for tracking ( tests 8, 110, 139, e3, e9 without normal map, e24 )
-    #if( NRD_SPEC )
+        // Hit distance for tracking ( tests 8, 110, 139, e3, e9 without normal map, e24 )
         #if( REBLUR_USE_STF == 1 && NRD_NORMAL_ENCODING == NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
             Rng::Hash::Initialize( pixelPos, gFrameIndex );
         #endif
@@ -207,8 +193,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float smbNoN;
     float4 smbNoN2x2;
     {
-        // TODO: currently "N" can't be used here, because of potential rejection of the entire footprint. See tests 17 and 18 at least ( under the frames on the wall )
-        float3 Nt = Navg; // IMPORTANT: yes, "Navg" // TODO: that's the only usage of "Navg"
+        // TODO: currently "N" can't be used here, because of potential rejection of the entire footprint. See tests 27 and 28 at least ( under the frames on the wall )
+        float3 Nt = Navg; // IMPORTANT: yes, "Navg"
 
         #if( NRD_USE_PREV_WORLD_SPACE_MATRIX == 1 )
             Nt = Geometry::RotateVectorInverse( gWorldPrevToWorld, Nt ); // to "prev" world space
@@ -416,7 +402,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float3 o = gOrthoMode == 0.0 ? 0 : x;
 
                 x10 = o + v * dot( X - o, N ) / dot( N, v ); // line-plane intersection
-                n10 = s_Normal_Roughness[ threadPos.y + NRD_BORDER ][ threadPos.x + NRD_BORDER + 1 ].xyz;
+                n10 = s_Normal_HitDistForTracking[ threadPos.y + NRD_BORDER ][ threadPos.x + NRD_BORDER + 1 ].xyz;
             }
 
             // 01 edge
@@ -428,7 +414,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float3 o = gOrthoMode == 0.0 ? 0 : x;
 
                 x01 = o + v * dot( X - o, N ) / dot( N, v ); // line-plane intersection
-                n01 = s_Normal_Roughness[ threadPos.y + NRD_BORDER + 1 ][ threadPos.x + NRD_BORDER ].xyz;
+                n01 = s_Normal_HitDistForTracking[ threadPos.y + NRD_BORDER + 1 ][ threadPos.x + NRD_BORDER ].xyz;
             }
 
             // Mix
@@ -506,7 +492,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float4 vmbRoughness = NRD_FrontEnd_UnpackRoughness( gPrev_Normal_Roughness.GatherAlpha( gNearestClamp, vmbBilinearGatherUv ).wzxy );
             #endif
 
-            roughnessWeight = ComputeNonExponentialWeightWithSigma( vmbRoughness * vmbRoughness, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y, roughnessSigma );
+            roughnessWeight = ComputeNonExponentialWeight( vmbRoughness * vmbRoughness, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
             roughnessWeight = lerp( Math::SmoothStep( 1.0, 0.0, smbParallaxInPixelsMax ), 1.0, roughnessWeight ); // jitter friendly
 
             virtualHistoryConfidence = Filtering::ApplyBilinearFilter( roughnessWeight.x, roughnessWeight.y, roughnessWeight.z, roughnessWeight.w, vmbBilinearFilter );
@@ -621,10 +607,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             // Copied from "GetNormalWeightParam" but doesn't use "lobeAngleFraction"
             float percentOfVolume = NRD_MAX_PERCENT_OF_LOBE_VOLUME / ( 1.0 + vmbSpecAccumSpeed );
-            float lobeTanHalfAngle = ImportanceSampling::GetSpecularLobeTanHalfAngle( roughnessModified, percentOfVolume );
+            float lobeTanHalfAngle = ImportanceSampling::GetSpecularLobeTanHalfAngle( roughness, percentOfVolume );
 
             // TODO: use old code and sync with "GetNormalWeightParam"?
-            //float lobeTanHalfAngle = ImportanceSampling::GetSpecularLobeTanHalfAngle( roughnessModified, NRD_MAX_PERCENT_OF_LOBE_VOLUME );
+            //float lobeTanHalfAngle = ImportanceSampling::GetSpecularLobeTanHalfAngle( roughness, NRD_MAX_PERCENT_OF_LOBE_VOLUME );
             //lobeTanHalfAngle /= 1.0 + vmbSpecAccumSpeed;
 
             lobeTanHalfAngle = max( lobeTanHalfAngle, NRD_NORMAL_ENCODING_ERROR );
@@ -683,7 +669,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 #endif
 
                 float w = GetEncodingAwareNormalWeight( vmbN.xyz, vmbNormalAndRoughnessPrev.xyz, lobeHalfAngle, curvatureAngle * ( 1.0 + i * stepBetweenTaps ), REBLUR_NORMAL_ULP );
-                w *= ComputeNonExponentialWeightWithSigma( vmbNormalAndRoughnessPrev.w * vmbNormalAndRoughnessPrev.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y, roughnessSigma );
+                w *= ComputeNonExponentialWeight( vmbNormalAndRoughnessPrev.w * vmbNormalAndRoughnessPrev.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
 
                 #if( REBLUR_USE_STF == 1 && NRD_NORMAL_ENCODING == NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
                     // Cures issues of "StochasticBilinear" and produces closer look to the linear filter
@@ -733,7 +719,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float vmbSpecAccumSpeed_NoHistoryFix;
         {
             // Responsive accumulation
-            float responsiveFactor = RemapRoughnessToResponsiveFactor( roughness );
+            // Use "roughnessModified" to bring some "AA" goodness
+            float responsiveFactor = RemapRoughnessToResponsiveFactor( roughnessModified );
             float smc = GetSpecMagicCurve( roughnessModified );
 
             float2 f;
@@ -771,8 +758,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             virtualHistoryAmount = 1.0 + ( vmbSpecAccumSpeed - smbSpecAccumSpeed ) / ( 1.0 + 0.5 * max( vmbSpecAccumSpeed, smbSpecAccumSpeed ) ); // TODO: 0.5 => 0.25?
             virtualHistoryAmount = saturate( virtualHistoryAmount );
 
-            // Choose one: "smb" or "vmb"
-            virtualHistoryAmount = step( 0.5, virtualHistoryAmount ); // TODO: dithering seems to be not needed, since "vmb" is dominating for any possible "roughness, NoV"
+            // - dithering is not needed, since "vmb" is dominating for any possible "roughness, NoV"
+            // - choose only one if the other one is not-fully valid
+            if( !smbAllowCatRom || !vmbAllowCatRom ) // TODO: doing "step" unconditionally is the safest approach
+                virtualHistoryAmount = step( 0.5, virtualHistoryAmount );
         }
 
         // Sample history
@@ -782,7 +771,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         {
             float2 uv = lerp( smbPixelUv, vmbPixelUv, virtualHistoryAmount );
             float4 occlusionWeights = lerp( smbOcclusionWeights, vmbOcclusionWeights, virtualHistoryAmount );
-            bool allowCatRom = virtualHistoryAmount < 0.5 ? ( smbAllowCatRom && smbSpecAccumSpeed > gHistoryFixFrameNum ) : ( vmbAllowCatRom && vmbSpecAccumSpeed > gHistoryFixFrameNum );
+            bool allowCatRom = virtualHistoryAmount < 0.5 ? smbAllowCatRom : vmbAllowCatRom;
 
             BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(
                 saturate( uv ) * gRectSizePrev, gResourceSizeInvPrev,
@@ -807,7 +796,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         if( !specHasData )
             specNonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, specNonLinearAccumSpeed );
 
-        REBLUR_TYPE specResult = MixHistoryAndCurrent( specHistory, spec, specNonLinearAccumSpeed, roughnessModified );
+        REBLUR_TYPE specResult = MixHistoryAndCurrent( specHistory, spec, specNonLinearAccumSpeed, roughness ); // TODO: previously was "roughnessModified"
 
         #if( NRD_MODE == SH )
             REBLUR_SH_TYPE specSh = gIn_SpecSh[ specPos ];
