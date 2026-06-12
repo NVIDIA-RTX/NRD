@@ -86,7 +86,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #define REBLUR_NORMAL_ULP                                       0.0 // was "NRD_NORMAL_ENCODING_ERROR"
 #define REBLUR_ALMOST_ZERO_ANGLE                                cos( Math::DegToRad( 89.0 ) )
-#define REBLUR_VIRTUAL_MOTION_PREV_PREV_WEIGHT_ITERATION_NUM    1
+#define REBLUR_VIRTUAL_MOTION_PREV_PREV_WEIGHT_ITERATION_NUM    1 // TODO: 2?
 #define REBLUR_FIREFLY_SUPPRESSOR_MAX_RELATIVE_INTENSITY        38.0
 #define REBLUR_FIREFLY_SUPPRESSOR_RADIUS_SCALE                  0.1
 #define REBLUR_FIREFLY_SUPPRESSOR_FAST_RELATIVE_INTENSITY       4.0 // TODO: needed only for high FPS. Why?
