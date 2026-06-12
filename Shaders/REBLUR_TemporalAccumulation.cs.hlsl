@@ -241,20 +241,20 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // TODO: small parallax ( very slow motion ) could be used to increase disocclusion threshold, but:
     // - MVs should be dilated first
-    // - Problem: a static pixel ( with relaxed threshold ) can touch a moving pixel, leading to reprojection artefacts
+    // - IMPORTANT: a static pixel ( with relaxed threshold ) can touch a moving pixel, leading to reprojection artefacts
     float smallParallax = Math::LinearStep( 0.25, 0.0, smbParallaxInPixelsMax );
-    float thresholdAngle = REBLUR_ALMOST_ZERO_ANGLE - 0.25 * smallParallax;
+    float cosMaxAngle = REBLUR_ALMOST_ZERO_ANGLE - 0.25 * smallParallax;
 
     float3 V = GetViewVector( X );
     float NoV = abs( dot( N, V ) );
     float NoVstrict = lerp( NoV, 1.0, saturate( smbParallaxInPixelsMax / 30.0 ) );
 
-    float4 smbDisocclusionThreshold = float4( smbNoN2x2 > thresholdAngle );
-    smbDisocclusionThreshold *= IsInScreenBilinear( smbBilinearFilter.origin, gRectSizePrev );
+    // Disocclusion
+    float4 smbDisocclusionThreshold = float4( smbNoN2x2 > cosMaxAngle ); // normal
+    smbDisocclusionThreshold *= IsInScreenBilinear( smbBilinearFilter.origin, gRectSizePrev ); // in screen
     smbDisocclusionThreshold *= GetDisocclusionThreshold( disocclusionThreshold, frustumSize, NoVstrict );
     smbDisocclusionThreshold -= NRD_EPS;
 
-    // Disocclusion: plane distance
     float3 Xvprev = Geometry::AffineTransform( gWorldToViewPrev, Xprev );
     float3 smbPlaneDist0 = abs( prevViewZ0 - Xvprev.z );
     float3 smbPlaneDist1 = abs( prevViewZ1 - Xvprev.z );
@@ -482,7 +482,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Virtual motion - confidence: roughness
         float virtualHistoryConfidence;
-        float4 roughnessWeight;
+        float4 roughnessWeights;
         {
             float2 relaxedRoughnessWeightParams = GetRelaxedRoughnessWeightParams( roughness * roughness, gRoughnessFraction, REBLUR_ROUGHNESS_SENSITIVITY_IN_TA ); // TODO: GetRoughnessWeightParams with 0.05 sensitivity?
 
@@ -492,10 +492,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float4 vmbRoughness = NRD_FrontEnd_UnpackRoughness( gPrev_Normal_Roughness.GatherAlpha( gNearestClamp, vmbBilinearGatherUv ).wzxy );
             #endif
 
-            roughnessWeight = ComputeNonExponentialWeight( vmbRoughness * vmbRoughness, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
-            roughnessWeight = lerp( Math::SmoothStep( 1.0, 0.0, smbParallaxInPixelsMax ), 1.0, roughnessWeight ); // jitter friendly
+            roughnessWeights = ComputeNonExponentialWeight( vmbRoughness * vmbRoughness, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
+            roughnessWeights = lerp( 1.0, roughnessWeights, Math::SmoothStep01( vmbPixelsTraveled ) ); // jitter friendly
 
-            virtualHistoryConfidence = Filtering::ApplyBilinearFilter( roughnessWeight.x, roughnessWeight.y, roughnessWeight.z, roughnessWeight.w, vmbBilinearFilter );
+            float roughnessWeight = Filtering::ApplyBilinearFilter( roughnessWeights.x, roughnessWeights.y, roughnessWeights.z, roughnessWeights.w, vmbBilinearFilter );
+            virtualHistoryConfidence = roughnessWeight;
         }
 
         float4 vmbN;
@@ -534,12 +535,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float vmbSpecAccumSpeed;
         bool vmbAllowCatRom;
         {
-            // Disocclusion: roughness
-            float4 vmbOcclusion = step( 0.5, roughnessWeight );
-
-            // Disocclusion: plane distance
-            float4 vmbOcclusionThreshold = float4( vmbNoN2x2 > thresholdAngle ); // TODO: use lobe angle?
-            vmbOcclusionThreshold *= IsInScreenBilinear( vmbBilinearFilter.origin, gRectSizePrev );
+            // Disocclusion
+            float4 vmbOcclusionThreshold = float4( vmbNoN2x2 > cosMaxAngle ); // normal // TODO: use lobe angle?
+            vmbOcclusionThreshold *= step( 0.5, roughnessWeights ); // roughness
+            vmbOcclusionThreshold *= IsInScreenBilinear( vmbBilinearFilter.origin, gRectSizePrev ); // in screen
             vmbOcclusionThreshold *= disocclusionThreshold * frustumSize;
             vmbOcclusionThreshold *= lerp( 0.1, 1.0, NoV ); // IMPORTANT: yes, "*" not "/"! This is a must for test 168 ( see contact shadow behind the heating radiator ), without this rare bright samples may stretch
             vmbOcclusionThreshold -= NRD_EPS;
@@ -551,7 +550,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 NoXprev = ( Nv.x * vmbVv.x + Nv.y * vmbVv.y ) * ( gOrthoMode == 0 ? vmbViewZ : gOrthoMode ) + Nv.z * vmbVv.z * vmbViewZ;
             float4 vmbPlaneDist = abs( NoXprev - NoXcurr );
 
-            vmbOcclusion *= step( vmbPlaneDist, vmbOcclusionThreshold ) * IsInDenoisingRange( vmbViewZ );
+            float4 vmbOcclusion = step( vmbPlaneDist, vmbOcclusionThreshold ) * IsInDenoisingRange( vmbViewZ );
 
             // Prev data
             uint4 vmbInternalData = gPrev_InternalData.GatherRed( gNearestClamp, vmbBilinearGatherUv ).wzxy;
@@ -642,7 +641,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Virtual motion - confidence: normal
         {
             float normalWeight = GetEncodingAwareNormalWeight( N, vmbN.xyz, lobeHalfAngle, curvatureAngle, REBLUR_NORMAL_ULP );
-            normalWeight = lerp( Math::SmoothStep( 1.0, 0.0, vmbPixelsTraveled ), 1.0, normalWeight ); // jitter friendly
+            normalWeight = lerp( 1.0, normalWeight, Math::SmoothStep01( vmbPixelsTraveled ) ); // jitter friendly
 
             virtualHistoryConfidence *= normalWeight;
         }
