@@ -428,17 +428,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // - "smbParallaxInPixelsMin" is used to get "0" ( ignore "high parallax" ) on objects attached to the camera
             // - increasing stride helps in corner cases due to better flattening, but on average it works worse ( test 1 if FPS <= 60 )
             float2 motionUvHigh = pixelUv + smbParallaxInPixelsMin * deltaUv * gRectSizeInv;
-            motionUvHigh = ( floor( motionUvHigh * gRectSize ) + 0.5 ) * gRectSizeInv; // Snap to the pixel center!
 
             if( smbParallaxInPixelsMin > 1.0 && IsInScreenNearest( motionUvHigh ) )
             {
                 float2 uvScaled = WithRectOffset( ClampUvToViewport( motionUvHigh ) );
 
-                float zHigh = UnpackViewZ( gIn_ViewZ.SampleLevel( gNearestClamp, uvScaled, 0 ) );
+                float zHigh = UnpackViewZ( gIn_ViewZ.SampleLevel( gLinearClamp, uvScaled, 0 ) );
                 float3 xHigh = Geometry::ReconstructViewPosition( motionUvHigh, gFrustum, zHigh, gOrthoMode );
                 xHigh = Geometry::RotateVector( gViewToWorld, xHigh );
 
-                float3 nHigh = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness.SampleLevel( gNearestClamp, uvScaled, 0 ) ).xyz;
+                float3 nHigh = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness.SampleLevel( STOCHASTIC_BILINEAR_FILTER, StochasticBilinear( uvScaled, gRectSize ), 0 ) ).xyz;
 
                 // Replace if same surface
                 float2 geometryWeightParams = GetGeometryWeightParams( NRD_CURVATURE_HIGH_PARALLAX_DISOCCLUSION_THRESHOLD, frustumSize, X, N );
@@ -454,7 +453,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // Estimate curvature for the edge { x; X }
             float3 edge = x - X;
             float edgeLenSq = Math::LengthSquared( edge );
-            curvature = dot( n - N, edge ) / edgeLenSq;
+            curvature = dot( n - N, edge ) * Math::PositiveRcp( edgeLenSq );
 
             // Correction - very negative inconsistent with previous frame curvature blows up reprojection ( tests 164, 171 - 176 )
             if( curvature < 0 )
