@@ -44,7 +44,12 @@ NRD_EXPORT void NRD_CS_MAIN( uint2 threadPos : SV_GroupThreadID, uint2 tilePos :
         for( uint j = 0; j < 4; j++ )
         {
             uint2 pos = pixelPos + uint2( i, j );
-            float h = gIn_Penumbra[ pos ];
+            uint2 inputPos = pos;
+            #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
+                inputPos.x >>= gCheckerboard == 2 ? 0 : 1;
+            #endif
+
+            float h = gIn_Penumbra[ inputPos ];
             float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
 
             bool isInf = !IsInDenoisingRange( viewZ );
@@ -53,7 +58,7 @@ NRD_EXPORT void NRD_CS_MAIN( uint2 threadPos : SV_GroupThreadID, uint2 tilePos :
 
             bool isOpaque = true;
             #if( TRANSLUCENCY == 1 )
-                float3 translucency = gIn_Shadow_Translucency[ pos ].yzw;
+                float3 translucency = gIn_Shadow_Translucency[ inputPos ].yzw;
                 isOpaque = Color::Luminance( translucency ) < 0.003; // TODO: replace with a uniformity test?
             #endif
 

@@ -39,7 +39,7 @@ namespace nrd
     // Notes:
     //  - if checkerboarding is enabled, "mode" defines the orientation of even numbered frames
     //  - all inputs must have the same resolution - logical FULL resolution
-    //  - noisy input signals ("IN_DIFF_XXX / IN_SPEC_XXX") are tightly packed to the LEFT HALF of the texture (the input pixel = 2x1 screen pixel)
+    //  - noisy input signals ("IN_DIFF_XXX", "IN_SPEC_XXX", "IN_PENUMBRA" and "IN_TRANSLUCENCY") are tightly packed to the LEFT HALF of the texture (the input pixel = 2x1 screen pixel)
     //  - for others the input pixel = 1x1 screen pixel
     //  - upsampling is handled internally in checkerboard mode
     enum class CheckerboardMode : uint8_t
@@ -471,6 +471,9 @@ namespace nrd
         // 0 - disables the stabilization pass
         // Always accumulate in "seconds" not in "frames", use "GetMaxAccumulatedFrameNum" for conversion
         uint32_t maxStabilizedFrameNum = 5;
+
+        // Defines the orientation of valid input samples. Used only if "NRD_SUPPORTS_CHECKERBOARD = 1"
+        CheckerboardMode checkerboardMode = CheckerboardMode::OFF;
     };
 
     //====================================================================================================================================================

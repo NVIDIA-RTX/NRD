@@ -70,9 +70,11 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float, gDenoisingRange ) \
     NRD_CONSTANT( float, gPlaneDistSensitivity ) \
     NRD_CONSTANT( float, gStabilizationStrength ) \
+    NRD_CONSTANT( float, gCheckerboardResolveAccumSpeed ) \
     NRD_CONSTANT( float, gDebug ) \
     NRD_CONSTANT( float, gSplitScreen ) \
     NRD_CONSTANT( float, gViewZScale ) \
     NRD_CONSTANT( float, gMinRectDimMulUnproject ) \
+    NRD_CONSTANT( uint, gCheckerboard ) \
     NRD_CONSTANT( uint, gFrameIndex ) \
     NRD_CONSTANT( uint, gIsRectChanged )

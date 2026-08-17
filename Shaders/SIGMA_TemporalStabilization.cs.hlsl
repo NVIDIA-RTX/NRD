@@ -201,7 +201,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     historyClamped = lerp( historyClamped, history, streetMagic );
 
     // Combine with the current frame
-    SIGMA_TYPE result = lerp( input, historyClamped, min( gStabilizationStrength, historyWeight ) );
+    float stabilizationWeight = 1.0 - min( gStabilizationStrength, historyWeight );
+    #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
+        if( gCheckerboard != 2 && Sequence::CheckerBoard( pixelPos, gFrameIndex ) != gCheckerboard )
+            stabilizationWeight *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, stabilizationWeight );
+    #endif
+
+    SIGMA_TYPE result = lerp( historyClamped, input, stabilizationWeight );
 
     // Debug ( don't forget that ".x" is used in antilag computations! )
     #if( SIGMA_SHOW == SIGMA_SHOW_TILES )

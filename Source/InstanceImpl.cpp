@@ -472,15 +472,18 @@ nrd::Result nrd::InstanceImpl::SetDenoiserSettings(Identifier identifier, const 
                 const RelaxSettings& settings = *(RelaxSettings*)denoiserSettings;
                 enableAntiFirefly = settings.enableAntiFirefly;
                 checkerboardMode = settings.checkerboardMode;
+            } else if (denoiserData.desc.denoiser == Denoiser::SIGMA_SHADOW || denoiserData.desc.denoiser == Denoiser::SIGMA_SHADOW_TRANSLUCENCY) {
+                const SigmaSettings& settings = *(SigmaSettings*)denoiserSettings;
+                checkerboardMode = settings.checkerboardMode;
             }
 
-            bool isValid = NRD_SUPPORTS_ANTIFIREFLY || !enableAntiFirefly;
-            assert("'enableAntiFirefly' must be 'false' if 'NRD_SUPPORTS_ANTIFIREFLY = 0'" && isValid);
+            bool isAntifireflyValid = NRD_SUPPORTS_ANTIFIREFLY || !enableAntiFirefly;
+            assert("'enableAntiFirefly' must be 'false' if 'NRD_SUPPORTS_ANTIFIREFLY = 0'" && isAntifireflyValid);
 
-            isValid |= NRD_SUPPORTS_CHECKERBOARD || checkerboardMode == CheckerboardMode::OFF;
-            assert("'checkerboardMode' must be 'OFF' if 'NRD_SUPPORTS_CHECKERBOARD = 0'" && isValid);
+            bool isCheckerboardValid = NRD_SUPPORTS_CHECKERBOARD || checkerboardMode == CheckerboardMode::OFF;
+            assert("'checkerboardMode' must be 'OFF' if 'NRD_SUPPORTS_CHECKERBOARD = 0'" && isCheckerboardValid);
 
-            return isValid ? Result::SUCCESS : Result::INVALID_ARGUMENT;
+            return (isAntifireflyValid && isCheckerboardValid) ? Result::SUCCESS : Result::INVALID_ARGUMENT;
         }
     }
 

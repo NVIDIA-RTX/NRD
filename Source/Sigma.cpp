@@ -99,6 +99,18 @@ void nrd::InstanceImpl::AddSharedConstants_Sigma(const SigmaSettings& settings, 
     float3 lightDirectionView = Rotate(m_WorldToView, float3(settings.lightDirection[0], settings.lightDirection[1], settings.lightDirection[2]));
     float stabilizationStrength = frameNum / (1.0f + frameNum);
 
+    uint32_t checkerboard = 2;
+    switch (settings.checkerboardMode) {
+        case CheckerboardMode::BLACK:
+            checkerboard = 0;
+            break;
+        case CheckerboardMode::WHITE:
+            checkerboard = 1;
+            break;
+        default:
+            break;
+    }
+
     SharedConstants* consts = (SharedConstants*)data;
     consts->gWorldToView = m_WorldToView;
     consts->gViewToClip = m_ViewToClip;
@@ -128,10 +140,12 @@ void nrd::InstanceImpl::AddSharedConstants_Sigma(const SigmaSettings& settings, 
     consts->gDenoisingRange = m_CommonSettings.denoisingRange;
     consts->gPlaneDistSensitivity = settings.planeDistanceSensitivity;
     consts->gStabilizationStrength = m_CommonSettings.accumulationMode == AccumulationMode::CONTINUE ? stabilizationStrength : 0.0f;
+    consts->gCheckerboardResolveAccumSpeed = m_CheckerboardResolveAccumSpeed;
     consts->gDebug = m_CommonSettings.debug;
     consts->gSplitScreen = m_CommonSettings.splitScreen;
     consts->gViewZScale = m_CommonSettings.viewZScale;
     consts->gMinRectDimMulUnproject = (float)min(rectW, rectH) * unproject;
+    consts->gCheckerboard = checkerboard;
     consts->gFrameIndex = m_CommonSettings.frameIndex;
     consts->gIsRectChanged = isRectChanged ? 1 : 0;
 }

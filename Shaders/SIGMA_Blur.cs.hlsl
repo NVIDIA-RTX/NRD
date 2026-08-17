@@ -21,27 +21,77 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 groupshared float2 s_Penumbra_ViewZ[ BUFFER_Y ][ BUFFER_X ];
 groupshared SIGMA_TYPE s_Shadow_Translucency[ BUFFER_Y ][ BUFFER_X ];
 
+SIGMA_TYPE LoadInput( int2 globalPos, out float penumbra )
+{
+    int2 inputPos = globalPos;
+    #if( NRD_SUPPORTS_CHECKERBOARD == 1 && FIRST_PASS == 1 )
+        inputPos.x >>= gCheckerboard == 2 ? 0 : 1;
+    #endif
+
+    penumbra = gIn_Penumbra[ inputPos ];
+
+    SIGMA_TYPE shadowTranslucency;
+    #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
+        shadowTranslucency = gIn_Shadow_Translucency[ inputPos ];
+    #else
+        shadowTranslucency = IsLit( penumbra );
+    #endif
+
+    #if( FIRST_PASS == 0 )
+        shadowTranslucency = SIGMA_BackEnd_UnpackShadow( shadowTranslucency );
+    #endif
+
+    return shadowTranslucency;
+}
+
 void Preload( uint2 sharedPos, int2 globalPos )
 {
     globalPos = clamp( globalPos, 0, gRectSizeMinusOne );
 
     float2 data;
-    data.x = gIn_Penumbra[ globalPos ];
+    SIGMA_TYPE s = LoadInput( globalPos, data.x );
     data.y = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( globalPos ) ] );
 
+    #if( NRD_SUPPORTS_CHECKERBOARD == 1 && FIRST_PASS == 1 )
+        uint checkerboard = Sequence::CheckerBoard( globalPos, gFrameIndex );
+        if( gCheckerboard != 2 && checkerboard != gCheckerboard )
+        {
+            int3 checkerboardPos = globalPos.xxy + int3( -1, 1, 0 );
+            checkerboardPos.x = max( checkerboardPos.x, 0 );
+            checkerboardPos.y = min( checkerboardPos.y, gRectSizeMinusOne.x );
+            float viewZ0 = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( checkerboardPos.xz ) ] );
+            float viewZ1 = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( checkerboardPos.yz ) ] );
+            float frustumSize = GetFrustumSize( gMinRectDimMulUnproject, gOrthoMode, data.y );
+            float disocclusionThreshold = GetDisocclusionThreshold( NRD_DISOCCLUSION_THRESHOLD, frustumSize, 1.0 );
+            float2 wc = GetDisocclusionWeight( float2( viewZ0, viewZ1 ), data.y, disocclusionThreshold );
+            wc.x = ( !IsInDenoisingRange( viewZ0 ) || globalPos.x < 1 ) ? 0.0 : wc.x;
+            wc.y = ( !IsInDenoisingRange( viewZ1 ) || globalPos.x >= gRectSizeMinusOne.x ) ? 0.0 : wc.y;
+            wc *= Math::PositiveRcp( wc.x + wc.y );
+
+            float penumbra0;
+            SIGMA_TYPE s0 = LoadInput( checkerboardPos.xz, penumbra0 );
+
+            float penumbra1;
+            SIGMA_TYPE s1 = LoadInput( checkerboardPos.yz, penumbra1 );
+
+            // Exclude lit samples from penumbra radius reconstruction
+            float2 penumbraWeights = wc * float2( !IsLit( penumbra0 ), !IsLit( penumbra1 ) );
+            float penumbraWeight = penumbraWeights.x + penumbraWeights.y;
+
+            // If only valid lit samples remain, preserve the lit sentinel. If no depth-compatible sample remains, resolve to 0.
+            data.x = penumbraWeight == 0.0 ? NRD_FP16_MAX * float( any( wc != 0.0 ) ) : dot( float2( penumbra0, penumbra1 ), penumbraWeights ) / penumbraWeight;
+
+            // A lit / occluded pair is a shadow boundary. Keep at least a 1-pixel radius to avoid the hard-shadow early out
+            bool hasLit = ( wc.x != 0.0 && IsLit( penumbra0 ) ) || ( wc.y != 0.0 && IsLit( penumbra1 ) );
+            bool hasOccluder = ( wc.x != 0.0 && !IsLit( penumbra0 ) ) || ( wc.y != 0.0 && !IsLit( penumbra1 ) );
+            if( hasLit && hasOccluder )
+                data.x = max( data.x, PixelRadiusToWorld( gUnproject, gOrthoMode, 1.0, data.y ) );
+
+            s = s0 * wc.x + s1 * wc.y;
+        }
+    #endif
+
     s_Penumbra_ViewZ[ sharedPos.y ][ sharedPos.x ] = data;
-
-    SIGMA_TYPE s;
-    #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
-        s = gIn_Shadow_Translucency[ globalPos ];
-    #else
-        s = IsLit( data.x );
-    #endif
-
-    #if( FIRST_PASS == 0 )
-        s = SIGMA_BackEnd_UnpackShadow( s );
-    #endif
-
     s_Shadow_Translucency[ sharedPos.y ][ sharedPos.x ] = s;
 }
 
@@ -217,30 +267,53 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     [unroll]
     for( uint n = 0; n < SIGMA_POISSON_SAMPLE_NUM; n++ )
     {
-        // Sample coordinates
         float3 offset = SIGMA_POISSON_SAMPLES[ n ];
 
+        // Sample coordinates
         #if( SIGMA_USE_SCREEN_SPACE_SAMPLING == 1 )
             float2 uv = pixelUv + Geometry::RotateVector( scaledRotator, offset.xy );
         #else
             float2 uv = GetKernelSampleCoordinates( gViewToClip, offset, Xv, Tv, Bv, rotator );
         #endif
 
-        // Snap to the pixel center!
-        uv = ( floor( uv * gRectSize ) + 0.5 ) * gRectSizeInv;
+        // Apply "mirror" to not waste taps going outside of the screen
+        float2 mirrorUv = MirrorUv( uv );
+        float w = any( uv != mirrorUv ) ? 1.0 : GetGaussianWeight( offset.z );
 
-        // Texture coordinates
-        float2 uvScaled = ClampUvToViewport( uv );
+        // "uv" to "pos"
+        int2 pos = mirrorUv * gRectSize;
+
+        // Move to a "valid" pixel in checkerboard mode
+        int checkerboardX = pos.x;
+        #if( NRD_SUPPORTS_CHECKERBOARD == 1 && FIRST_PASS == 1 )
+            if( gCheckerboard != 2 )
+            {
+                int shift = ( ( n & 0x1 ) == 0 ) ? -1 : 1;
+                pos.x += Sequence::CheckerBoard( pos, gFrameIndex ) != gCheckerboard ? shift : 0;
+                checkerboardX = pos.x >> 1;
+                w = pos.x < 0.0 || pos.x > gRectSizeMinusOne.x ? 0.0 : w; // "pos.x" clamping can make the sample "invalid"
+            }
+        #endif
 
         // Fetch data
-        float penum = gIn_Penumbra.SampleLevel( gNearestClamp, uvScaled, 0 );
+        int2 inputPos = int2( checkerboardX, pos.y );
+        float penum = gIn_Penumbra[ inputPos ];
 
-        float zs = UnpackViewZ( gIn_ViewZ.SampleLevel( gNearestClamp, WithRectOffset( uvScaled ), 0 ) );
-        float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
+        float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
+        float3 Xvs = Geometry::ReconstructViewPosition( float2( pos + 0.5 ) * gRectSizeInv, gFrustum, zs, gOrthoMode );
+
+        // Sample weight
+        w *= AreBothLitOrUnlit( centerPenumbra, penum );
+
+        // Avoid umbra leaking inside wide penumbra
+        w *= saturate( penum * invEstimatedPenumbra ); // TODO: it works surprisingly well, keep an eye on it!
+
+        float NoX = dot( Nv, Xvs );
+        w = ApplyGeometryWeightLast( w, zs, NoX, geometryWeightParams );
 
         SIGMA_TYPE s;
         #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
-            s = gIn_Shadow_Translucency.SampleLevel( gNearestClamp, uvScaled, 0 );
+            s = gIn_Shadow_Translucency[ inputPos ];
         #else
             s = IsLit( penum );
         #endif
@@ -249,20 +322,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             s = SIGMA_BackEnd_UnpackShadow( s );
         #endif
 
-        // Sample weight
-        float NoX = dot( Nv, Xvs );
-
-        float w = IsInScreenNearest( uv );
-        w *= AreBothLitOrUnlit( centerPenumbra, penum );
-        w *= GetGaussianWeight( offset.z );
-
-        // Avoid umbra leaking inside wide penumbra
-        w *= saturate( penum * invEstimatedPenumbra ); // TODO: it works surprisingly well, keep an eye on it!
-
-        w = ApplyGeometryWeightLast( w, zs, NoX, geometryWeightParams );
+        s = Denanify( w, s );
 
         // Accumulate
-        result += w == 0.0 ? 0.0 : s * w;
+        result += s * w;
         sum.x += w;
 
         w *= pixelSize / ( pixelSize + penum ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
