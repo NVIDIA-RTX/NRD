@@ -251,6 +251,7 @@ nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreati
 nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSettings) {
     m_SplitScreenPrev = m_CommonSettings.splitScreen;
 
+    bool isNewFrame = m_IsFirstUse || m_CommonSettings.frameIndex != commonSettings.frameIndex; // prev != curr
     memcpy(&m_CommonSettings, &commonSettings, sizeof(commonSettings));
 
     // Silently fix settings for known cases
@@ -436,7 +437,6 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
 
     m_CameraDelta = float3(translationDelta.x, translationDelta.y, translationDelta.z);
 
-    const bool isNewFrame = m_IsFirstUse || m_CommonSettings.frameIndex != commonSettings.frameIndex;
     if (isNewFrame) {
         m_Timer.UpdateElapsedTimeSinceLastSave();
         m_Timer.SaveCurrentTime();
