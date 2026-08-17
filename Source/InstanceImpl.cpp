@@ -436,8 +436,11 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
 
     m_CameraDelta = float3(translationDelta.x, translationDelta.y, translationDelta.z);
 
-    m_Timer.UpdateElapsedTimeSinceLastSave();
-    m_Timer.SaveCurrentTime();
+    const bool isNewFrame = m_IsFirstUse || m_CommonSettings.frameIndex != commonSettings.frameIndex;
+    if (isNewFrame) {
+        m_Timer.UpdateElapsedTimeSinceLastSave();
+        m_Timer.SaveCurrentTime();
+    }
 
     m_TimeDelta = m_CommonSettings.timeDeltaBetweenFrames > 0.0f ? m_CommonSettings.timeDeltaBetweenFrames : m_Timer.GetSmoothedElapsedTime();
     m_FrameRateScale = max(33.333f / m_TimeDelta, 1.0f);

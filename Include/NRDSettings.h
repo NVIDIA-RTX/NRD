@@ -171,9 +171,9 @@ namespace nrd
         uint32_t rectOrigin[2] = {};
 
         // A consecutively growing number. Valid usage:
-        // - must be incremented by 1 on each frame (not by 1 on each "SetCommonSettings" call)
-        // - sequence can be restarted after passing "AccumulationMode != CONTINUE"
+        // - must be incremented by 1 on each frame, not on each "SetCommonSettings" call
         // - must be in sync with "CheckerboardMode" (if not OFF)
+        // - may be restarted after setting "accumulationMode != AccumulationMode::CONTINUE"
         uint32_t frameIndex = 0;
 
         // To reset history set to RESTART or CLEAR_AND_RESTART for one frame
