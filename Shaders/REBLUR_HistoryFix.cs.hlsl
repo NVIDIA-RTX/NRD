@@ -157,7 +157,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     uv = MirrorUv( uv );
 
                     // "uv" to "pos"
-                    int2 pos = uv * gRectSize;
+                    int2 pos = int2( uv * gRectSize );
 
                     // Fetch data
                     float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
@@ -360,7 +360,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     uv = MirrorUv( uv );
 
                     // "uv" to "pos"
-                    int2 pos = uv * gRectSize;
+                    int2 pos = int2( uv * gRectSize );
 
                     // Fetch data
                     float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );

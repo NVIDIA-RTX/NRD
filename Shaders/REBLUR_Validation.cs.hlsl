@@ -76,7 +76,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     bool isInf = !IsInDenoisingRange( abs( viewZ ) );
     bool checkerboard = Sequence::CheckerBoard( pixelPos >> 2, 0 );
 
-    uint4 textState = Text::Init( pixelPos, viewportId * gResourceSize * VIEWPORT_SIZE + OFFSET, 1 );
+    uint4 textState = Text::Init( pixelPos, uint2( viewportId * gResourceSize * VIEWPORT_SIZE + OFFSET ), 1 );
 
     float4 result = gOut_Validation[ pixelPos ];
 
@@ -180,11 +180,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             // Rotators
             int2 b = int2( remappedUv2 * dimInPixels );
 
-            uint frameIndex = ( gFrameIndex >> 2 ) % gMaxAccumulatedFrameNum;
+            uint frameIndex = ( gFrameIndex >> 2 ) % uint( gMaxAccumulatedFrameNum );
 
             float scale = 0.5; // [ -0.5; 0.5 ]
             scale /= max( REBLUR_BLUR_RADIUS_SCALE, REBLUR_POST_BLUR_RADIUS_SCALE ); // normalize
-            scale *= Math::Sqrt01( GetAdvancedNonLinearAccumSpeed( frameIndex ) ); // area factor ( see "REBLUR_Common_SpatialFilter.hlsli" )
+            scale *= Math::Sqrt01( GetAdvancedNonLinearAccumSpeed( float( frameIndex ) ) ); // area factor ( see "REBLUR_Common_SpatialFilter.hlsli" )
 
             [unroll]
             for( uint n = 0; n < 8; n++ )

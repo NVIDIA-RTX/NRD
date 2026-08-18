@@ -116,15 +116,15 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             float2 ww = w;
             #if( REBLUR_PERFORMANCE_MODE == 0 )
-                float4 normalAndRoughness = s_Normal_Roughness[ pos.y ][ pos.x ];
+                float4 sampleNormalAndRoughness = s_Normal_Roughness[ pos.y ][ pos.x ];
 
-                float cosa = dot( N, normalAndRoughness.xyz );
+                float cosa = dot( N, sampleNormalAndRoughness.xyz );
                 float angle = Math::AcosApproxPositive( cosa );
 
                 // These weights have infinite exponential tails, because with strict weights we are reducing a chance to find a valid sample in 3x3 or 5x5 area
                 ww.x *= ComputeExponentialWeight( angle, diffNormalWeightParam, 0.0 );
                 ww.y *= ComputeExponentialWeight( angle, specNormalWeightParam, 0.0 );
-                ww.y *= ComputeExponentialWeight( normalAndRoughness.w * normalAndRoughness.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
+                ww.y *= ComputeExponentialWeight( sampleNormalAndRoughness.w * sampleNormalAndRoughness.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
             #endif
 
             // Ignore "no data"

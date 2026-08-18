@@ -178,10 +178,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     */
     Filtering::CatmullRom smbCatromFilter = Filtering::GetCatmullRomFilter( smbPixelUv, gRectSizePrev );
     float2 smbCatromGatherUv = smbCatromFilter.origin * gResourceSizeInvPrev;
-    float4 smbViewZ0 = gPrev_ViewZ.GatherRed( gNearestClamp, smbCatromGatherUv, float2( 1, 1 ) ).wzxy;
-    float4 smbViewZ1 = gPrev_ViewZ.GatherRed( gNearestClamp, smbCatromGatherUv, float2( 3, 1 ) ).wzxy;
-    float4 smbViewZ2 = gPrev_ViewZ.GatherRed( gNearestClamp, smbCatromGatherUv, float2( 1, 3 ) ).wzxy;
-    float4 smbViewZ3 = gPrev_ViewZ.GatherRed( gNearestClamp, smbCatromGatherUv, float2( 3, 3 ) ).wzxy;
+    float4 smbViewZ0 = gPrev_ViewZ.GatherRed( gNearestClamp, smbCatromGatherUv, int2( 1, 1 ) ).wzxy;
+    float4 smbViewZ1 = gPrev_ViewZ.GatherRed( gNearestClamp, smbCatromGatherUv, int2( 3, 1 ) ).wzxy;
+    float4 smbViewZ2 = gPrev_ViewZ.GatherRed( gNearestClamp, smbCatromGatherUv, int2( 1, 3 ) ).wzxy;
+    float4 smbViewZ3 = gPrev_ViewZ.GatherRed( gNearestClamp, smbCatromGatherUv, int2( 3, 3 ) ).wzxy;
 
     float3 prevViewZ0 = UnpackViewZ( smbViewZ0.yzw );
     float3 prevViewZ1 = UnpackViewZ( smbViewZ1.xzw );
@@ -267,10 +267,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Disocclusion: materialID
     #if( NRD_NORMAL_ENCODING == NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
-        uint4 smbInternalData0 = gPrev_InternalData.GatherRed( gNearestClamp, smbCatromGatherUv, float2( 1, 1 ) ).wzxy;
-        uint4 smbInternalData1 = gPrev_InternalData.GatherRed( gNearestClamp, smbCatromGatherUv, float2( 3, 1 ) ).wzxy;
-        uint4 smbInternalData2 = gPrev_InternalData.GatherRed( gNearestClamp, smbCatromGatherUv, float2( 1, 3 ) ).wzxy;
-        uint4 smbInternalData3 = gPrev_InternalData.GatherRed( gNearestClamp, smbCatromGatherUv, float2( 3, 3 ) ).wzxy;
+        uint4 smbInternalData0 = gPrev_InternalData.GatherRed( gNearestClamp, smbCatromGatherUv, int2( 1, 1 ) ).wzxy;
+        uint4 smbInternalData1 = gPrev_InternalData.GatherRed( gNearestClamp, smbCatromGatherUv, int2( 3, 1 ) ).wzxy;
+        uint4 smbInternalData2 = gPrev_InternalData.GatherRed( gNearestClamp, smbCatromGatherUv, int2( 1, 3 ) ).wzxy;
+        uint4 smbInternalData3 = gPrev_InternalData.GatherRed( gNearestClamp, smbCatromGatherUv, int2( 3, 3 ) ).wzxy;
 
         float3 smbMaterialID0 = float3( UnpackInternalData( smbInternalData0.y ).z, UnpackInternalData( smbInternalData0.z ).z, UnpackInternalData( smbInternalData0.w ).z );
         float3 smbMaterialID1 = float3( UnpackInternalData( smbInternalData1.x ).z, UnpackInternalData( smbInternalData1.z ).z, UnpackInternalData( smbInternalData1.w ).z );
@@ -730,7 +730,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             float2 maxResponsiveFrameNum = gMaxAccumulatedFrameNum;
             maxResponsiveFrameNum *= f;
-            maxResponsiveFrameNum = max( maxResponsiveFrameNum, gResponsiveAccumulationMinAccumulatedFrameNum );
+            maxResponsiveFrameNum = max( maxResponsiveFrameNum, float( gResponsiveAccumulationMinAccumulatedFrameNum ) );
 
             // Apply limits
             float2 maxFrameNum = gMaxAccumulatedFrameNum * float2( surfaceHistoryConfidence, virtualHistoryConfidence );

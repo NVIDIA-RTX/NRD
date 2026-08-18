@@ -198,7 +198,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             float w = any( uv != mirrorUv ) ? 1.0 : GetGaussianWeight( offset.z );
 
             // "uv" to "pos"
-            int2 pos = mirrorUv * gRectSize;
+            int2 pos = int2( mirrorUv * gRectSize );
 
             // Move to a "valid" pixel in checkerboard mode
             int checkerboardX = pos.x;
