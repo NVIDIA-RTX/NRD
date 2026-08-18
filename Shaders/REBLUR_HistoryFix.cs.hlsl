@@ -27,12 +27,12 @@ void Preload( uint2 sharedPos, int2 globalPos )
 
     float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( globalPos ) ] );
 
-    #if( NRD_DIFF )
+    #if( NRD_HAS_DIFF )
         float diffFast = gIn_DiffFast[ globalPos ];
         s_DiffLuma[ sharedPos.y ][ sharedPos.x ] = !IsInDenoisingRange( viewZ ) ? REBLUR_INVALID : diffFast;
     #endif
 
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         float specFast = gIn_SpecFast[ globalPos ];
         s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = !IsInDenoisingRange( viewZ ) ? REBLUR_INVALID : specFast;
     #endif
@@ -100,10 +100,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     stride *= materialID == gHistoryFixAlternatePixelStrideMaterialID ? gHistoryFixAlternatePixelStride : gHistoryFixBasePixelStride;
 
     // Diffuse
-    #if( NRD_DIFF )
+    #if( NRD_HAS_DIFF )
     {
         REBLUR_TYPE diff = gIn_Diff[ pixelPos ];
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             REBLUR_SH_TYPE diffSh = gIn_DiffSh[ pixelPos ];
         #endif
 
@@ -132,7 +132,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             #endif
 
             diff *= sumd;
-            #if( NRD_MODE == SH )
+            #if( NRD_MODE == NRD_MODE_SH )
                 diffSh *= sumd;
             #endif
 
@@ -191,7 +191,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     sumd += w;
 
                     diff += s * w;
-                    #if( NRD_MODE == SH )
+                    #if( NRD_MODE == NRD_MODE_SH )
                         REBLUR_SH_TYPE sh = gIn_DiffSh[ pos ];
                         sh = Denanify( w, sh );
 
@@ -202,7 +202,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             sumd = Math::PositiveRcp( sumd );
             diff *= sumd;
-            #if( NRD_MODE == SH )
+            #if( NRD_MODE == NRD_MODE_SH )
                 diffSh *= sumd;
             #endif
         }
@@ -283,23 +283,23 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         diff = ChangeLuma( diff, diffLuma );
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             diffSh *= GetLumaScale( length( diffSh ), diffLuma );
         #endif
 
         // Output
         gOut_Diff[ pixelPos ] = diff;
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             gOut_DiffSh[ pixelPos ] = diffSh;
         #endif
     }
     #endif
 
     // Specular
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
     {
         REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             REBLUR_SH_TYPE specSh = gIn_SpecSh[ pixelPos ];
         #endif
 
@@ -308,7 +308,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float hitDistScale = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings.xyz, roughness );
         float hitDist = ExtractHitDist( spec ) * hitDistScale;
-        #if( NRD_MODE != OCCLUSION )
+        #if( NRD_MODE != NRD_MODE_OCCLUSION )
             // "gIn_SpecHitDistForTracking" is better for low roughness, but doesn't suit for high roughness ( because it's min )
             hitDist = lerp( gIn_SpecHitDistForTracking[ pixelPos ], hitDist, smc );
         #endif
@@ -335,7 +335,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             #endif
 
             spec *= sums;
-            #if( NRD_MODE == SH )
+            #if( NRD_MODE == NRD_MODE_SH )
                 specSh *= sums;
             #endif
 
@@ -395,7 +395,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     sums += w;
 
                     spec += s * w;
-                    #if( NRD_MODE == SH )
+                    #if( NRD_MODE == NRD_MODE_SH )
                         REBLUR_SH_TYPE sh = gIn_SpecSh[ pos ];
                         sh = Denanify( w, sh );
 
@@ -406,7 +406,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             sums = Math::PositiveRcp( sums );
             spec *= sums;
-            #if( NRD_MODE == SH )
+            #if( NRD_MODE == NRD_MODE_SH )
                 specSh *= sums;
             #endif
         }
@@ -492,13 +492,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         spec = ChangeLuma( spec, specLuma );
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             specSh *= GetLumaScale( length( specSh ), specLuma );
         #endif
 
         // Output
         gOut_Spec[ pixelPos ] = spec;
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             gOut_SpecSh[ pixelPos ] = specSh;
         #endif
     }

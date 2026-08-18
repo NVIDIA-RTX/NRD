@@ -31,7 +31,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
     s_Normal_Roughness[ sharedPos.y ][ sharedPos.x ] = normalAndRoughness;
 
     float2 hitDist = 0.0;
-    #if( NRD_DIFF )
+    #if( NRD_HAS_DIFF )
         hitDist.x = ExtractHitDist( gIn_Diff[ globalPos ] );
 
         #if( REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION == 1 )
@@ -39,7 +39,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
         #endif
     #endif
 
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         hitDist.y = ExtractHitDist( gIn_Spec[ globalPos ] );
 
         #if( REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION == 1 )
@@ -147,8 +147,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #endif
 
     // Output
-    #if( NRD_DIFF )
-        #if( NRD_MODE == OCCLUSION )
+    #if( NRD_HAS_DIFF )
+        #if( NRD_MODE == NRD_MODE_OCCLUSION )
             gOut_Diff[ pixelPos ] = center.x;
         #else
             float3 diff = gIn_Diff[ pixelPos ].xyz;
@@ -156,8 +156,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
     #endif
 
-    #if( NRD_SPEC )
-        #if( NRD_MODE == OCCLUSION )
+    #if( NRD_HAS_SPEC )
+        #if( NRD_MODE == NRD_MODE_OCCLUSION )
             gOut_Spec[ pixelPos ] = center.y;
         #else
             float3 spec = gIn_Spec[ pixelPos ].xyz;

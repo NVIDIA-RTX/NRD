@@ -35,7 +35,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_USE_SCREEN_SPACE_SAMPLING_FOR_SPECULAR           0 // specular is more complicated
 #define REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION      0 // compression helps to preserve "lobe important" values
 
-#if( NRD_MODE == OCCLUSION || NRD_MODE == DO )
+#if( NRD_MODE == NRD_MODE_OCCLUSION || NRD_MODE == NRD_MODE_DO )
     #undef NRD_SUPPORTS_ANTIFIREFLY
     #define NRD_SUPPORTS_ANTIFIREFLY                            0 // not needed in occlusion mode
 #endif
@@ -100,7 +100,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define REBLUR_INVALID                                          -32768.0 // marks INF pixels, which must be ignored in SMEM involved calculations
 
 // Data types
-#if( NRD_MODE == OCCLUSION )
+#if( NRD_MODE == NRD_MODE_OCCLUSION )
     #define REBLUR_TYPE                                         float
 #else
     #define REBLUR_TYPE                                         float4
@@ -194,7 +194,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 // ( Optional ) This can provide a minor performance boost by sacrificing IQ a bit.
 // The negative effect is minimal if SH resolve is in use
 /*
-#if( NRD_MODE == DO || NRD_MODE == SH )
+#if( NRD_MODE == NRD_MODE_DO || NRD_MODE == NRD_MODE_SH )
     #undef REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA
     #define REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA          0
 

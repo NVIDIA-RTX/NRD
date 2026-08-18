@@ -30,11 +30,11 @@ void Preload(uint2 sharedPos, int2 globalPos)
     float viewZ = UnpackViewZ(gIn_ViewZ[WithRectOrigin(globalPos)]);
     float2 hitDist = gDenoisingRange;
 
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         hitDist.x = gIn_Spec[globalPos].w;
     #endif
 
-    #if( NRD_DIFF )
+    #if( NRD_HAS_DIFF )
         hitDist.y = gIn_Diff[globalPos].w;
     #endif
 
@@ -71,7 +71,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float centerRoughness = normalAndRoughness.w;
 
     // Hit distance reconstruction
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     float3 centerSpecularIllumination = gIn_Spec[pixelPos].xyz;
     float centerSpecularHitDist = centerHitdistViewZ.x;
     float2 relaxedRoughnessWeightParams = GetRelaxedRoughnessWeightParams(centerRoughness * centerRoughness);
@@ -81,7 +81,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float sumSpecularHitDist = centerSpecularHitDist * sumSpecularWeight;
 #endif
 
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     float3 centerDiffuseIllumination = gIn_Diff[pixelPos].xyz;
     float centerDiffuseHitDist = centerHitdistViewZ.y;
     float diffuseNormalWeightParam = GetNormalWeightParam(1.0, 1.0);
@@ -115,7 +115,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             w *= GetGaussianWeight(length(o) * 0.5);
             w *= GetBilateralWeight(sampleViewZ, centerViewZ);
 
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
             float specularWeight = w;
             specularWeight *= ComputeExponentialWeight(angle, specularNormalWeightParam, 0.0);
             specularWeight *= ComputeExponentialWeight(normalAndRoughness.w * normalAndRoughness.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y);
@@ -129,7 +129,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             sumSpecularWeight += specularWeight;
 #endif
 
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
             float diffuseWeight = w;
             diffuseWeight *= ComputeExponentialWeight(angle, diffuseNormalWeightParam, 0.0);
 
@@ -145,12 +145,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     }
 
     // Output
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     sumSpecularHitDist /= max(sumSpecularWeight, 1e-6);
     gOut_Spec[pixelPos] = float4(centerSpecularIllumination, sumSpecularHitDist);
 #endif
 
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     sumDiffuseHitDist /= max(sumDiffuseWeight, 1e-6);
     gOut_Diff[pixelPos] = float4(centerDiffuseIllumination, sumDiffuseHitDist);
 #endif

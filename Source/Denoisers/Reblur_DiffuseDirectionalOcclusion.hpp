@@ -51,8 +51,8 @@ void nrd::InstanceImpl::Add_ReblurDiffuseDirectionalOcclusion(DenoiserData& deno
     AddTextureToTransientPool({REBLUR_FORMAT_TILES, 16});
 
     std::array<ShaderMake::ShaderConstant, 2> commonDefines = {{
-        {"NRD_SIGNAL", NRD_DIFFUSE},
-        {"NRD_MODE", NRD_DO},
+        NRD_MAKE_SHADER_CONSTANT(NRD_SIGNAL, NRD_SIGNAL_DIFF),
+        NRD_MAKE_SHADER_CONSTANT(NRD_MODE, NRD_MODE_DO),
     }};
 
     PushPass("Classify tiles");
@@ -86,7 +86,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseDirectionalOcclusion(DenoiserData& deno
             // Shaders
             std::array<ShaderMake::ShaderConstant, 3> defines = {{
                 commonDefines[0],
-                {"NRD_MODE", NRD_RADIANCE},
+                NRD_MAKE_SHADER_CONSTANT(NRD_MODE, NRD_MODE_RADIANCE),
                 {"MODE_5X5", is5x5 ? "1" : "0"},
             }};
             AddDispatch(REBLUR_HitDistReconstruction, defines);
@@ -243,7 +243,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseDirectionalOcclusion(DenoiserData& deno
         // Shaders
         std::array<ShaderMake::ShaderConstant, 2> defines = {{
             commonDefines[0],
-            {"NRD_MODE", NRD_RADIANCE},
+            NRD_MAKE_SHADER_CONSTANT(NRD_MODE, NRD_MODE_RADIANCE),
         }};
         AddDispatch(REBLUR_SplitScreen, defines);
     }

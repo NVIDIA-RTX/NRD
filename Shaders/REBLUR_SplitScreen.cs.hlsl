@@ -30,25 +30,25 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pixelPos ) ] );
     uint2 checkerboardPos = pixelPos;
 
-    #if( NRD_DIFF )
+    #if( NRD_HAS_DIFF )
         checkerboardPos.x = pixelPos.x >> ( gDiffCheckerboard != 2 ? 1 : 0 );
 
         REBLUR_TYPE diff = gIn_Diff[ checkerboardPos ];
         gOut_Diff[ pixelPos ] = diff * float( IsInDenoisingRange( viewZ ) );
 
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             REBLUR_SH_TYPE diffSh = gIn_DiffSh[ checkerboardPos ];
             gOut_DiffSh[ pixelPos ] = diffSh * float( IsInDenoisingRange( viewZ ) );
         #endif
     #endif
 
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         checkerboardPos.x = pixelPos.x >> ( gSpecCheckerboard != 2 ? 1 : 0 );
 
         REBLUR_TYPE spec = gIn_Spec[ checkerboardPos ];
         gOut_Spec[ pixelPos ] = spec * float( IsInDenoisingRange( viewZ ) );
 
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             REBLUR_SH_TYPE specSh = gIn_SpecSh[ checkerboardPos ];
             gOut_SpecSh[ pixelPos ] = specSh * float( IsInDenoisingRange( viewZ ) );
         #endif

@@ -46,7 +46,7 @@ float2 PackData1( float diffAccumSpeed, float specAccumSpeed )
     r.y = saturate( round( specAccumSpeed ) / REBLUR_MAX_ACCUM_FRAME_NUM );
 
     // Allow R8_UNORM for specular only denoiser
-    #if( NRD_DIFF == 0 )
+    #if( NRD_HAS_DIFF == 0 )
         r.x = r.y;
     #endif
 
@@ -56,7 +56,7 @@ float2 PackData1( float diffAccumSpeed, float specAccumSpeed )
 REBLUR_DATA1_TYPE UnpackData1( float2 p )
 {
     // Allow R8_UNORM for specular only denoiser
-    #if( NRD_DIFF == 0 )
+    #if( NRD_HAS_DIFF == 0 )
         p.y = p.x;
     #endif
 
@@ -66,7 +66,7 @@ REBLUR_DATA1_TYPE UnpackData1( float2 p )
     return round( p * REBLUR_MAX_ACCUM_FRAME_NUM );
 }
 
-#if( NRD_SPEC == 0 )
+#if( NRD_HAS_SPEC == 0 )
     #define smbAllowCatRomBit 4 // 8-bits storage
 #else
     #define smbAllowCatRomBit 15 // 32-bits storage
@@ -144,7 +144,7 @@ float GetLumaScale( float currLuma, float newLuma )
     return ( newLuma + NRD_EPS ) / ( currLuma + NRD_EPS );
 }
 
-#if( NRD_MODE == OCCLUSION )
+#if( NRD_MODE == NRD_MODE_OCCLUSION )
 
     #define REBLUR_TYPE float
 
@@ -167,7 +167,7 @@ float GetLumaScale( float currLuma, float newLuma )
     float ClampNegativeToZero( float input )
     { return ClampNegativeHitDistToZero( input ); }
 
-#elif( NRD_MODE == DO )
+#elif( NRD_MODE == NRD_MODE_DO )
 
     #define REBLUR_TYPE float4
 

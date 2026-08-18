@@ -22,42 +22,42 @@ NRD_INPUTS_START
     NRD_INPUT( Texture2D, float,  gIn_HistoryLength, t, 1 )
     NRD_INPUT( Texture2D, float4, gIn_Normal_Roughness, t, 2 )
     NRD_INPUT( Texture2D, float,  gIn_ViewZ, t, 3 )
-    #if( NRD_DIFF && NRD_SPEC )
+    #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
         NRD_INPUT( Texture2D, float4, gIn_Spec, t, 4 )
         NRD_INPUT( Texture2D, float4, gIn_Diff, t, 5 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_INPUT( Texture2D, RELAX_SH_TYPE, gIn_SpecSh, t, 6 )
             NRD_INPUT( Texture2D, RELAX_SH_TYPE, gIn_DiffSh, t, 7 )
         #endif
-    #elif( NRD_DIFF )
+    #elif( NRD_HAS_DIFF )
         NRD_INPUT( Texture2D, float4, gIn_Diff, t, 4 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_INPUT( Texture2D, RELAX_SH_TYPE, gIn_DiffSh, t, 5 )
         #endif
     #else
         NRD_INPUT( Texture2D, float4, gIn_Spec, t, 4 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_INPUT( Texture2D, RELAX_SH_TYPE, gIn_SpecSh, t, 5 )
         #endif
     #endif
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
-    #if( NRD_DIFF && NRD_SPEC )
+    #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
         NRD_OUTPUT( RWTexture2D, float4, gOut_Spec, u, 0 )
         NRD_OUTPUT( RWTexture2D, float4, gOut_Diff, u, 1 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_OUTPUT( RWTexture2D, RELAX_SH_TYPE, gOut_SpecSh, u, 2 )
             NRD_OUTPUT( RWTexture2D, RELAX_SH_TYPE, gOut_DiffSh, u, 3 )
         #endif
-    #elif( NRD_DIFF )
+    #elif( NRD_HAS_DIFF )
         NRD_OUTPUT( RWTexture2D, float4, gOut_Diff, u, 0 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_OUTPUT( RWTexture2D, RELAX_SH_TYPE, gOut_DiffSh, u, 1 )
         #endif
     #else
         NRD_OUTPUT( RWTexture2D, float4, gOut_Spec, u, 0 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_OUTPUT( RWTexture2D, RELAX_SH_TYPE, gOut_SpecSh, u, 1 )
         #endif
     #endif

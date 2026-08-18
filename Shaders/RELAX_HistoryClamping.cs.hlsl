@@ -18,12 +18,12 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "RELAX_Common.hlsli"
 
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     groupshared float4 s_SpecResponsiveYCoCg[BUFFER_Y][BUFFER_X];
     groupshared float4 s_SpecNoisy_IsValid[BUFFER_Y][BUFFER_X];
 #endif
 
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     groupshared float4 s_DiffResponsiveYCoCg[BUFFER_Y][BUFFER_X];
     groupshared float4 s_DiffNoisy_IsValid[BUFFER_Y][BUFFER_X];
 #endif
@@ -35,7 +35,7 @@ void Preload(uint2 sharedPos, int2 globalPos)
     float viewZ = gIn_ViewZ[globalPos];
     float isValid = float(IsInDenoisingRange( viewZ ));
 
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         float4 specularResponsive = gIn_SpecFast[globalPos];
         s_SpecResponsiveYCoCg[sharedPos.y][sharedPos.x] = float4(Color::RgbToYCoCg(specularResponsive.rgb), specularResponsive.a);
 
@@ -43,7 +43,7 @@ void Preload(uint2 sharedPos, int2 globalPos)
         s_SpecNoisy_IsValid[sharedPos.y][sharedPos.x] = float4(specularNoisy, isValid);
     #endif
 
-    #if( NRD_DIFF )
+    #if( NRD_HAS_DIFF )
         float4 diffuseResponsive = gIn_DiffFast[globalPos];
         s_DiffResponsiveYCoCg[sharedPos.y][sharedPos.x] = float4(Color::RgbToYCoCg(diffuseResponsive.rgb), diffuseResponsive.a);
 
@@ -74,7 +74,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Early out
     uint2 sharedMemoryIndex = threadPos.xy + int2(NRD_BORDER, NRD_BORDER);
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     if (s_SpecNoisy_IsValid[sharedMemoryIndex.y][sharedMemoryIndex.x].w == 0.0)
         return;
 #else
@@ -86,14 +86,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float historyLength = 255.0 * gIn_HistoryLength[pixelPos];
 
     // Reading normal history
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     float3 specularResponsiveFirstMomentYCoCg = 0;
     float3 specularResponsiveSecondMomentYCoCg = 0;
     float3 specularNoisyFirstMoment = 0;
     float specularNoisySecondMoment = 0;
 #endif
 
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     float3 diffuseResponsiveFirstMomentYCoCg = 0;
     float3 diffuseResponsiveSecondMomentYCoCg = 0;
     float3 diffuseNoisyFirstMoment = 0;
@@ -111,18 +111,18 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             uint2 sharedMemoryIndexP = sharedMemoryIndex + int2(dx, dy);
 
             float w;
-        #if( NRD_SPEC )
+        #if( NRD_HAS_SPEC )
             float4 specularNoisySample = s_SpecNoisy_IsValid[sharedMemoryIndexP.y][sharedMemoryIndexP.x];
             w = specularNoisySample.w;
         #endif
-        #if( NRD_DIFF )
+        #if( NRD_HAS_DIFF )
             float4 diffuseNoisySample = s_DiffNoisy_IsValid[sharedMemoryIndexP.y][sharedMemoryIndexP.x];
             w = diffuseNoisySample.w; // yes, overwrite to the same value
         #endif
 
             if( w != 0.0 )
             {
-            #if( NRD_SPEC )
+            #if( NRD_HAS_SPEC )
                 float3 specularSampleYCoCg = s_SpecResponsiveYCoCg[sharedMemoryIndexP.y][sharedMemoryIndexP.x].rgb;
                 specularResponsiveFirstMomentYCoCg += specularSampleYCoCg;
                 specularResponsiveSecondMomentYCoCg += specularSampleYCoCg * specularSampleYCoCg;
@@ -131,7 +131,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 specularNoisyFirstMoment += specularNoisySample.rgb;
                 specularNoisySecondMoment += specularNoisyLuminance * specularNoisyLuminance;
             #endif
-            #if( NRD_DIFF )
+            #if( NRD_HAS_DIFF )
                 float3 diffuseSampleYCoCg = s_DiffResponsiveYCoCg[sharedMemoryIndexP.y][sharedMemoryIndexP.x].rgb;
                 diffuseResponsiveFirstMomentYCoCg += diffuseSampleYCoCg;
                 diffuseResponsiveSecondMomentYCoCg += diffuseSampleYCoCg * diffuseSampleYCoCg;
@@ -146,7 +146,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
     }
 
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     // Calculating color box
     specularResponsiveFirstMomentYCoCg /= sum;
     specularResponsiveSecondMomentYCoCg /= sum;
@@ -239,7 +239,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     gOut_Spec[pixelPos.xy] = outSpecular;
     gOut_SpecFast[pixelPos.xy] = outSpecularResponsive;
 
-#if( NRD_MODE == SH )
+#if( NRD_MODE == NRD_MODE_SH )
     RELAX_SH_TYPE specularSH = gIn_SpecSh[pixelPos.xy];
     RELAX_SH_TYPE specularResponsiveSH = gIn_SpecShFast[pixelPos.xy];
 
@@ -248,7 +248,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #endif
 #endif
 
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     // Calculating color box
     diffuseResponsiveFirstMomentYCoCg /= sum;
     diffuseResponsiveSecondMomentYCoCg /= sum;
@@ -340,7 +340,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     gOut_Diff[pixelPos.xy] = outDiffuse;
     gOut_DiffFast[pixelPos.xy] = outDiffuseResponsive;
 
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         RELAX_SH_TYPE diffuseSH = gIn_DiffSh[pixelPos.xy];
         RELAX_SH_TYPE diffuseResponsiveSH = gIn_DiffShFast[pixelPos.xy];
 

@@ -83,12 +83,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Spatial filtering
     #define REBLUR_SPATIAL_PASS REBLUR_POST_BLUR
 
-    #if( NRD_DIFF )
+    #if( NRD_HAS_DIFF )
         #define REBLUR_SPATIAL_LOBE REBLUR_DIFF
         #include "REBLUR_Common_SpatialFilter.hlsli"
     #endif
 
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         #define REBLUR_SPATIAL_LOBE REBLUR_SPEC
         #include "REBLUR_Common_SpatialFilter.hlsli"
     #endif

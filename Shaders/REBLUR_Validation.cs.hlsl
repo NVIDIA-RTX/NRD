@@ -16,8 +16,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #include "Common.hlsli"
 
-#undef NRD_SPEC
-#define NRD_SPEC 1 // see "UnpackData2"
+#undef NRD_HAS_SPEC
+#define NRD_HAS_SPEC 1 // see "UnpackData2"
 
 #include "REBLUR_Common.hlsli"
 

@@ -18,10 +18,10 @@ NRD_SAMPLERS_START
 NRD_SAMPLERS_END
 
 NRD_INPUTS_START
-    #if( NRD_DIFF && NRD_SPEC )
+    #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
         NRD_INPUT( Texture2D, float4, gIn_Spec, t, 0 )
         NRD_INPUT( Texture2D, float4, gIn_Diff, t, 1 )
-    #elif( NRD_DIFF )
+    #elif( NRD_HAS_DIFF )
         NRD_INPUT( Texture2D, float4, gIn_Diff, t, 0 )
     #else
         NRD_INPUT( Texture2D, float4, gIn_Spec, t, 0 )
@@ -29,10 +29,10 @@ NRD_INPUTS_START
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
-    #if( NRD_DIFF && NRD_SPEC )
+    #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
         NRD_OUTPUT( RWTexture2D, float4, gOut_Spec, u, 0 )
         NRD_OUTPUT( RWTexture2D, float4, gOut_Diff, u, 1 )
-    #elif( NRD_DIFF )
+    #elif( NRD_HAS_DIFF )
         NRD_OUTPUT( RWTexture2D, float4, gOut_Diff, u, 0 )
     #else
         NRD_OUTPUT( RWTexture2D, float4, gOut_Spec, u, 0 )

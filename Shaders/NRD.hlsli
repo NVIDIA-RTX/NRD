@@ -309,10 +309,7 @@ NOISY INPUTS:
         #define rcp( x )                                                                ( 1.0 / ( x ) )
     #endif
     #ifndef any
-        bool any( bool value )
-        {
-            return value;
-        }
+        bool any( bool value )                                                          { return value; }
     #endif
 #endif
 
@@ -324,19 +321,21 @@ NOISY INPUTS:
 #ifdef NRD_INTERNAL
     // Explicitly set matrix layout for shader compilation outside of NRD environment
     #pragma pack_matrix( column_major )
+#endif
 
-    // Permutations
-    #define RADIANCE                                                                    0 // normal mode
-    #define SH                                                                          1 // spherical harmonics ( gaussian )
-    #define OCCLUSION                                                                   2
-    #define DO                                                                          3 // directional occlusion
+// Permutations
+#ifndef __cplusplus
+    #define NRD_MODE_RADIANCE                                                           0 // normal mode
+    #define NRD_MODE_SH                                                                 1 // spherical harmonics ( gaussian )
+    #define NRD_MODE_OCCLUSION                                                          2
+    #define NRD_MODE_DO                                                                 3 // directional occlusion
 
-    #define DIFF                                                                        0x1 // diffuse
-    #define SPEC                                                                        0x2 // specular
-    #define BOTH                                                                        ( DIFF | SPEC )
+    #define NRD_SIGNAL_DIFF                                                             0x1 // diffuse
+    #define NRD_SIGNAL_SPEC                                                             0x2 // specular
+    #define NRD_SIGNAL_BOTH                                                             ( NRD_SIGNAL_DIFF | NRD_SIGNAL_SPEC )
 
-    #define NRD_DIFF                                                                    ( ( NRD_SIGNAL & DIFF ) != 0 )
-    #define NRD_SPEC                                                                    ( ( NRD_SIGNAL & SPEC ) != 0 )
+    #define NRD_HAS_DIFF                                                                ( ( NRD_SIGNAL & NRD_SIGNAL_DIFF ) != 0 )
+    #define NRD_HAS_SPEC                                                                ( ( NRD_SIGNAL & NRD_SIGNAL_SPEC ) != 0 )
 #endif
 
 // Normal encoding variants ( match NormalEncoding )

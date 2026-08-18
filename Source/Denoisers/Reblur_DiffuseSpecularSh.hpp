@@ -82,8 +82,8 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularSh(DenoiserData& denoiserData) 
     AddTextureToTransientPool({REBLUR_FORMAT_TILES, 16});
 
     std::array<ShaderMake::ShaderConstant, 2> commonDefines = {{
-        {"NRD_SIGNAL", NRD_DIFFUSE_SPECULAR},
-        {"NRD_MODE", NRD_SH},
+        NRD_MAKE_SHADER_CONSTANT(NRD_SIGNAL, NRD_SIGNAL_BOTH),
+        NRD_MAKE_SHADER_CONSTANT(NRD_MODE, NRD_MODE_SH),
     }};
 
     PushPass("Classify tiles");
@@ -119,7 +119,7 @@ void nrd::InstanceImpl::Add_ReblurDiffuseSpecularSh(DenoiserData& denoiserData) 
             // Shaders
             std::array<ShaderMake::ShaderConstant, 3> defines = {{
                 commonDefines[0],
-                {"NRD_MODE", NRD_RADIANCE},
+                NRD_MAKE_SHADER_CONSTANT(NRD_MODE, NRD_MODE_RADIANCE),
                 {"MODE_5X5", is5x5 ? "1" : "0"},
             }};
             AddDispatch(REBLUR_HitDistReconstruction, defines);

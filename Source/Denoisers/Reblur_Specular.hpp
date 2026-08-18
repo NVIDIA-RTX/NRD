@@ -55,8 +55,8 @@ void nrd::InstanceImpl::Add_ReblurSpecular(DenoiserData& denoiserData) {
     AddTextureToTransientPool({REBLUR_FORMAT_TILES, 16});
 
     std::array<ShaderMake::ShaderConstant, 2> commonDefines = {{
-        {"NRD_SIGNAL", NRD_SPECULAR},
-        {"NRD_MODE", NRD_RADIANCE},
+        NRD_MAKE_SHADER_CONSTANT(NRD_SIGNAL, NRD_SIGNAL_SPEC),
+        NRD_MAKE_SHADER_CONSTANT(NRD_MODE, NRD_MODE_RADIANCE),
     }};
 
     PushPass("Classify tiles");

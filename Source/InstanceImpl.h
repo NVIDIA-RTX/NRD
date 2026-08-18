@@ -26,17 +26,10 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 // "NRDConfig.hlsli", included in "NRD.hlsli", must be visible in all files!
 #include "../Shaders/NRD.hlsli"
 
-// See "Shaders.cfg" and "NRD.hlsli"
-#define NRD_DIFFUSE          "DIFF"
-#define NRD_SPECULAR         "SPEC"
-#define NRD_DIFFUSE_SPECULAR "BOTH"
-#define NRD_RADIANCE         "RADIANCE"
-#define NRD_SH               "SH"
-#define NRD_OCCLUSION        "OCCLUSION"
-#define NRD_DO               "DO"
-
 #define _NRD_STRINGIFY(s) #s
 #define NRD_STRINGIFY(s)  _NRD_STRINGIFY(s)
+
+#define NRD_MAKE_SHADER_CONSTANT(name, value) ShaderMake::ShaderConstant{#name, #value}
 
 #if NRD_EMBEDS_DXBC_SHADERS
 #    define FillDXBC(blobName, defines, computeShader) ShaderMake::FindPermutationInBlob(g_##blobName##_cs_dxbc, GetCountOf(g_##blobName##_cs_dxbc), defines.data(), (uint32_t)defines.size(), &computeShader.bytecode, (size_t*)&computeShader.size)

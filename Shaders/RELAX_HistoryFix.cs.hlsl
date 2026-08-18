@@ -49,16 +49,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 centerV = -normalize(centerWorldPos);
     float depthThreshold = gDepthThreshold * (gOrthoMode == 0 ? centerViewZ : 1.0);
 
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     float4 diffuseIlluminationAnd2ndMomentSum = gIn_Diff[pixelPos];
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         RELAX_SH_TYPE diffuseSumSH = gIn_DiffSh[pixelPos];
     #endif
     float diffuseWSum = 1;
 #endif
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     float4 specularIlluminationAnd2ndMomentSum = gIn_Spec[pixelPos];
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         RELAX_SH_TYPE specularSumSH = gIn_SpecSh[pixelPos];
     #endif
     float specularWSum = 1;
@@ -101,7 +101,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float geometryWeight = GetPlaneDistanceWeight_Atrous(centerWorldPos, centerNormal, sampleWorldPos, depthThreshold);
             geometryWeight = IsInDenoisingRange( sampleViewZ ) ? geometryWeight : 0.0;
 
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
             // Summing up diffuse result
             float diffuseW = geometryWeight;
             diffuseW *= getDiffuseNormalWeight(centerNormal, sampleNormal);
@@ -111,14 +111,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             {
                 float4 sampleDiffuseIlluminationAnd2ndMoment = gIn_Diff[samplePosInt];
                 diffuseIlluminationAnd2ndMomentSum += sampleDiffuseIlluminationAnd2ndMoment * diffuseW;
-                #if( NRD_MODE == SH )
+                #if( NRD_MODE == NRD_MODE_SH )
                     RELAX_SH_TYPE sampleDiffuseSH = gIn_DiffSh[samplePosInt];
                     diffuseSumSH += sampleDiffuseSH * diffuseW;
                 #endif
                 diffuseWSum += diffuseW;
             }
 #endif
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
             // Getting sample view vector closer to center view vector
             // by adding gRoughnessEdgeStoppingRelaxation * centerWorldPos
             // relaxes view direction based rejection
@@ -133,7 +133,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             {
                 float4 sampleSpecularIlluminationAnd2ndMoment = gIn_Spec[samplePosInt];
                 specularIlluminationAnd2ndMomentSum += sampleSpecularIlluminationAnd2ndMoment * specularW;
-                #if( NRD_MODE == SH )
+                #if( NRD_MODE == NRD_MODE_SH )
                     RELAX_SH_TYPE sampleSpecularSH = gIn_SpecSh[samplePosInt];
                     specularSumSH += sampleSpecularSH * specularW;
                 #endif
@@ -145,18 +145,18 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Output buffers will hold the pixels with disocclusion processed by history fix.
     // The next shader will have to copy these areas to normal and responsive history buffers.
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     float4 outDiffuseIlluminationAnd2ndMoment = diffuseIlluminationAnd2ndMomentSum / diffuseWSum;
     gOut_Diff[pixelPos] = outDiffuseIlluminationAnd2ndMoment;
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         gOut_DiffSh[pixelPos] = diffuseSumSH / diffuseWSum;
     #endif
 #endif
 
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     float4 outSpecularIlluminationAnd2ndMoment = specularIlluminationAnd2ndMomentSum / specularWSum;
     gOut_Spec[pixelPos] = outSpecularIlluminationAnd2ndMoment;
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         gOut_SpecSh[pixelPos] = specularSumSH / specularWSum;
     #endif
 #endif

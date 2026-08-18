@@ -21,44 +21,44 @@ NRD_INPUTS_START
     NRD_INPUT( Texture2D, REBLUR_TILE_TYPE, gIn_Tiles, t, 0 )
     NRD_INPUT( Texture2D, float4, gIn_Normal_Roughness, t, 1 )
     NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 2 )
-    #if( NRD_DIFF && NRD_SPEC )
+    #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
         NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Diff, t, 3 )
         NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Spec, t, 4 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_DiffSh, t, 5 )
             NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_SpecSh, t, 6 )
         #endif
-    #elif( NRD_DIFF )
+    #elif( NRD_HAS_DIFF )
         NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Diff, t, 3 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_DiffSh, t, 4 )
         #endif
     #else
         NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Spec, t, 3 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_SpecSh, t, 4 )
         #endif
     #endif
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
-    #if( NRD_DIFF && NRD_SPEC )
+    #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
         NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Diff, u, 0 )
         NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Spec, u, 1 )
         NRD_OUTPUT( RWTexture2D, float, gOut_SpecHitDistForTracking, u, 2 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_DiffSh, u, 3 )
             NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_SpecSh, u, 4 )
         #endif
-    #elif( NRD_DIFF )
+    #elif( NRD_HAS_DIFF )
         NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Diff, u, 0 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_DiffSh, u, 1 )
         #endif
     #else
         NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Spec, u, 0 )
         NRD_OUTPUT( RWTexture2D, float, gOut_SpecHitDistForTracking, u, 1 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_SpecSh, u, 2 )
         #endif
     #endif

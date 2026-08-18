@@ -42,8 +42,8 @@ void Preload( uint2 sharedPos, int2 globalPos )
     float3 N = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( globalPos ) ] ).xyz;
     float hitDistForTracking = 0.0;
 
-    #if( NRD_SPEC )
-        #if( NRD_MODE == OCCLUSION )
+    #if( NRD_HAS_SPEC )
+        #if( NRD_MODE == NRD_MODE_OCCLUSION )
             uint shift = gSpecCheckerboard != 2 ? 1 : 0;
             uint2 pos = uint2( globalPos.x >> shift, globalPos.y );
         #else
@@ -51,7 +51,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
         #endif
 
         REBLUR_TYPE spec = gIn_Spec[ pos ];
-        #if( NRD_MODE == OCCLUSION )
+        #if( NRD_MODE == NRD_MODE_OCCLUSION )
             float hitDist = ExtractHitDist( spec );
         #else
             float hitDist = gSpecPrepassBlurRadius == 0.0 ? ExtractHitDist( spec ) : gIn_SpecHitDistForTracking[ globalPos ];
@@ -90,7 +90,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Find hit distance for tracking, averaged normal and roughness variance
     float3 Navg = 0.0; // needs to be unnormalized!
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         float hitDistForTracking = NRD_INF;
     #endif
 
@@ -107,7 +107,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             if( i < 2 && j < 2 ) // TODO: 3x3?
                 Navg += data.xyz * 0.25;
 
-            #if( NRD_SPEC )
+            #if( NRD_HAS_SPEC )
                 // Min hit distance for tracking, ignoring 0 values ( which still can be produced by VNDF sampling )
                 hitDistForTracking = min( hitDistForTracking, data.w );
             #endif
@@ -120,7 +120,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 N = normalAndRoughness.xyz;
     float roughness = normalAndRoughness.w;
 
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         // Modified roughness is essential for "smb" specular motion
         float roughnessModified = Filtering::GetModifiedRoughnessFromNormalVariance( roughness, Navg );
 
@@ -132,7 +132,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         hitDistForTracking = hitDistForTracking == NRD_INF ? 0.0 : hitDistForTracking;
 
         float hitDistNormalization = _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings.xyz, roughness );
-        #if( NRD_MODE == OCCLUSION )
+        #if( NRD_MODE == NRD_MODE_OCCLUSION )
             hitDistForTracking *= hitDistNormalization;
         #else
             hitDistForTracking *= gSpecPrepassBlurRadius == 0.0 ? hitDistNormalization : 1.0;
@@ -305,12 +305,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float2 internalData01 = UnpackInternalData( smbInternalData.z ).xy;
     float2 internalData11 = UnpackInternalData( smbInternalData.w ).xy;
 
-    #if( NRD_DIFF )
+    #if( NRD_HAS_DIFF )
         float4 diffAccumSpeeds = float4( internalData00.x, internalData10.x, internalData01.x, internalData11.x );
         float diffAccumSpeed = Filtering::ApplyBilinearCustomWeights( diffAccumSpeeds.x, diffAccumSpeeds.y, diffAccumSpeeds.z, diffAccumSpeeds.w, smbOcclusionWeights );
     #endif
 
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         float4 specAccumSpeeds = float4( internalData00.y, internalData10.y, internalData01.y, internalData11.y );
         float smbSpecAccumSpeed = Filtering::ApplyBilinearCustomWeights( specAccumSpeeds.x, specAccumSpeeds.y, specAccumSpeeds.z, specAccumSpeeds.w, smbOcclusionWeights );
     #endif
@@ -328,7 +328,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Checkerboard resolve
     uint checkerboard = Sequence::CheckerBoard( pixelPos, gFrameIndex );
-    #if( NRD_MODE == OCCLUSION )
+    #if( NRD_MODE == NRD_MODE_OCCLUSION )
         int3 checkerboardPos = pixelPos.xxy + int3( -1, 1, 0 );
         checkerboardPos.x = max( checkerboardPos.x, 0 );
         checkerboardPos.y = min( checkerboardPos.y, gRectSizeMinusOne.x );
@@ -343,7 +343,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #endif
 
     // Specular
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         // Accumulation speed
         float smbSpecHistoryConfidence = smbFootprintQuality;
         if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
@@ -356,14 +356,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Current
         bool specHasData = NRD_SUPPORTS_CHECKERBOARD == 0 || gSpecCheckerboard == 2 || checkerboard == gSpecCheckerboard;
         uint2 specPos = pixelPos;
-        #if( NRD_MODE == OCCLUSION )
+        #if( NRD_MODE == NRD_MODE_OCCLUSION )
             specPos.x >>= gSpecCheckerboard == 2 ? 0 : 1;
         #endif
 
         REBLUR_TYPE spec = gIn_Spec[ specPos ];
 
         // Checkerboard resolve // TODO: materialID support?
-        #if( NRD_MODE == OCCLUSION )
+        #if( NRD_MODE == NRD_MODE_OCCLUSION )
             if( !specHasData )
             {
                 float s0 = gIn_Spec[ checkerboardPos.xz ];
@@ -778,7 +778,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 occlusionWeights, allowCatRom,
                 gHistory_Spec, specHistory,
                 gHistory_SpecFast, specFastHistory
-                #if( NRD_MODE == SH )
+                #if( NRD_MODE == NRD_MODE_SH )
                     , gHistory_SpecSh, specShHistory
                 #endif
             );
@@ -798,7 +798,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         REBLUR_TYPE specResult = MixHistoryAndCurrent( specHistory, spec, specNonLinearAccumSpeed, roughness ); // TODO: previously was "roughnessModified"
 
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             REBLUR_SH_TYPE specSh = gIn_SpecSh[ specPos ];
             REBLUR_SH_TYPE specShResult = lerp( specShHistory, specSh, specNonLinearAccumSpeed );
         #endif
@@ -809,14 +809,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float specAntifireflyFactor = specAccumSpeed * gMaxBlurRadius * REBLUR_FIREFLY_SUPPRESSOR_RADIUS_SCALE;
         specAntifireflyFactor /= 1.0 + specAntifireflyFactor;
 
-        #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
+        #if( NRD_MODE != NRD_MODE_OCCLUSION && NRD_MODE != NRD_MODE_DO )
         {
             float specLumaResult = GetLuma( specResult );
             float specLumaClamped = min( specLumaResult, GetLuma( specHistory ) * specMaxRelativeIntensity );
             specLumaClamped = lerp( specLumaResult, specLumaClamped, specAntifireflyFactor );
 
             specResult = ChangeLuma( specResult, specLumaClamped );
-            #if( NRD_MODE == SH )
+            #if( NRD_MODE == NRD_MODE_SH )
                 specShResult *= GetLumaScale( length( specShResult ), specLumaClamped );
             #endif
 
@@ -828,7 +828,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Output
         gOut_Spec[ pixelPos ] = specResult;
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             gOut_SpecSh[ pixelPos ] = specShResult;
         #endif
 
@@ -842,7 +842,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float specFastResult = lerp( specFastHistory, GetLuma( spec ), specFastNonLinearAccumSpeed );
 
             // Firefly suppressor ( fixes heavy crawling under camera rotation: test 95, 120 )
-            #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
+            #if( NRD_MODE != NRD_MODE_OCCLUSION && NRD_MODE != NRD_MODE_DO )
                 float specFastClamped = min( specFastResult, GetLuma( specHistory ) * specMaxRelativeIntensity * REBLUR_FIREFLY_SUPPRESSOR_FAST_RELATIVE_INTENSITY );
                 specFastResult = lerp( specFastResult, specFastClamped, specAntifireflyFactor );
             #endif
@@ -870,14 +870,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #endif
 
     // Output
-    #if( NRD_MODE != OCCLUSION )
+    #if( NRD_MODE != NRD_MODE_OCCLUSION )
         // TODO: "PackData2" can be inlined into the code ( right after a variable gets ready for use ) to utilize the only
         // one "uint" for the intermediate storage. But it looks like the compiler does good job by rearranging the code for us
         gOut_Data2[ pixelPos ] = PackData2( fbits, curvature, virtualHistoryAmount, smbAllowCatRom );
     #endif
 
     // Diffuse
-    #if( NRD_DIFF )
+    #if( NRD_HAS_DIFF )
         // Accumulation speed
         float diffHistoryConfidence = smbFootprintQuality;
         if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
@@ -890,14 +890,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Current
         bool diffHasData = NRD_SUPPORTS_CHECKERBOARD == 0 || gDiffCheckerboard == 2 || checkerboard == gDiffCheckerboard;
         uint2 diffPos = pixelPos;
-        #if( NRD_MODE == OCCLUSION )
+        #if( NRD_MODE == NRD_MODE_OCCLUSION )
             diffPos.x >>= gDiffCheckerboard == 2 ? 0 : 1;
         #endif
 
         REBLUR_TYPE diff = gIn_Diff[ diffPos ];
 
         // Checkerboard resolve // TODO: materialID support?
-        #if( NRD_MODE == OCCLUSION )
+        #if( NRD_MODE == NRD_MODE_OCCLUSION )
             if( !diffHasData )
             {
                 float d0 = gIn_Diff[ checkerboardPos.xz ];
@@ -920,7 +920,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 smbOcclusionWeights, smbAllowCatRom,
                 gHistory_Diff, diffHistory,
                 gHistory_DiffFast, diffFastHistory
-                #if( NRD_MODE == SH )
+                #if( NRD_MODE == NRD_MODE_SH )
                     , gHistory_DiffSh, diffShHistory
                 #endif
             );
@@ -937,13 +937,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             diffNonLinearAccumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, diffNonLinearAccumSpeed );
 
         REBLUR_TYPE diffResult = MixHistoryAndCurrent( diffHistory, diff, diffNonLinearAccumSpeed );
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             REBLUR_SH_TYPE diffSh = gIn_DiffSh[ diffPos ];
             REBLUR_SH_TYPE diffShResult = lerp( diffShHistory, diffSh, diffNonLinearAccumSpeed );
         #endif
 
         // Firefly suppressor
-        #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
+        #if( NRD_MODE != NRD_MODE_OCCLUSION && NRD_MODE != NRD_MODE_DO )
             float diffMaxRelativeIntensity = gFireflySuppressorMinRelativeScale + REBLUR_FIREFLY_SUPPRESSOR_MAX_RELATIVE_INTENSITY / ( diffAccumSpeed + 1.0 );
 
             float diffAntifireflyFactor = diffAccumSpeed * gMaxBlurRadius * REBLUR_FIREFLY_SUPPRESSOR_RADIUS_SCALE;
@@ -954,7 +954,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             diffLumaClamped = lerp( diffLumaResult, diffLumaClamped, diffAntifireflyFactor );
 
             diffResult = ChangeLuma( diffResult, diffLumaClamped );
-            #if( NRD_MODE == SH )
+            #if( NRD_MODE == NRD_MODE_SH )
                 diffShResult *= GetLumaScale( length( diffShResult ), diffLumaClamped );
             #endif
 
@@ -965,7 +965,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Output
         gOut_Diff[ pixelPos ] = diffResult;
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             gOut_DiffSh[ pixelPos ] = diffShResult;
         #endif
 
@@ -978,7 +978,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             float diffFastResult = lerp( diffFastHistory, GetLuma( diff ), diffFastNonLinearAccumSpeed );
 
-            #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
+            #if( NRD_MODE != NRD_MODE_OCCLUSION && NRD_MODE != NRD_MODE_DO )
                 // Firefly suppressor ( fixes heavy crawling under camera rotation, test 99 )
                 float diffFastClamped = min( diffFastResult, GetLuma( diffHistory ) * diffMaxRelativeIntensity * REBLUR_FIREFLY_SUPPRESSOR_FAST_RELATIVE_INTENSITY );
                 diffFastResult = lerp( diffFastResult, diffFastClamped, diffAntifireflyFactor );

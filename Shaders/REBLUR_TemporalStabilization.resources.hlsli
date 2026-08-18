@@ -23,27 +23,27 @@ NRD_INPUTS_START
     NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 2 )
     NRD_INPUT( Texture2D, REBLUR_DATA1_TYPE, gIn_Data1, t, 3 )
     NRD_INPUT( Texture2D, uint, gIn_Data2, t, 4 )
-    #if( NRD_DIFF && NRD_SPEC )
+    #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
         NRD_INPUT( Texture2D, float, gIn_SpecHitDistForTracking, t, 5 )
         NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Diff, t, 6 )
         NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Spec, t, 7 )
         NRD_INPUT( Texture2D, float, gHistory_DiffLumaStabilized, t, 8 )
         NRD_INPUT( Texture2D, float, gHistory_SpecLumaStabilized, t, 9 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_DiffSh, t, 10 )
             NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_SpecSh, t, 11 )
         #endif
-    #elif( NRD_DIFF )
+    #elif( NRD_HAS_DIFF )
         NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Diff, t, 5 )
         NRD_INPUT( Texture2D, float, gHistory_DiffLumaStabilized, t, 6 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_DiffSh, t, 7 )
         #endif
     #else
         NRD_INPUT( Texture2D, float, gIn_SpecHitDistForTracking, t, 5 )
         NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Spec, t, 6 )
         NRD_INPUT( Texture2D, float, gHistory_SpecLumaStabilized, t, 7 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_SpecSh, t, 8 )
         #endif
     #endif
@@ -52,25 +52,25 @@ NRD_INPUTS_END
 NRD_OUTPUTS_START
     NRD_OUTPUT( RWTexture2D, float4, gInOut_Mv, u, 0 )
     NRD_OUTPUT( RWTexture2D, uint, gOut_InternalData, u, 1 )
-    #if( NRD_DIFF && NRD_SPEC )
+    #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
         NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Diff, u, 2 )
         NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Spec, u, 3 )
         NRD_OUTPUT( RWTexture2D, float, gOut_DiffLumaStabilized, u, 4 )
         NRD_OUTPUT( RWTexture2D, float, gOut_SpecLumaStabilized, u, 5 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_DiffSh, u, 6 )
             NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_SpecSh, u, 7 )
         #endif
-    #elif( NRD_DIFF )
+    #elif( NRD_HAS_DIFF )
         NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Diff, u, 2 )
         NRD_OUTPUT( RWTexture2D, float, gOut_DiffLumaStabilized, u, 3 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_DiffSh, u, 4 )
         #endif
     #else
         NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Spec, u, 2 )
         NRD_OUTPUT( RWTexture2D, float, gOut_SpecLumaStabilized, u, 3 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_SpecSh, u, 4 )
         #endif
     #endif

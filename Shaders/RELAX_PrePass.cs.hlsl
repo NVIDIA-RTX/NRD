@@ -47,9 +47,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float materialID0 = 0;
     float materialID1 = 0;
     float2 checkerboardResolveWeights = 1.0;
-#if( NRD_DIFF && NRD_SPEC )
+#if( NRD_HAS_DIFF && NRD_HAS_SPEC )
     if ((gSpecCheckerboard != 2) || (gDiffCheckerboard != 2))
-#elif( NRD_DIFF )
+#elif( NRD_HAS_DIFF )
     if (gDiffCheckerboard != 2)
 #else
     if (gSpecCheckerboard != 2)
@@ -81,7 +81,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     float2 pixelUv = float2(pixelPos + 0.5) * gRectSizeInv;
 
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     bool diffHasData = true;
     int2 diffPos = pixelPos;
 #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
@@ -94,7 +94,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Reading diffuse & resolving diffuse checkerboard
     float4 diffuseIllumination = gIn_Diff[diffPos];
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         RELAX_SH_TYPE diffuseSH = gIn_DiffSh[diffPos];
     #endif
 
@@ -114,7 +114,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         d1 = Denanify( wc.y, d1 );
         diffuseIllumination = d0 * wc.x + d1 * wc.y;
 
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             RELAX_SH_TYPE d0SH = gIn_DiffSh[checkerboardPos.xz];
             RELAX_SH_TYPE d1SH = gIn_DiffSh[checkerboardPos.yz];
             d0SH = Denanify( wc.x, d0SH );
@@ -197,7 +197,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             weightSum += sampleWeight;
 
             diffuseIllumination += sampleDiffuseIllumination * sampleWeight;
-            #if( NRD_MODE == SH )
+            #if( NRD_MODE == NRD_MODE_SH )
                 RELAX_SH_TYPE sampleDiffuseSH = gIn_DiffSh.SampleLevel(gNearestClamp, checkerboardUvScaled, 0);
                 sampleDiffuseSH = Denanify( sampleWeight, sampleDiffuseSH );
                 diffuseSH += sampleDiffuseSH * sampleWeight;
@@ -205,18 +205,18 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         diffuseIllumination /= weightSum;
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             diffuseSH /= weightSum;
         #endif
     }
 
     gOut_Diff[pixelPos] = clamp(diffuseIllumination, 0, NRD_FP16_MAX);
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         gOut_DiffSh[pixelPos] = clamp(diffuseSH, -NRD_FP16_MAX, NRD_FP16_MAX);
     #endif
 #endif
 
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     Rng::Hash::Initialize( pixelPos, gFrameIndex );
 
     bool specHasData = true;
@@ -231,7 +231,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Reading specular & resolving specular checkerboard
     float4 specularIllumination = gIn_Spec[specPos];
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         RELAX_SH_TYPE specularSH = gIn_SpecSh[specPos];
     #endif
 
@@ -251,7 +251,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         s1 = Denanify( wc.y, s1 );
         specularIllumination = s0 * wc.x + s1 * wc.y;
 
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             RELAX_SH_TYPE s0SH = gIn_SpecSh[checkerboardPos.xz];
             RELAX_SH_TYPE s1SH = gIn_SpecSh[checkerboardPos.yz];
             s0SH = Denanify( wc.x, s0SH );
@@ -365,7 +365,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             weightSum += sampleWeight;
 
             specularIllumination.rgb += sampleSpecularIllumination.rgb * sampleWeight;
-            #if( NRD_MODE == SH )
+            #if( NRD_MODE == NRD_MODE_SH )
                 RELAX_SH_TYPE sampleSpecularSH = gIn_SpecSh.SampleLevel(gNearestClamp, checkerboardUvScaled, 0);
                 sampleSpecularSH = Denanify( sampleWeight, sampleSpecularSH );
                 specularSH += sampleSpecularSH * sampleWeight;
@@ -373,13 +373,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
         specularIllumination.rgb /= weightSum;
         specularIllumination.a = minHitT == NRD_INF ? 0.0 : minHitT;
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             specularSH /= weightSum;
         #endif
     }
 
     gOut_Spec[pixelPos] = clamp(specularIllumination, 0, NRD_FP16_MAX);
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         gOut_SpecSh[pixelPos] = clamp(specularSH, -NRD_FP16_MAX, NRD_FP16_MAX);
     #endif
 #endif

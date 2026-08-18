@@ -24,48 +24,48 @@ NRD_INPUTS_START
     NRD_INPUT( Texture2D, float, gIn_HistoryLength, t, 1 )
     NRD_INPUT( Texture2D, float4, gIn_Normal_Roughness, t, 2 )
     NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 3 )
-    #if( NRD_DIFF && NRD_SPEC )
+    #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
         NRD_INPUT( Texture2D, float4, gIn_Spec_Variance, t, 4 )
         NRD_INPUT( Texture2D, float4, gIn_Diff_Variance, t, 5 )
         NRD_INPUT( Texture2D, float, gIn_SpecReprojectionConfidence, t, 6 )
         NRD_INPUT( Texture2D, float, gIn_SpecConfidence, t, 7 )
         NRD_INPUT( Texture2D, float, gIn_DiffConfidence, t, 8 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_INPUT( Texture2D, RELAX_SH_TYPE, gIn_SpecSh, t, 9 )
             NRD_INPUT( Texture2D, RELAX_SH_TYPE, gIn_DiffSh, t, 10 )
         #endif
-    #elif( NRD_DIFF )
+    #elif( NRD_HAS_DIFF )
         NRD_INPUT( Texture2D, float4, gIn_Diff_Variance, t, 4 )
         NRD_INPUT( Texture2D, float, gIn_DiffConfidence, t, 5 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_INPUT( Texture2D, RELAX_SH_TYPE, gIn_DiffSh, t, 6 )
         #endif
     #else
         NRD_INPUT( Texture2D, float4, gIn_Spec_Variance, t, 4 )
         NRD_INPUT( Texture2D, float, gIn_SpecReprojectionConfidence, t, 5 )
         NRD_INPUT( Texture2D, float, gIn_SpecConfidence, t, 6 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_INPUT( Texture2D, RELAX_SH_TYPE, gIn_SpecSh, t, 7 )
         #endif
     #endif
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
-    #if( NRD_DIFF && NRD_SPEC )
+    #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
         NRD_OUTPUT( RWTexture2D, float4, gOut_Spec_Variance, u, 0 )
         NRD_OUTPUT( RWTexture2D, float4, gOut_Diff_Variance, u, 1 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_OUTPUT( RWTexture2D, RELAX_SH_TYPE, gOut_SpecSh, u, 2 )
             NRD_OUTPUT( RWTexture2D, RELAX_SH_TYPE, gOut_DiffSh, u, 3 )
         #endif
-    #elif( NRD_DIFF )
+    #elif( NRD_HAS_DIFF )
         NRD_OUTPUT( RWTexture2D, float4, gOut_Diff_Variance, u, 0 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_OUTPUT( RWTexture2D, RELAX_SH_TYPE, gOut_DiffSh, u, 1 )
         #endif
     #else
         NRD_OUTPUT( RWTexture2D, float4, gOut_Spec_Variance, u, 0 )
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             NRD_OUTPUT( RWTexture2D, RELAX_SH_TYPE, gOut_SpecSh, u, 1 )
         #endif
     #endif

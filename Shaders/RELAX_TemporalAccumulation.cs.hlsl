@@ -47,7 +47,7 @@ float loadSurfaceMotionBasedPrevData(
     float2 prevUVSMB,
     float currentLinearZ,
     float3 currentNormal,
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     float currentReflectionHitT,
 #endif
     float NoV,
@@ -57,19 +57,19 @@ float loadSurfaceMotionBasedPrevData(
 
     out float footprintQuality,
     out float historyLength
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     , out float4 prevDiffuseIllumAnd2ndMoment
     , out float3 prevDiffuseResponsiveIllum
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         , out RELAX_SH_TYPE prevDiffuseSH
         , out RELAX_SH_TYPE prevDiffuseResponsiveSH
     #endif
 #endif
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     , out float4 prevSpecularIllumAnd2ndMoment
     , out float3 prevSpecularResponsiveIllum
     , out float  prevReflectionHitT
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         , out RELAX_SH_TYPE prevSpecularSH
         , out RELAX_SH_TYPE prevSpecularResponsiveSH
     #endif
@@ -162,10 +162,10 @@ float loadSurfaceMotionBasedPrevData(
     BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(
         prevPixelPosFloat, gResourceSizeInvPrev,
         bilinearCustomWeights, useBicubic
-    #if( NRD_DIFF )
+    #if( NRD_HAS_DIFF )
         , gHistory_Diff, prevDiffuseIllumAnd2ndMoment
     #endif
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         , gHistory_Spec, prevSpecularIllumAnd2ndMoment
     #endif
     );
@@ -176,30 +176,30 @@ float loadSurfaceMotionBasedPrevData(
     BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(
         prevPixelPosFloat, gResourceSizeInvPrev,
         bilinearCustomWeights, useBicubic
-    #if( NRD_DIFF )
+    #if( NRD_HAS_DIFF )
         , gHistory_DiffFast, diff
     #endif
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         , gHistory_SpecFast, spec
     #endif
     );
 
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     prevDiffuseIllumAnd2ndMoment = max(prevDiffuseIllumAnd2ndMoment, 0);
     prevDiffuseResponsiveIllum = max(diff.rgb, 0);
 #endif
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     prevSpecularIllumAnd2ndMoment = max(prevSpecularIllumAnd2ndMoment, 0.0);
     prevSpecularResponsiveIllum = max(spec.rgb, 0);
 #endif
 
     // Fitering previous SH data
-#if( NRD_MODE == SH )
-    #if( NRD_DIFF )
+#if( NRD_MODE == NRD_MODE_SH )
+    #if( NRD_HAS_DIFF )
         prevDiffuseSH = BilinearWithCustomWeightsSH(gHistory_DiffSh, bilinearOrigin, bilinearCustomWeights);
         prevDiffuseResponsiveSH = BilinearWithCustomWeightsSH(gHistory_DiffShFast, bilinearOrigin, bilinearCustomWeights);
     #endif
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         prevSpecularSH = BilinearWithCustomWeightsSH(gHistory_SpecSh, bilinearOrigin, bilinearCustomWeights);
         prevSpecularResponsiveSH = BilinearWithCustomWeightsSH(gHistory_SpecShFast, bilinearOrigin, bilinearCustomWeights);
     #endif
@@ -215,7 +215,7 @@ float loadSurfaceMotionBasedPrevData(
         prevHistoryLengths.w,
         bilinearCustomWeights);
 
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     float4 prevReflectionHitTs = gPrev_SpecHitDist.GatherRed(gNearestClamp, gatherOrigin).wzxy;
     prevReflectionHitT = BilinearWithCustomWeightsImmediateFloat(prevReflectionHitTs.x, prevReflectionHitTs.y, prevReflectionHitTs.z, prevReflectionHitTs.w, bilinearCustomWeights);
     prevReflectionHitT = max(0.001, prevReflectionHitT);
@@ -235,7 +235,7 @@ float loadSurfaceMotionBasedPrevData(
 }
 
 // Returns specular reprojection search result based on virtual motion
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
 float loadVirtualMotionBasedPrevData(
     float3 currentWorldPos,
     float3 currentNormal,
@@ -251,7 +251,7 @@ float loadVirtualMotionBasedPrevData(
     out float prevRoughness,
     out float prevReflectionHitT,
     out float2 prevUVVMB
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         , out RELAX_SH_TYPE prevSpecularSH
         , out RELAX_SH_TYPE prevSpecularResponsiveSH
     #endif
@@ -301,7 +301,7 @@ float loadVirtualMotionBasedPrevData(
     prevNormal = currentNormal;
     prevRoughness = 0;
     prevReflectionHitT = gDenoisingRange;
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         prevSpecularSH = 0;
         prevSpecularResponsiveSH = 0;
     #endif
@@ -333,7 +333,7 @@ float loadVirtualMotionBasedPrevData(
         prevSpecularResponsiveIllum = max(prevSpecularResponsiveIllum, 0.0);
 
         // Fitering previous SH data
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             prevSpecularSH = BilinearWithCustomWeightsSH(gHistory_SpecSh, bilinearOrigin, bilinearCustomWeights);
             prevSpecularResponsiveSH = BilinearWithCustomWeightsSH(gHistory_SpecShFast, bilinearOrigin, bilinearCustomWeights).xyz;
         #endif
@@ -363,7 +363,7 @@ void Preload(uint2 sharedPos, int2 globalPos)
     float4 normalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(globalPos)]);
     float4 normalSpecHitT = normalRoughness;
 
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     float4 inSpecularIllumination = gIn_Spec[globalPos];
     normalSpecHitT.a = inSpecularIllumination.a;
 #endif
@@ -423,16 +423,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     }
 
     // Input noisy data
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     float3 diffuseIllumination = gIn_Diff[pixelPos].rgb;
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         RELAX_SH_TYPE diffuseSH = gIn_DiffSh[pixelPos];
     #endif
 #endif
 
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     float4 specularIllumination = gIn_Spec[pixelPos];
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         RELAX_SH_TYPE specularSH = gIn_SpecSh[pixelPos];
     #endif
 #endif
@@ -460,17 +460,17 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     }
     currentNormalAveraged /= 9.0;
 
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     float currentRoughnessModified = Filtering::GetModifiedRoughnessFromNormalVariance(currentRoughness, currentNormalAveraged);
 #endif
 
     // Computing 2nd moments of input noisy luminance
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     float specular1stMoment = Color::Luminance(specularIllumination.rgb);
     float specular2ndMoment = specular1stMoment * specular1stMoment;
 #endif
 
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     float diffuse1stMoment = Color::Luminance(diffuseIllumination.rgb);
     float diffuse2ndMoment = diffuse1stMoment * diffuse1stMoment;
 #endif
@@ -501,20 +501,20 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Loading previous data based on surface motion vectors
     float footprintQuality;
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     float4 prevDiffuseIlluminationAnd2ndMomentSMB;
     float3 prevDiffuseIlluminationAnd2ndMomentSMBResponsive;
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         RELAX_SH_TYPE prevDiffuseSH;
         RELAX_SH_TYPE prevDiffuseResponsiveSH;
     #endif
 #endif
 
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     float4 prevSpecularIlluminationAnd2ndMomentSMB;
     float3 prevSpecularIlluminationAnd2ndMomentSMBResponsive;
     float  prevReflectionHitTSMB;
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         RELAX_SH_TYPE prevSpecularSMBSH;
         RELAX_SH_TYPE prevSpecularSMBResponsiveSH;
     #endif
@@ -526,7 +526,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         prevUVSMB,
         currentLinearZ,
         normalize(currentNormalAveraged),
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         specularIllumination.a,
     #endif
         NoV,
@@ -535,19 +535,19 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         disocclusionThreshold,
         footprintQuality,
         historyLength
-    #if( NRD_DIFF )
+    #if( NRD_HAS_DIFF )
         , prevDiffuseIlluminationAnd2ndMomentSMB
         , prevDiffuseIlluminationAnd2ndMomentSMBResponsive
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             , prevDiffuseSH
             , prevDiffuseResponsiveSH
         #endif
     #endif
-    #if( NRD_SPEC )
+    #if( NRD_HAS_SPEC )
         , prevSpecularIlluminationAnd2ndMomentSMB
         , prevSpecularIlluminationAnd2ndMomentSMBResponsive
         , prevReflectionHitTSMB
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             , prevSpecularSMBSH
             , prevSpecularSMBResponsiveSH
         #endif
@@ -579,9 +579,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     historyLength = (gResetHistory != 0) ? 1.0 : historyLength;
 
     // Limiting history length: HistoryFix must be invoked if history length <= gHistoryFixFrameNum
-#if( NRD_DIFF && NRD_SPEC )
+#if( NRD_HAS_DIFF && NRD_HAS_SPEC )
     float maxAccumulatedFrameNum = 1.0 + max(gDiffMaxAccumulatedFrameNum, gSpecMaxAccumulatedFrameNum);
-#elif( NRD_DIFF )
+#elif( NRD_HAS_DIFF )
     float maxAccumulatedFrameNum = 1.0 + gDiffMaxAccumulatedFrameNum;
 #else
     float maxAccumulatedFrameNum = 1.0 + gSpecMaxAccumulatedFrameNum;
@@ -591,7 +591,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Calculating checkerboard fields
     uint checkerboard = Sequence::CheckerBoard(pixelPos, gFrameIndex);
 
-#if( NRD_DIFF )
+#if( NRD_HAS_DIFF )
     // Temporal accumulation of diffuse illumination
     float diffMaxAccumulatedFrameNum = gDiffMaxAccumulatedFrameNum;
     float diffMaxFastAccumulatedFrameNum = gDiffMaxFastAccumulatedFrameNum;
@@ -626,7 +626,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     gOut_Diff[pixelPos] = accumulatedDiffuseIlluminationAnd2ndMoment;
     gOut_DiffFast[pixelPos] = float4(accumulatedDiffuseIlluminationResponsive, 0);
 
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         RELAX_SH_TYPE accumulatedDiffuseSH = lerp(prevDiffuseSH, diffuseSH, diffuseAlpha);
         RELAX_SH_TYPE accumulatedDiffuseResponsiveSH = lerp(prevDiffuseResponsiveSH, diffuseSH, diffuseAlphaResponsive);
         gOut_DiffSh[pixelPos] = accumulatedDiffuseSH;
@@ -636,7 +636,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     gOut_HistoryLength[pixelPos] = historyLength / 255.0;
 
-#if( NRD_SPEC )
+#if( NRD_HAS_SPEC )
     float specMaxAccumulatedFrameNum = gSpecMaxAccumulatedFrameNum;
     float specMaxFastAccumulatedFrameNum = gSpecMaxFastAccumulatedFrameNum;
     if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
@@ -748,7 +748,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float2 prevUVVMB;
     float prevRoughnessVMB;
     float prevReflectionHitTVMB;
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         RELAX_SH_TYPE prevSpecularVMBSH;
         RELAX_SH_TYPE prevSpecularVMBResponsiveSH;
     #endif
@@ -768,7 +768,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         prevRoughnessVMB,
         prevReflectionHitTVMB,
         prevUVVMB
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         , prevSpecularVMBSH
         , prevSpecularVMBResponsiveSH
     #endif
@@ -915,7 +915,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 accumulatedSpecularIlluminationResponsive = lerp(accumulatedSpecularSMBResponsive.xyz, accumulatedSpecularVMBResponsive.xyz, virtualHistoryAmount);
     float accumulatedSpecular2ndMoment = lerp(accumulatedSpecularM2SMB, accumulatedSpecularM2VMB, virtualHistoryAmount);
 
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         RELAX_SH_TYPE accumulatedSpecularSMBSH = lerp(prevSpecularSMBSH, specularSH, specSMBAlpha);
         RELAX_SH_TYPE accumulatedSpecularSMBResponsiveSH = lerp(prevSpecularSMBResponsiveSH, specularSH, specSMBResponsiveAlpha);
 

@@ -64,7 +64,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
     float sum = 1.0;
     REBLUR_TYPE result = INPUT[ inputPos ];
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         REBLUR_SH_TYPE resultSh = INPUT_SH[ inputPos ];
     #endif
 
@@ -74,7 +74,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         {
             sum = 0;
             result = 0;
-            #if( NRD_MODE == SH )
+            #if( NRD_MODE == NRD_MODE_SH )
                 resultSh = 0;
             #endif
         }
@@ -137,7 +137,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         float minHitDistWeight = gMinHitDistanceWeight * fractionScale * smc;
 
         // Gradually reduce "minHitDistWeight" to squeeze more shadow details
-    #if( REBLUR_SPATIAL_PASS != REBLUR_PRE_PASS && NRD_MODE != OCCLUSION && NRD_MODE != DO )
+    #if( REBLUR_SPATIAL_PASS != REBLUR_PRE_PASS && NRD_MODE != NRD_MODE_OCCLUSION && NRD_MODE != NRD_MODE_DO )
         minHitDistWeight *= NON_LINEAR_ACCUM_SPEED; // this is valid only for non-occlusion modes!
     #endif
 
@@ -265,7 +265,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             sum += w;
 
             result += s * w;
-            #if( NRD_MODE == SH )
+            #if( NRD_MODE == NRD_MODE_SH )
                 REBLUR_SH_TYPE sh = INPUT_SH[ int2( checkerboardX, pos.y ) ];
                 sh = Denanify( w, sh );
 
@@ -275,12 +275,12 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
         float invSum = Math::PositiveRcp( sum );
         result *= invSum;
-        #if( NRD_MODE == SH )
+        #if( NRD_MODE == NRD_MODE_SH )
             resultSh *= invSum;
         #endif
 
         // Keep hit distances unprocessed to avoid bias and self-inference
-    #if( REBLUR_SPATIAL_PASS != REBLUR_PRE_PASS && NRD_MODE != OCCLUSION && NRD_MODE != DO )
+    #if( REBLUR_SPATIAL_PASS != REBLUR_PRE_PASS && NRD_MODE != NRD_MODE_OCCLUSION && NRD_MODE != NRD_MODE_DO )
         result.w = hitDist / hitDistScale;
     #endif
 
@@ -304,7 +304,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
             result = s0 * wc.x + s1 * wc.y;
 
-            #if( NRD_MODE == SH )
+            #if( NRD_MODE == NRD_MODE_SH )
                 REBLUR_SH_TYPE sh0 = INPUT_SH[ checkerboardPos.xz ];
                 REBLUR_SH_TYPE sh1 = INPUT_SH[ checkerboardPos.yz ];
 
@@ -319,17 +319,17 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
     // Output
     OUTPUT[ pixelPos ] = result;
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         OUTPUT_SH[ pixelPos ] = resultSh;
     #endif
 
 #if( REBLUR_SPATIAL_PASS == REBLUR_POST_BLUR && TEMPORAL_STABILIZATION == 0 )
-    #if( NRD_MODE != OCCLUSION && NRD_MODE != DO )
+    #if( NRD_MODE != NRD_MODE_OCCLUSION && NRD_MODE != NRD_MODE_DO )
         result.w = gReturnHistoryLengthInsteadOfOcclusion ? ACCUM_SPEED : result.w;
     #endif
 
     OUTPUT_COPY[ pixelPos ] = result;
-    #if( NRD_MODE == SH )
+    #if( NRD_MODE == NRD_MODE_SH )
         OUTPUT_SH_COPY[ pixelPos ] = resultSh;
     #endif
 #endif
