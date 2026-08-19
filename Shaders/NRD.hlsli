@@ -1141,6 +1141,7 @@ float2 NRD_SG_ReJitter(
     // Fix instabilities
     // TODO: compared with linear roughness, "smc" keeps near-mirror directions closer to "V" but moves toward "Ls" faster otherwise,
     // reducing bias at the cost of greater sensitivity to potentially unstable "Ls"
+    float smc = _NRD_GetSpecMagicCurve( roughness, 0.5 );
     Ls = normalize( lerp( V, Ls, smc ) );
 
     // BRDF at center
