@@ -1139,7 +1139,9 @@ float2 NRD_SG_ReJitter(
     float3 Ls = NRD_SG_ExtractDirection( specSg );
 
     // Fix instabilities
-    Ls = normalize( lerp( V, Ls, roughness ) );
+    // TODO: compared with linear roughness, "smc" keeps near-mirror directions closer to "V" but moves toward "Ls" faster otherwise,
+    // reducing bias at the cost of greater sensitivity to potentially unstable "Ls"
+    Ls = normalize( lerp( V, Ls, smc ) );
 
     // BRDF at center
     float2 brdfCenter = _NRD_ComputeBrdfs( Ld, Ls, N, V, roughness );
@@ -1155,10 +1157,21 @@ float2 NRD_SG_ReJitter(
     float2 j = ( brdfCenter + NRD_EPS ) / ( brdfAverage + NRD_EPS );
     j = clamp( j, 1.0 / NRD_REJITTER_AMPLITUDE, NRD_REJITTER_AMPLITUDE );
 
-    // Z weights
+    // Z weights to avoid ringing on geometry edges
     float NoV = abs( dot( N, V ) );
     float zThreshold = NRD_REJITTER_VIEWZ_THRESHOLD * abs( Z ) / ( NoV * 0.95 + 0.05 );
     float4 w = step( abs( float4( Ze, Zw, Zn, Zs ) - Z ), zThreshold.xxxx );
+
+    // Normal weights to avoid ringing on hard normal edges
+    float4 NoN;
+    NoN.x = dot( Ne, N );
+    NoN.y = dot( Nw, N );
+    NoN.z = dot( Nn, N );
+    NoN.w = dot( Ns, N );
+
+    w *= step( 0.01, NoN );
+
+    // Result
     bool isSymmetrical = dot( w, float4( 1.0, 1.0, 1.0, 1.0 ) ) > 3.5;
 
     return isSymmetrical ? j : float2( 1.0, 1.0 );
