@@ -29,14 +29,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Early out if linearZ is beyond denoising range
-    float centerViewZ = UnpackViewZ(gIn_ViewZ[pixelPos]);
+    float centerViewZ = UnpackViewZ(gIn_ViewZ[WithRectOrigin(pixelPos)]);
     if (!IsInDenoisingRange( centerViewZ ))
         return;
 
     float2 pixelUv = ( pixelPos + 0.5 ) * gRectSizeInv;
 
     float centerMaterialID;
-    float4 centerNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[pixelPos], centerMaterialID);
+    float4 centerNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(pixelPos)], centerMaterialID);
     float3 centerNormal = centerNormalRoughness.rgb;
     float centerRoughness = centerNormalRoughness.a;
     float historyLength = 255.0 * gIn_HistoryLength[pixelPos];
@@ -155,10 +155,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             // Fetching normal, roughness, linear Z
             float sampleMaterialID;
-            float4 sampleNormalRoughnes = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[p], sampleMaterialID);
+            float4 sampleNormalRoughnes = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(p)], sampleMaterialID);
             float3 sampleNormal = sampleNormalRoughnes.rgb;
             float sampleRoughness = sampleNormalRoughnes.a;
-            float sampleViewZ = UnpackViewZ(gIn_ViewZ[p]);
+            float sampleViewZ = UnpackViewZ(gIn_ViewZ[WithRectOrigin(p)]);
 
             // Calculating sample world position
             float3 sampleWorldPos = GetCurrentWorldPosFromPixelPos(p, sampleViewZ);

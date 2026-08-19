@@ -36,7 +36,7 @@ NRD_EXPORT void NRD_CS_MAIN( uint2 threadPos : SV_GroupThreadID, uint2 tilePos :
         for( uint j = 0; j < 4; j++ )
         {
             uint2 pos = pixelPos + uint2( i, j );
-            float viewZ = abs( gIn_ViewZ[ pos ] );
+            float viewZ = abs( gIn_ViewZ[ WithRectOrigin( pos ) ] );
 
             isSky += !IsInDenoisingRange( viewZ ) ? 1 : 0;
         }

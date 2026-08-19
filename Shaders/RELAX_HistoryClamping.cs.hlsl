@@ -32,7 +32,7 @@ void Preload(uint2 sharedPos, int2 globalPos)
 {
     globalPos = clamp(globalPos, 0, gRectSize - 1.0);
 
-    float viewZ = gIn_ViewZ[globalPos];
+    float viewZ = gIn_ViewZ[WithRectOrigin(globalPos)];
     float isValid = float(IsInDenoisingRange( viewZ ));
 
     #if( NRD_HAS_SPEC )

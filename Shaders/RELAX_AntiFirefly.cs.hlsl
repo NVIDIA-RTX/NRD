@@ -34,7 +34,7 @@ void Preload(uint2 sharedPos, int2 globalPos)
     globalPos = clamp(globalPos, 0, gRectSize - 1.0);
 
     float materialID;
-    NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[globalPos], materialID);
+    NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(globalPos)], materialID);
     s_MaterialID[sharedPos.y][sharedPos.x] = materialID;
 
 #if( NRD_HAS_SPEC )
@@ -182,7 +182,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Early out if linearZ is beyond denoising range
-    float centerViewZ = UnpackViewZ(gIn_ViewZ[pixelPos]);
+    float centerViewZ = UnpackViewZ(gIn_ViewZ[WithRectOrigin(pixelPos)]);
     if (!IsInDenoisingRange( centerViewZ ))
         return;
 

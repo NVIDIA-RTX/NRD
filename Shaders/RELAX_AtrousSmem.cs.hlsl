@@ -111,9 +111,9 @@ void Preload(uint2 sharedPos, int2 globalPos)
     #endif
 #endif
     float materialID;
-    s_Normal_Roughness[sharedPos.y][sharedPos.x] = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[globalPos], materialID);
+    s_Normal_Roughness[sharedPos.y][sharedPos.x] = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(globalPos)], materialID);
 
-    float viewZ = UnpackViewZ(gIn_ViewZ[globalPos]);
+    float viewZ = UnpackViewZ(gIn_ViewZ[WithRectOrigin(globalPos)]);
     s_WorldPos_MaterialID[sharedPos.y][sharedPos.x] = float4(GetCurrentWorldPosFromPixelPos(globalPos, viewZ), materialID);
 
 }
@@ -128,7 +128,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     PRELOAD_INTO_SMEM_WITH_TILE_CHECK;
 
     // Prev ViewZ
-    float viewZpacked = gIn_ViewZ[pixelPos];
+    float viewZpacked = gIn_ViewZ[WithRectOrigin(pixelPos)];
     gOut_ViewZ[pixelPos] = viewZpacked;
 
     // Prev normal and roughness

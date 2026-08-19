@@ -35,14 +35,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Early out if linearZ is beyond denoising range
     // Early out if no disocclusion detected
-    float centerViewZ = UnpackViewZ(gIn_ViewZ[pixelPos]);
+    float centerViewZ = UnpackViewZ(gIn_ViewZ[WithRectOrigin(pixelPos)]);
     float historyLength = 255.0 * gIn_HistoryLength[pixelPos];
     if ((!IsInDenoisingRange( centerViewZ )) || (historyLength > gHistoryFixFrameNum || gHistoryFixFrameNum == 1.0))
         return;
 
     // Loading center data
     float centerMaterialID;
-    float4 centerNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[pixelPos], centerMaterialID);
+    float4 centerNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(pixelPos)], centerMaterialID);
     float3 centerNormal = centerNormalRoughness.rgb;
     float centerRoughness = centerNormalRoughness.a;
     float3 centerWorldPos = GetCurrentWorldPosFromPixelPos(pixelPos, centerViewZ);
@@ -93,9 +93,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             samplePosInt = uv * gRectSize;
 
             float sampleMaterialID;
-            float3 sampleNormal = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[samplePosInt], sampleMaterialID).rgb;
+            float3 sampleNormal = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(samplePosInt)], sampleMaterialID).rgb;
 
-            float sampleViewZ = UnpackViewZ(gIn_ViewZ[samplePosInt]);
+            float sampleViewZ = UnpackViewZ(gIn_ViewZ[WithRectOrigin(samplePosInt)]);
             float3 sampleWorldPos = GetCurrentWorldPosFromPixelPos(samplePosInt, sampleViewZ);
 
             float geometryWeight = GetPlaneDistanceWeight_Atrous(centerWorldPos, centerNormal, sampleWorldPos, depthThreshold);
