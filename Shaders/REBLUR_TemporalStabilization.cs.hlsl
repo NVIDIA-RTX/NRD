@@ -25,7 +25,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
 {
     globalPos = clamp( globalPos, 0, gRectSizeMinusOne );
 
-    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( globalPos ) ] );
+    float viewZ = UnpackViewZ( gIn_ViewZ[ globalPos ] );
 
     #if( NRD_HAS_DIFF )
         float diffLuma = GetLuma( gIn_Diff[ globalPos ] );
@@ -52,7 +52,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Early out
-    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pixelPos ) ] );
+    float viewZ = UnpackViewZ( gIn_ViewZ[ pixelPos ] );
     if( !IsInDenoisingRange( viewZ ) )
         return;
 

@@ -21,7 +21,7 @@ NRD_INPUTS_START
     NRD_INPUT( Texture2D, REBLUR_TILE_TYPE, gIn_Tiles, t, 0 )
     NRD_INPUT( Texture2D, float4, gIn_Normal_Roughness, t, 1 )
     NRD_INPUT( Texture2D, REBLUR_DATA1_TYPE, gIn_Data1, t, 2 )
-    NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 3 )
+    NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 3 ) // internal viewZ ( potentially reduced precision )
     #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
         NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Diff, t, 4 )
         NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Spec, t, 5 )
