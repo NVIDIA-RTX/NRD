@@ -768,15 +768,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             virtualHistoryAmount = 1.0 + ( vmbSpecAccumSpeed - smbSpecAccumSpeed ) / ( 1.0 + 0.5 * max( vmbSpecAccumSpeed, smbSpecAccumSpeed ) ); // TODO: 0.5 => 0.25?
             virtualHistoryAmount = saturate( virtualHistoryAmount );
 
-            // - dithering is not needed, since "vmb" is dominating for any possible "roughness, NoV"
-            // - choose only one if the other one is not-fully valid
-            if( !smbAllowCatRom || !vmbAllowCatRom ) // TODO: doing "step" unconditionally is the safest approach
-                virtualHistoryAmount = step( 0.5, virtualHistoryAmount );
-        }
+            // Fallback to surface motion for camera attached objects ( including any other "no motion" cases )
+            if( materialID != gCameraAttachedReflectionMaterialID ) // TODO: review, should not affect "cameraAttachedReflectionMaterialID" behavior
+                virtualHistoryAmount *= slowMotionFactor;
 
-        // Fallback to surface motion for camera attached objects ( including any other "no motion" cases )
-        if( materialID != gCameraAttachedReflectionMaterialID ) // TODO: review, should not affect "cameraAttachedReflectionMaterialID" behavior
-            virtualHistoryAmount *= slowMotionFactor;
+            // Choose only one ("smb" or "vmb") if the other one is not-fully valid, i.e. "uv" interpolation is not possible
+            if( !smbAllowCatRom || !vmbAllowCatRom )
+                virtualHistoryAmount = step( 0.5, virtualHistoryAmount ); // TODO: doing "step" unconditionally is the safest approach
+        }
 
         // Sample history
         REBLUR_TYPE specHistory;
