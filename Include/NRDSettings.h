@@ -142,9 +142,10 @@ namespace nrd
         // - "IN_DISOCCLUSION_THRESHOLD_MIX" texture, if "isDisocclusionThresholdMixAvailable = true" (has higher priority and ignores "strandMaterialID")
         float disocclusionThresholdAlternate = 0.05f;
 
-        // (Optional) (>=0) - marks reflections of camera attached objects (requires "NormalEncoding::R10_G10_B10_A2_UNORM")
-        // This material ID marks reflections of objects attached to the camera, not objects themselves. Unfortunately, this is only an improvement
-        // for critical cases, but not a generic solution. A generic solution requires reflection MVs, which NRD currently doesn't ask for
+        // (Optional) (>=0) - marks mirror self-reflections of camera attached objects (requires "NormalEncoding::R10_G10_B10_A2_UNORM")
+        // This material ID can also mark camera attached objects themselves, even with self motion, if surface motion is expected to work better
+        // than virtual motion computed for the static world. This is not a generic solution: correct tracking requires specular MVs, which are
+        // hard to compute and are not currently requested by NRD
         float cameraAttachedReflectionMaterialID = 999.0f;
 
         // (Optional) (>=0) - marks hair (grass) geometry to enable "under-the-hood" tweaks (requires "NormalEncoding::R10_G10_B10_A2_UNORM")
