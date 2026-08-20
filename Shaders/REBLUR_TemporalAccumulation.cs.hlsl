@@ -687,13 +687,23 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         virtualHistoryConfidence *= parallaxWeight;
 
         // Surface history confidence ( test 9, 9e )
-        // IMPORTANT: needs to be responsive, because "vmb" fails on bumpy surfaces for the following reasons:
-        //  - normal and prev-prev tests fail
-        //  - curvature is so high that "vmb" regresses to "smb" and starts to lag
+        // It needs to cover "vmb" failing cases, which are:
+        //  - normal and prev-prev tests failures
+        //  - "vmb" regression on bumpy surfaces to laggy surface motion
+        //  - "vmb" may be wrong for objects attached to the camera, especially for self-reflections of such objects
+        float mvLengthInPixels = length( ( smbPixelUv - pixelUv ) * gRectSize );
+        float slowMotionFactor = saturate( mvLengthInPixels / 0.25 );
+
         float surfaceHistoryConfidence;
         {
+            // TODO: it would be good to use "XvirtualLength" as the denominator to make parallax of distant reflections smaller, but
+            // it adds self-interference of "vmb" and "smb", which may look bad in some cases ( test 6 )
             float a = atan( smbParallaxInPixelsMax * pixelSize / length( X ) );
             //a = acos( saturate( dot( V, smbVprev ) ) ); // numerically unstable
+
+            // Increase "smb" confidence if there is no motion ( objects attached to the camera ).
+            // Parallax-based "a" accounts for high-parallax in any case
+            a *= lerp( 0.1, 1.0, slowMotionFactor );
 
             float nonLinearAccumSpeed = 1.0 / ( 1.0 + smbSpecAccumSpeed );
             float hPrev = ExtractHitDist( gHistory_Spec.SampleLevel( gLinearClamp, smbPixelUv * gResolutionScalePrev, 0 ) ); // this is safe because "history" is always "cleared" on startup, the rest is handled by "lerp" below
@@ -763,6 +773,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             if( !smbAllowCatRom || !vmbAllowCatRom ) // TODO: doing "step" unconditionally is the safest approach
                 virtualHistoryAmount = step( 0.5, virtualHistoryAmount );
         }
+
+        // Fallback to surface motion for camera attached objects ( including any other "no motion" cases )
+        if( materialID != gCameraAttachedReflectionMaterialID ) // TODO: review, should not affect "cameraAttachedReflectionMaterialID" behavior
+            virtualHistoryAmount *= slowMotionFactor;
 
         // Sample history
         REBLUR_TYPE specHistory;
