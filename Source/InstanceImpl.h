@@ -143,7 +143,6 @@ constexpr uint16_t TRANSIENT_POOL_START = 2000;
 constexpr size_t CONSTANT_DATA_SIZE = 128 * 1024; // TODO: improve
 
 constexpr uint16_t USE_PREV_DIMS = 0xFFFF;
-constexpr uint16_t IGNORE_RS = 0xFFFE;
 
 inline uint16_t DivideUp(uint32_t x, uint16_t y) {
     return uint16_t((x + y - 1) / y);

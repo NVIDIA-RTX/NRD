@@ -74,7 +74,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         PushInput(AsUint(spec)); \
         PushOutput(AsUint(ResourceType::OUT_VALIDATION)); \
         std::array<ShaderMake::ShaderConstant, 0> defines = {}; \
-        AddDispatchWithArgs(REBLUR_Validation, defines, IGNORE_RS, 1); \
+        AddDispatch(REBLUR_Validation, defines); \
     }
 
 struct ReblurProps {

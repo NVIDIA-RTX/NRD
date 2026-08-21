@@ -46,7 +46,7 @@ constexpr uint32_t RELAX_MAX_ATROUS_PASS_NUM = 8;
         PushInput(AsUint(Transient::HISTORY_LENGTH)); \
         PushOutput(AsUint(ResourceType::OUT_VALIDATION)); \
         std::array<ShaderMake::ShaderConstant, 0> defines = {}; \
-        AddDispatchWithArgs(RELAX_Validation, defines, IGNORE_RS, 1); \
+        AddDispatch(RELAX_Validation, defines); \
     }
 
 inline float3 RELAX_GetFrustumForward(const float4x4& viewToWorld, const float4& frustum) {

@@ -190,7 +190,7 @@ namespace nrd
         // If "true" "IN_DISOCCLUSION_THRESHOLD_MIX" is available
         bool isDisocclusionThresholdMixAvailable = false;
 
-        // Enables debug overlay in OUT_VALIDATION
+        // Enables REBLUR / RELAX debug overlay (see "ResourceType::OUT_VALIDATION")
         bool enableValidation = false;
     };
 

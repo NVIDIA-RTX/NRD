@@ -545,7 +545,12 @@ If `CommonSettings::enableValidation = true` *REBLUR* & *RELAX* denoisers render
 
 where:
 
-- Viewport 0 - world-space normals
+- Viewport 0 - world-space grid:
+  - 1 cube = `1 unit`
+  - REBLUR additionally overlays two "mini" viewports:
+    - the first represents a pixel with accumulated jitter samples
+    - a red boundary marks jittering outside of the pixel area
+    - the attached viewport visualizes kernel rotators in time
 - Viewport 1 - linear roughness
 - Viewport 2 - linear viewZ
   - green = `+`
@@ -554,10 +559,7 @@ where:
 - Viewport 3 - difference between MVs, coming from `IN_MV`, and expected MVs, assuming that the scene is static
   - blue = `out of screen`
   - pixels with moving objects have non-0 values
-- Viewport 4 - world-space grid & camera jitter:
-  - 1 cube = `1 unit`
-  - the square in the bottom-right corner represents a pixel with accumulated samples
-  - the red boundary of the square marks jittering outside of the pixel area
+- Viewport 4 - world-space normals
 - Viewport 7 - amount of virtual history
 - Viewport 8 - number of accumulated frames for diffuse signal (checkerboarded red = `history reset`)
 - Viewport 11 - number of accumulated frames for specular signal (checkerboarded red = `history reset`)

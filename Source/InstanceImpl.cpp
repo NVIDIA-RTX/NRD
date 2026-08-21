@@ -810,10 +810,6 @@ void* nrd::InstanceImpl::PushDispatch(const DenoiserData& denoiserData, uint32_t
         w = m_CommonSettings.rectSizePrev[0];
         h = m_CommonSettings.rectSizePrev[1];
         d = 1;
-    } else if (d == IGNORE_RS) {
-        w = m_CommonSettings.resourceSize[0];
-        h = m_CommonSettings.resourceSize[1];
-        d = 1;
     }
 
     w = DivideUp(w, d);
