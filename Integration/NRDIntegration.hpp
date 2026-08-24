@@ -323,7 +323,7 @@ bool Integration::_CreateResources() {
 
         nri::BufferDesc bufferDesc = {};
         bufferDesc.size = m_ConstantBufferSize;
-        bufferDesc.usage = nri::BufferUsageBits::CONSTANT_BUFFER;
+        bufferDesc.usage = nri::BufferUsageBits::CONSTANT;
         NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(m_iCore.CreateBuffer(*m_Device, bufferDesc, m_ConstantBuffer));
     }
 
