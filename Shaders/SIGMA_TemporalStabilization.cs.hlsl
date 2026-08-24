@@ -58,13 +58,17 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float isSky = gIn_Tiles[ pixelPos >> 4 ].x;
     PRELOAD_INTO_SMEM_WITH_TILE_CHECK;
 
+    // Tile-based early out
+    if( isSky != 0.0 || any( pixelPos > gRectSizeMinusOne ) )
+        return;
+
     // Center data
     int2 smemPos = threadPos + NRD_BORDER;
     float centerPenumbra = s_Penumbra[ smemPos.y ][ smemPos.x ];
     float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pixelPos ) ] );
 
     // Early out #1
-    if( isSky != 0.0 || any( pixelPos > gRectSizeMinusOne ) || !IsInDenoisingRange( viewZ ) )
+    if( !IsInDenoisingRange( viewZ ) )
         return;
 
     // Early out #2

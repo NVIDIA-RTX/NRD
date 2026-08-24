@@ -71,6 +71,7 @@ void nrd::InstanceImpl::Update_Reference(const DenoiserData& denoiserData) {
 
     { // ACCUMULATE
         REFERENCE_TemporalAccumulationConstants* consts = (REFERENCE_TemporalAccumulationConstants*)PushDispatch(denoiserData, AsUint(Dispatch::ACCUMULATE));
+        consts->gRectSize = int2(rectW, rectH);
         consts->gAccumSpeed = 1.0f / (1.0f + m_AccumulatedFrameNum);
         consts->gDebug = m_CommonSettings.debug;
     }
@@ -78,6 +79,7 @@ void nrd::InstanceImpl::Update_Reference(const DenoiserData& denoiserData) {
     { // COPY
         REFERENCE_CopyConstants* consts = (REFERENCE_CopyConstants*)PushDispatch(denoiserData, AsUint(Dispatch::COPY));
         consts->gRectSizeInv = float2(1.0f / float(rectW), 1.0f / float(rectH));
+        consts->gRectSize = int2(rectW, rectH);
         consts->gSplitScreen = m_CommonSettings.splitScreen;
     }
 }

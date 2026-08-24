@@ -305,6 +305,7 @@ private:
     // Available in denoiser implementations
 private:
     void AddTextureToTransientPool(const TextureDesc& textureDesc);
+    void* PushDispatch(const InternalDispatchDesc& internalDispatchDesc, Identifier identifier, const ResourceDesc* resources, uint32_t resourcesNum, uint16_t w, uint16_t h);
     void* PushDispatch(const DenoiserData& denoiserData, uint32_t localIndex);
 
     inline void AddTextureToPermanentPool(const TextureDesc& textureDesc) {

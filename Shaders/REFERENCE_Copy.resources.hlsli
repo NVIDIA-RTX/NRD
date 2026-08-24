@@ -10,6 +10,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 NRD_CONSTANTS_START( REFERENCE_CopyConstants )
     NRD_CONSTANT( float2, gRectSizeInv )
+    NRD_CONSTANT( int2, gRectSize )
     NRD_CONSTANT( float, gSplitScreen )
     // Only for availability in "Common.hlsl"
     NRD_CONSTANT( float, gDebug )

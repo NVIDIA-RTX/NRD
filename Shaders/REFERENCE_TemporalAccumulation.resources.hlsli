@@ -9,6 +9,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
 NRD_CONSTANTS_START( REFERENCE_TemporalAccumulationConstants )
+    NRD_CONSTANT( int2, gRectSize )
     NRD_CONSTANT( float, gAccumSpeed )
     // Only for availability in "Common.hlsl"
     NRD_CONSTANT( float, gDebug )

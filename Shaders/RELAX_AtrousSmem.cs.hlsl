@@ -127,9 +127,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float isSky = gIn_Tiles[pixelPos >> 4];
     PRELOAD_INTO_SMEM_WITH_TILE_CHECK;
 
+    bool isInRect = all(pixelPos < gRectSize);
+    int2 clampedPixelPos = min(pixelPos, gRectSize - 1);
+
     // Prev ViewZ
-    float viewZpacked = gIn_ViewZ[WithRectOrigin(pixelPos)];
-    gOut_ViewZ[pixelPos] = viewZpacked;
+    float viewZpacked = gIn_ViewZ[WithRectOrigin(clampedPixelPos)];
 
     // Prev normal and roughness
     int2 sharedMemoryIndex = threadPos.xy + int2(NRD_BORDER, NRD_BORDER);
@@ -140,22 +142,25 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Setting normal and roughness to close to zero for out of range pixels
         normalRoughness = 1.0 / 255.0;
     }
-    gOut_NormalRoughness[pixelPos] = PackPrevNormalRoughness(normalRoughness);
-
     float4 centerWorldPosMaterialID = s_WorldPos_MaterialID[sharedMemoryIndex.y][sharedMemoryIndex.x];
     float3 centerWorldPos = centerWorldPosMaterialID.xyz;
     float centerMaterialID = centerWorldPosMaterialID.w;
 
+    if (isInRect)
+    {
+        gOut_ViewZ[pixelPos] = viewZpacked;
+        gOut_NormalRoughness[pixelPos] = PackPrevNormalRoughness(normalRoughness);
 #if( NRD_NORMAL_ENCODING == NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
-    gOut_MaterialID[pixelPos] = centerMaterialID / 255.0;
+        gOut_MaterialID[pixelPos] = centerMaterialID / 255.0;
 #endif
+    }
 
     // Tile-based early out
-    if (isSky != 0.0 || pixelPos.x >= gRectSize.x || pixelPos.y >= gRectSize.y)
+    if (isSky != 0.0)
         return;
 
     // Early out if linearZ is beyond denoising range
-    if (!IsInDenoisingRange( centerViewZ ))
+    if (!IsInDenoisingRange( centerViewZ ) || !isInRect)
         return;
 
     float2 pixelUv = ( pixelPos + 0.5 ) * gRectSizeInv;

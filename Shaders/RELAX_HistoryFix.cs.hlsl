@@ -30,7 +30,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Tile-based early out
     float isSky = gIn_Tiles[pixelPos >> 4];
-    if (isSky != 0.0 || pixelPos.x >= gRectSize.x || pixelPos.y >= gRectSize.y)
+    if (isSky != 0.0 || any(pixelPos >= gRectSize))
         return;
 
     // Early out if linearZ is beyond denoising range

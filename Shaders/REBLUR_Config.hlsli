@@ -142,7 +142,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float2, gRectOffset ) \
     NRD_CONSTANT( float2, gJitter ) \
     NRD_CONSTANT( uint2, gPrintfAt ) \
-    NRD_CONSTANT( uint2, gRectOrigin ) \
+    NRD_CONSTANT( int2, gRectOrigin ) \
     NRD_CONSTANT( int2, gRectSizeMinusOne ) \
     NRD_CONSTANT( float, gDisocclusionThreshold ) \
     NRD_CONSTANT( float, gDisocclusionThresholdAlternate ) \

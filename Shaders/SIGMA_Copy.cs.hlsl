@@ -21,6 +21,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 {
     NRD_CTA_ORDER_DEFAULT;
 
+    if( any( pixelPos >= int2( gRectSizePrev ) ) )
+        return;
+
     // Tile-based early out
     float isSky = gIn_Tiles[ pixelPos >> 4 ].x;
     if( isSky != 0.0 && !gIsRectChanged )

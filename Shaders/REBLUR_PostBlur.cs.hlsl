@@ -29,13 +29,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Non-linear accum speed
-    REBLUR_DATA1_TYPE data1 = UnpackData1( gIn_Data1[ pixelPos ] );
+    int2 clampedPixelPos = min( pixelPos, gRectSizeMinusOne );
+    REBLUR_DATA1_TYPE data1 = UnpackData1( gIn_Data1[ clampedPixelPos ] );
 
     REBLUR_DATA1_TYPE nonLinearAccumSpeed;
     nonLinearAccumSpeed.x = GetAdvancedNonLinearAccumSpeed( data1.x );
     nonLinearAccumSpeed.y = GetAdvancedNonLinearAccumSpeed( data1.y );
 
-    float viewZ = UnpackViewZ( gIn_ViewZ[ pixelPos ] );
+    float viewZ = UnpackViewZ( gIn_ViewZ[ clampedPixelPos ] );
     nonLinearAccumSpeed = !IsInDenoisingRange( viewZ ) ? 0.0 : nonLinearAccumSpeed; // less blur on "SKY" edges
 
     #if( NRD_SUPPORTS_QUAD_INTRINSICS == 1 )

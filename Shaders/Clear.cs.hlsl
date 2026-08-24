@@ -20,5 +20,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 {
     NRD_CTA_ORDER_DEFAULT;
 
+    if( any( pixelPos >= gRectSize ) )
+        return;
+
     gOut[ pixelPos ] = 0;
 }

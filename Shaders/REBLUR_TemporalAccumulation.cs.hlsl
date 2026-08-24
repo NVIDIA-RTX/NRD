@@ -355,7 +355,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Current
         bool specHasData = NRD_SUPPORTS_CHECKERBOARD == 0 || gSpecCheckerboard == 2 || checkerboard == gSpecCheckerboard;
-        uint2 specPos = pixelPos;
+        int2 specPos = pixelPos;
         #if( NRD_MODE == NRD_MODE_OCCLUSION )
             specPos.x >>= gSpecCheckerboard == 2 ? 0 : 1;
         #endif
@@ -902,7 +902,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Current
         bool diffHasData = NRD_SUPPORTS_CHECKERBOARD == 0 || gDiffCheckerboard == 2 || checkerboard == gDiffCheckerboard;
-        uint2 diffPos = pixelPos;
+        int2 diffPos = pixelPos;
         #if( NRD_MODE == NRD_MODE_OCCLUSION )
             diffPos.x >>= gDiffCheckerboard == 2 ? 0 : 1;
         #endif

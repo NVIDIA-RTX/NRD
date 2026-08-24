@@ -33,6 +33,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     NRD_CTA_ORDER_DEFAULT;
     PRELOAD_INTO_SMEM;
 
+    if( any( pixelPos > gTilesSizeMinusOne ) )
+        return;
+
     float3 center = gIn_Tiles[ pixelPos ];
     float blurry = 0.0;
     float sum = 0.0;

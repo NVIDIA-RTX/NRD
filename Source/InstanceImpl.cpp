@@ -227,7 +227,7 @@ nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreati
         std::array<ShaderMake::ShaderConstant, 1> defines = {
             {{"FLOAT", "1"}},
         };
-        AddDispatchNoConstants(Clear, defines);
+        AddDispatch(Clear, defines);
     }
 
     m_DispatchClearIndex[1] = m_Dispatches.size();
@@ -238,7 +238,7 @@ nrd::Result nrd::InstanceImpl::Create(const InstanceCreationDesc& instanceCreati
         std::array<ShaderMake::ShaderConstant, 1> defines = {
             {{"FLOAT", "0"}},
         };
-        AddDispatchNoConstants(Clear, defines);
+        AddDispatch(Clear, defines);
     }
 
     PrepareDesc();
@@ -515,16 +515,9 @@ nrd::Result nrd::InstanceImpl::GetComputeDispatches(const Identifier* identifier
             uint16_t w = DivideUp(m_CommonSettings.resourceSize[0], clearResource.downsampleFactor);
             uint16_t h = DivideUp(m_CommonSettings.resourceSize[1], clearResource.downsampleFactor);
 
-            DispatchDesc dispatchDesc = {};
-            dispatchDesc.name = internalDispatchDesc.name;
-            dispatchDesc.identifier = clearResource.identifier;
-            dispatchDesc.resources = &clearResource.resource;
-            dispatchDesc.resourcesNum = 1;
-            dispatchDesc.pipelineIndex = internalDispatchDesc.pipelineIndex;
-            dispatchDesc.gridWidth = DivideUp(w, internalDispatchDesc.numThreads.width);
-            dispatchDesc.gridHeight = DivideUp(h, internalDispatchDesc.numThreads.height);
-
-            m_ActiveDispatches.push_back(dispatchDesc);
+            ClearConstants* consts = (ClearConstants*)PushDispatch(internalDispatchDesc, clearResource.identifier, &clearResource.resource, 1, w, h);
+            if (consts)
+                consts->gRectSize = int2(w, h);
         }
     }
 
@@ -775,16 +768,13 @@ void nrd::InstanceImpl::AddTextureToTransientPool(const TextureDesc& textureDesc
     m_TransientPool.push_back(textureDesc);
 }
 
-void* nrd::InstanceImpl::PushDispatch(const DenoiserData& denoiserData, uint32_t localIndex) {
-    size_t dispatchIndex = denoiserData.dispatchOffset + localIndex;
-    const InternalDispatchDesc& internalDispatchDesc = m_Dispatches[dispatchIndex];
-
+void* nrd::InstanceImpl::PushDispatch(const InternalDispatchDesc& internalDispatchDesc, Identifier identifier, const ResourceDesc* resources, uint32_t resourcesNum, uint16_t w, uint16_t h) {
     // Copy data
     DispatchDesc dispatchDesc = {};
     dispatchDesc.name = internalDispatchDesc.name;
-    dispatchDesc.identifier = internalDispatchDesc.identifier;
-    dispatchDesc.resources = internalDispatchDesc.resources;
-    dispatchDesc.resourcesNum = internalDispatchDesc.resourcesNum;
+    dispatchDesc.identifier = identifier;
+    dispatchDesc.resources = resources;
+    dispatchDesc.resourcesNum = resourcesNum;
     dispatchDesc.pipelineIndex = internalDispatchDesc.pipelineIndex;
 
     // Update constant data
@@ -802,6 +792,19 @@ void* nrd::InstanceImpl::PushDispatch(const DenoiserData& denoiserData, uint32_t
         memset((void*)dispatchDesc.constantBufferData, 0, dispatchDesc.constantBufferDataSize);
 
     // Update grid size
+    dispatchDesc.gridWidth = DivideUp(w, internalDispatchDesc.numThreads.width);
+    dispatchDesc.gridHeight = DivideUp(h, internalDispatchDesc.numThreads.height);
+
+    // Store
+    m_ActiveDispatches.push_back(dispatchDesc);
+
+    return (void*)dispatchDesc.constantBufferData;
+}
+
+void* nrd::InstanceImpl::PushDispatch(const DenoiserData& denoiserData, uint32_t localIndex) {
+    size_t dispatchIndex = denoiserData.dispatchOffset + localIndex;
+    const InternalDispatchDesc& internalDispatchDesc = m_Dispatches[dispatchIndex];
+
     uint16_t w = m_CommonSettings.rectSize[0];
     uint16_t h = m_CommonSettings.rectSize[1];
     uint16_t d = internalDispatchDesc.downsampleFactor;
@@ -815,11 +818,5 @@ void* nrd::InstanceImpl::PushDispatch(const DenoiserData& denoiserData, uint32_t
     w = DivideUp(w, d);
     h = DivideUp(h, d);
 
-    dispatchDesc.gridWidth = DivideUp(w, internalDispatchDesc.numThreads.width);
-    dispatchDesc.gridHeight = DivideUp(h, internalDispatchDesc.numThreads.height);
-
-    // Store
-    m_ActiveDispatches.push_back(dispatchDesc);
-
-    return (void*)dispatchDesc.constantBufferData;
+    return PushDispatch(internalDispatchDesc, internalDispatchDesc.identifier, internalDispatchDesc.resources, internalDispatchDesc.resourcesNum, w, h);
 }

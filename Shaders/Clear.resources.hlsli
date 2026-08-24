@@ -8,7 +8,8 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
-NRD_CONSTANTS_START( Clear_Constants )
+NRD_CONSTANTS_START( ClearConstants )
+    NRD_CONSTANT( int2, gRectSize )
     // Only for availability in "Common.hlsl"
     NRD_CONSTANT( float, gDebug )
     NRD_CONSTANT( float, gViewZScale )

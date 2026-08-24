@@ -43,16 +43,17 @@ NRD_EXPORT void NRD_CS_MAIN( uint2 threadPos : SV_GroupThreadID, uint2 tilePos :
         [unroll]
         for( uint j = 0; j < 4; j++ )
         {
-            uint2 pos = pixelPos + uint2( i, j );
-            uint2 inputPos = pos;
+            int2 pos = pixelPos + int2( i, j );
+            int2 clampedPos = min( pos, gRectSizeMinusOne );
+            int2 inputPos = clampedPos;
             #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
                 inputPos.x >>= gCheckerboard == 2 ? 0 : 1;
             #endif
 
             float h = gIn_Penumbra[ inputPos ];
-            float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
+            float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( clampedPos ) ] );
 
-            bool isInf = !IsInDenoisingRange( viewZ );
+            bool isInf = any( pos > gRectSizeMinusOne ) || !IsInDenoisingRange( viewZ );
             bool isShadow = h == 0;
             bool isLit = IsLit( h );
 

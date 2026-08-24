@@ -132,7 +132,7 @@ void nrd::InstanceImpl::AddSharedConstants_Sigma(const SigmaSettings& settings, 
     consts->gResolutionScale = float2(float(rectW) / float(resourceW), float(rectH) / float(resourceH));
     consts->gRectOffset = float2(float(m_CommonSettings.rectOrigin[0]) / float(resourceW), float(m_CommonSettings.rectOrigin[1]) / float(resourceH));
     consts->gPrintfAt = uint2(m_CommonSettings.printfAt[0], m_CommonSettings.printfAt[1]);
-    consts->gRectOrigin = uint2(m_CommonSettings.rectOrigin[0], m_CommonSettings.rectOrigin[1]);
+    consts->gRectOrigin = int2(m_CommonSettings.rectOrigin[0], m_CommonSettings.rectOrigin[1]);
     consts->gRectSizeMinusOne = int2(rectW - 1, rectH - 1);
     consts->gTilesSizeMinusOne = int2(tilesW - 1, tilesH - 1);
     consts->gOrthoMode = m_OrthoMode;

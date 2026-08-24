@@ -20,6 +20,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 {
     NRD_CTA_ORDER_DEFAULT;
 
+    if( any( pixelPos >= gRectSize ) )
+        return;
+
     float4 input = gIn_Input[ pixelPos ];
     float4 history = gInOut_History[ pixelPos ];
     float4 result = lerp( history, input, gAccumSpeed );

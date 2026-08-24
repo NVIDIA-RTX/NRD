@@ -20,6 +20,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 {
     NRD_CTA_ORDER_DEFAULT;
 
+    if( any( pixelPos >= gRectSize ) )
+        return;
+
     float2 pixelUv = float2( pixelPos + 0.5 ) * gRectSizeInv;
 
     if( pixelUv.x > gSplitScreen )
