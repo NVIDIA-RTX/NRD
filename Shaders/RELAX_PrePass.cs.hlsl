@@ -150,30 +150,38 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float3 offset = POISSON_SAMPLES[i];
 
             // Sample coordinates
-            float2 uv = pixelUv * gRectSize + Geometry::RotateVector(rotator, offset.xy) * blurRadius;
+            float2 uv = pixelUv + Geometry::RotateVector(rotator, offset.xy) * blurRadius * gRectSizeInv;
 
-            // Snap to the pixel center!
-            uv = floor(uv) + 0.5;
+            // Apply "mirror" to not waste taps going outside of the screen
+            float2 mirrorUv = MirrorUv( uv );
+            float sampleWeight = any( uv != mirrorUv ) ? 1.0 : GetGaussianWeight( offset.z );
 
-            // Apply checkerboard shift
+            // "uv" to "pos"
+            int2 samplePos = int2( mirrorUv * gRectSize );
+
+            // Move to a "valid" pixel in checkerboard mode
+            int checkerboardX = samplePos.x;
         #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
-            uv = ApplyCheckerboardShift(uv, gDiffCheckerboard, i, gFrameIndex);
+            if( gDiffCheckerboard != 2 )
+            {
+                const int shift = ( ( i & 0x1 ) == 0 ) ? -1 : 1; // compile time
+
+                bool isShifted = Sequence::CheckerBoard( samplePos, gFrameIndex ) != gDiffCheckerboard;
+                samplePos.x += isShifted ? shift : 0;
+                mirrorUv.x += isShifted * gRectSizeInv.x * shift;
+
+                checkerboardX = samplePos.x >> 1;
+                sampleWeight = ( samplePos.x < 0 || samplePos.x >= gRectSize.x ) ? 0.0 : sampleWeight;
+            }
         #endif
-
-            // Texture coordinates
-            uv *= gRectSizeInv;
-
-            float2 uvScaled = ClampUvToViewport( uv );
-            float2 checkerboardUvScaled = float2( uvScaled.x * ( gDiffCheckerboard != 2 ? 0.5 : 1.0 ), uvScaled.y );
 
             // Fetch data
             float sampleMaterialID;
-            float3 sampleNormal = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness.SampleLevel(gNearestClamp, WithRectOffset(uvScaled), 0), sampleMaterialID).rgb;
-            float sampleViewZ = UnpackViewZ(gIn_ViewZ.SampleLevel(gNearestClamp, WithRectOffset(uvScaled), 0));
-            float3 sampleWorldPos = GetCurrentWorldPosFromClipSpaceXY(uv * 2.0 - 1.0, sampleViewZ);
+            float3 sampleNormal = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( samplePos ) ], sampleMaterialID ).rgb;
+            float sampleViewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( samplePos ) ] );
+            float3 sampleWorldPos = GetCurrentWorldPosFromClipSpaceXY( mirrorUv * 2.0 - 1.0, sampleViewZ );
 
             // Sample weight
-            float sampleWeight = IsInScreenNearest(uv);
             sampleWeight *= IsInDenoisingRange(sampleViewZ);
             sampleWeight *= CompareMaterials(centerMaterialID, sampleMaterialID, gDiffMinMaterial);
 
@@ -187,18 +195,17 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float angle = Math::AcosApproxPositive(dot(centerNormal, sampleNormal));
             sampleWeight *= ComputeWeight(angle, normalWeightParam, 0.0);
 
-            float4 sampleDiffuseIllumination = gIn_Diff.SampleLevel(gNearestClamp, checkerboardUvScaled, 0);
+            float4 sampleDiffuseIllumination = gIn_Diff[ int2( checkerboardX, samplePos.y ) ];
             sampleDiffuseIllumination = Denanify( sampleWeight, sampleDiffuseIllumination );
 
             sampleWeight *= lerp(diffMinHitDistanceWeight, 1.0, ComputeExponentialWeight(sampleDiffuseIllumination.a, hitDistanceWeightParams.x, hitDistanceWeightParams.y));
-            sampleWeight *= GetGaussianWeight(offset.z);
 
             // Accumulate
             weightSum += sampleWeight;
 
             diffuseIllumination += sampleDiffuseIllumination * sampleWeight;
             #if( NRD_MODE == NRD_MODE_SH )
-                RELAX_SH_TYPE sampleDiffuseSH = gIn_DiffSh.SampleLevel(gNearestClamp, checkerboardUvScaled, 0);
+                RELAX_SH_TYPE sampleDiffuseSH = gIn_DiffSh[ int2( checkerboardX, samplePos.y ) ];
                 sampleDiffuseSH = Denanify( sampleWeight, sampleDiffuseSH );
                 diffuseSH += sampleDiffuseSH * sampleWeight;
             #endif
@@ -306,31 +313,39 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float3 offset = POISSON_SAMPLES[i];
 
             // Sample coordinates
-            float2 uv = pixelUv * gRectSize + Geometry::RotateVector(rotator, offset.xy) * blurRadius;
+            float2 uv = pixelUv + Geometry::RotateVector(rotator, offset.xy) * blurRadius * gRectSizeInv;
 
-            // Snap to the pixel center!
-            uv = floor(uv) + 0.5;
+            // Apply "mirror" to not waste taps going outside of the screen
+            float2 mirrorUv = MirrorUv( uv );
+            float sampleWeight = any( uv != mirrorUv ) ? 1.0 : GetGaussianWeight( offset.z );
 
-            // Apply checkerboard shift
+            // "uv" to "pos"
+            int2 samplePos = int2( mirrorUv * gRectSize );
+
+            // Move to a "valid" pixel in checkerboard mode
+            int checkerboardX = samplePos.x;
         #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
-            uv = ApplyCheckerboardShift(uv, gSpecCheckerboard, i, gFrameIndex);
+            if( gSpecCheckerboard != 2 )
+            {
+                const int shift = ( ( i & 0x1 ) == 0 ) ? -1 : 1; // compile time
+
+                bool isShifted = Sequence::CheckerBoard( samplePos, gFrameIndex ) != gSpecCheckerboard;
+                samplePos.x += isShifted ? shift : 0;
+                mirrorUv.x += isShifted * gRectSizeInv.x * shift;
+
+                checkerboardX = samplePos.x >> 1;
+                sampleWeight = ( samplePos.x < 0 || samplePos.x >= gRectSize.x ) ? 0.0 : sampleWeight;
+            }
         #endif
-
-            // Texture coordinates
-            uv *= gRectSizeInv;
-
-            float2 uvScaled = ClampUvToViewport( uv );
-            float2 checkerboardUvScaled = float2( uvScaled.x * ( gSpecCheckerboard != 2 ? 0.5 : 1.0 ), uvScaled.y );
 
             // Fetch data
             float sampleMaterialID;
-            float4 sampleNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness.SampleLevel(gNearestClamp, WithRectOffset(uvScaled), 0), sampleMaterialID);
+            float4 sampleNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( samplePos ) ], sampleMaterialID );
             float3 sampleNormal = sampleNormalRoughness.rgb;
             float sampleRoughness = sampleNormalRoughness.a;
-            float sampleViewZ = UnpackViewZ(gIn_ViewZ.SampleLevel(gNearestClamp, WithRectOffset(uvScaled), 0));
+            float sampleViewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( samplePos ) ] );
 
             // Sample weight
-            float sampleWeight = IsInScreenNearest(uv);
             sampleWeight *= IsInDenoisingRange(sampleViewZ);
             sampleWeight *= CompareMaterials(centerMaterialID, sampleMaterialID, gSpecMinMaterial);
             sampleWeight *= ComputeWeight(sampleRoughness, roughnessWeightParams.x, roughnessWeightParams.y);
@@ -338,7 +353,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float angle = Math::AcosApproxPositive(dot(centerNormal, sampleNormal));
             sampleWeight *= ComputeWeight(angle, normalWeightParam, 0.0);
 
-            float3 sampleWorldPos = GetCurrentWorldPosFromClipSpaceXY(uv * 2.0 - 1.0, sampleViewZ);
+            float3 sampleWorldPos = GetCurrentWorldPosFromClipSpaceXY( mirrorUv * 2.0 - 1.0, sampleViewZ );
             sampleWeight *= GetPlaneDistanceWeight(
                 centerWorldPos,
                 centerNormal,
@@ -346,14 +361,13 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 sampleWorldPos,
                 gDepthThreshold);
 
-            float4 sampleSpecularIllumination = gIn_Spec.SampleLevel(gNearestClamp, checkerboardUvScaled, 0);
+            float4 sampleSpecularIllumination = gIn_Spec[ int2( checkerboardX, samplePos.y ) ];
             sampleSpecularIllumination = Denanify( sampleWeight, sampleSpecularIllumination );
 
             if (Rng::Hash::GetFloat() < sampleWeight * NoV)
                 minHitT = min(minHitT, sampleSpecularIllumination.a == 0.0 ? NRD_INF : sampleSpecularIllumination.a);
 
             sampleWeight *= lerp(specMinHitDistanceWeight, 1.0, ComputeExponentialWeight(sampleSpecularIllumination.a, hitDistanceWeightParams.x, hitDistanceWeightParams.y));
-            sampleWeight *= GetGaussianWeight(offset.z);
 
             // Decreasing weight for samples that most likely are very close to reflection contact which should not be pre-blurred
             float d = length(sampleWorldPos - centerWorldPos);
@@ -366,7 +380,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             specularIllumination.rgb += sampleSpecularIllumination.rgb * sampleWeight;
             #if( NRD_MODE == NRD_MODE_SH )
-                RELAX_SH_TYPE sampleSpecularSH = gIn_SpecSh.SampleLevel(gNearestClamp, checkerboardUvScaled, 0);
+                RELAX_SH_TYPE sampleSpecularSH = gIn_SpecSh[ int2( checkerboardX, samplePos.y ) ];
                 sampleSpecularSH = Denanify( sampleWeight, sampleSpecularSH );
                 specularSH += sampleSpecularSH * sampleWeight;
             #endif
