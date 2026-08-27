@@ -225,10 +225,8 @@ static const float3 g_Special8[ 8 ] =
 
 #if( NRD_SUPPORTS_VIEWPORT_OFFSET == 1 )
     #define WithRectOrigin( pos )               ( gRectOrigin + pos )
-    #define WithRectOffset( uv )                ( gRectOffset + uv )
 #else
     #define WithRectOrigin( pos )               ( pos )
-    #define WithRectOffset( uv )                ( uv )
 #endif
 
 #if( NRD_USE_DENANIFICATION == 1 )

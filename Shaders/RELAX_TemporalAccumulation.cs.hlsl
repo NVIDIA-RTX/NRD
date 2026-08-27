@@ -700,7 +700,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // sqrt( 2.0 ) offers a smooth transition from one calculations to another without a hard border
         if( smbParallaxInPixelsMin > sqrt( 2.0 ) && IsInScreenNearest( motionUvHigh ) )
         {
-            float2 uvScaled = WithRectOffset( ClampUvToViewport( motionUvHigh ) );
+            float2 uvScaled = ClampUvToViewport( motionUvHigh ) + float2( gRectOrigin ) * gResourceSizeInv;
 
             float zHigh = UnpackViewZ( gIn_ViewZ.SampleLevel( gLinearClamp, uvScaled, 0 ) );
             float3 xHigh = GetCurrentWorldPosFromClipSpaceXY( motionUvHigh * 2.0 - 1.0, zHigh );

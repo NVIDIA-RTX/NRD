@@ -340,7 +340,6 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gRectSizePrev = float2(float(rectWprev), float(rectHprev));
     consts->gResolutionScale = float2(float(rectW) / float(resourceW), float(rectH) / float(resourceH));
     consts->gResolutionScalePrev = float2(float(rectWprev) / float(resourceWprev), float(rectHprev) / float(resourceHprev));
-    consts->gRectOffset = float2(float(m_CommonSettings.rectOrigin[0]) / float(resourceW), float(m_CommonSettings.rectOrigin[1]) / float(resourceH));
     consts->gJitter = float2(m_CommonSettings.cameraJitter[0], m_CommonSettings.cameraJitter[1]);
     consts->gPrintfAt = uint2(m_CommonSettings.printfAt[0], m_CommonSettings.printfAt[1]);
     consts->gRectOrigin = int2(m_CommonSettings.rectOrigin[0], m_CommonSettings.rectOrigin[1]);
