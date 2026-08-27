@@ -205,8 +205,12 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             #if( NRD_SUPPORTS_CHECKERBOARD == 1 && REBLUR_SPATIAL_PASS == REBLUR_PRE_PASS )
                 if( CHECKERBOARD != 2 )
                 {
-                    int shift = ( ( n & 0x1 ) == 0 ) ? -1 : 1;
-                    pos.x += Sequence::CheckerBoard( pos, gFrameIndex ) != CHECKERBOARD ? shift : 0;
+                    const int shift = ( ( n & 0x1 ) == 0 ) ? -1 : 1; // compile time
+
+                    bool isShifted = Sequence::CheckerBoard( pos, gFrameIndex ) != CHECKERBOARD;
+                    pos.x += isShifted ? shift : 0;
+                    mirrorUv.x += isShifted * gRectSizeInv.x * shift;
+
                     checkerboardX = pos.x >> 1;
                     w = pos.x < 0.0 || pos.x > gRectSizeMinusOne.x ? 0.0 : w; // "pos.x" clamping can make the sample "invalid"
                 }
@@ -218,7 +222,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
         #else
             float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
         #endif
-            float3 Xvs = Geometry::ReconstructViewPosition( float2( pos + 0.5 ) * gRectSizeInv, gFrustum, zs, gOrthoMode );
+            float3 Xvs = Geometry::ReconstructViewPosition( mirrorUv, gFrustum, zs, gOrthoMode ); // use "mirrorUv" instead of "pos" to avoid expensive "itof"
 
             float materialIDs;
             float4 Ns = gIn_Normal_Roughness[ WithRectOrigin( pos ) ];
