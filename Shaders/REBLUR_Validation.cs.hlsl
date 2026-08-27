@@ -53,15 +53,18 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float viewportIndex = viewportId.y / VIEWPORT_SIZE + viewportId.x;
 
     float2 viewportUvScaled = viewportUv * gResolutionScale;
+    int2 viewportPixelPos = int2( viewportUvScaled * gResourceSize );
+    int2 diffPixelPos = int2( viewportUvScaled * float2( gDiffCheckerboard != 2 ? 0.5 : 1.0, 1.0 ) * gResourceSize );
+    int2 specPixelPos = int2( viewportUvScaled * float2( gSpecCheckerboard != 2 ? 0.5 : 1.0, 1.0 ) * gResourceSize );
 
-    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness.SampleLevel( gNearestClamp, WithRectOffset( viewportUvScaled ), 0 ) );
-    float viewZ = UnpackViewZ( gIn_ViewZ.SampleLevel( gNearestClamp, WithRectOffset( viewportUvScaled ), 0 ) );
-    float3 mv = gIn_Mv.SampleLevel( gNearestClamp, WithRectOffset( viewportUvScaled ), 0 ) * gMvScale.xyz;
-    float4 diff = gIn_Diff.SampleLevel( gNearestClamp, viewportUvScaled * float2( gDiffCheckerboard != 2 ? 0.5 : 1.0, 1.0 ), 0 );
-    float4 spec = gIn_Spec.SampleLevel( gNearestClamp, viewportUvScaled * float2( gSpecCheckerboard != 2 ? 0.5 : 1.0, 1.0 ), 0 );
+    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( viewportPixelPos ) ] );
+    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( viewportPixelPos ) ] );
+    float3 mv = gIn_Mv[ WithRectOrigin( viewportPixelPos ) ] * gMvScale.xyz;
+    float4 diff = gIn_Diff[ diffPixelPos ];
+    float4 spec = gIn_Spec[ specPixelPos ];
 
     // See "UnpackData1"
-    REBLUR_DATA1_TYPE data1 = gIn_Data1.SampleLevel( gNearestClamp, viewportUvScaled, 0 );
+    REBLUR_DATA1_TYPE data1 = gIn_Data1[ viewportPixelPos ];
     if( !gHasDiffuse )
         data1.y = data1.x;
     data1 *= REBLUR_MAX_ACCUM_FRAME_NUM;
