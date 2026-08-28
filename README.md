@@ -1,4 +1,4 @@
-# NVIDIA REAL-TIME DENOISERS (NRD) v4.17.4
+# NVIDIA REAL-TIME DENOISERS (NRD) v4.18.0
 
 [![Build NRD SDK](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml/badge.svg)](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml)
 
@@ -83,7 +83,7 @@ See *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* project for all det
   - `NRD_STATIC_LIBRARY` - build static library (OFF by default, visible in the parent project)
   - `NRD_NORMAL_ENCODING` - *normal* encoding for the entire library
   - `NRD_ROUGHNESS_ENCODING` - *roughness* encoding for the entire library
-  - `NRD_SUPPORTS_VIEWPORT_OFFSET` - enable `CommonSettings::rectOrigin` support (OFF by default)
+  - `NRD_SUPPORTS_VIEWPORT_OFFSET` - enable `CommonSettings::inputRectOrigin` and `CommonSettings::outputRectOrigin` support (OFF by default)
   - `NRD_SUPPORTS_CHECKERBOARD` - enable `checkerboardMode` support (ON by default)
   - `NRD_SUPPORTS_HISTORY_CONFIDENCE` - enable `IN_DIFF_CONFIDENCE` and `IN_SPEC_CONFIDENCE` support (ON by default)
   - `NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX` - enable `IN_DISOCCLUSION_THRESHOLD_MIX` support (ON by default)
@@ -137,6 +137,8 @@ Flow:
 *NRD* doesn't make any *GAPI* calls. The application is supposed to invoke a set of compute *Dispatch* calls to do denoising. Refer to [NRDIntegration](https://github.com/NVIDIA-RTX/NRD/blob/master/Integration/NRDIntegration.hpp) file as an example of an integration using low level RHI.
 
 *NRD* doesn't have a "resize" functionality. On a resolution change the old denoiser needs to be destroyed and a new one needs to be created with new parameters. But *NRD* supports dynamic resolution scaling via `CommonSettings::resourceSize, resourceSizePrev, rectSize, rectSizePrev`.
+
+If `NRD_SUPPORTS_VIEWPORT_OFFSET` is enabled, `CommonSettings::inputRectOrigin` applies to `IN_` resources, excluding `IN_DIFF_CONFIDENCE`, `IN_SPEC_CONFIDENCE` and `IN_DISOCCLUSION_THRESHOLD_MIX`. `CommonSettings::outputRectOrigin` applies to all `OUT_` resources and resources from `PERMANENT_POOL` on both reads and writes. Since `outputRectOrigin` is also used to access previous-frame history, changing it assumes `AccumulationMode::CLEAR_AND_RESTART`. The rectangles defined by `inputRectOrigin + rectSize` and `outputRectOrigin + rectSize` must fit inside `resourceSize`.
 
 Some textures can be requested as inputs or outputs for a method. Required resources are specified near a denoiser declaration inside the `Denoiser` enum class. Also `NRD.hlsli` has a comment near each front-end or back-end function, clarifying which resources this function is for.
 

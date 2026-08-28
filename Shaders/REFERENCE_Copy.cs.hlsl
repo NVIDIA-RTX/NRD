@@ -26,5 +26,5 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float2 pixelUv = float2( pixelPos + 0.5 ) * gRectSizeInv;
 
     if( pixelUv.x > gSplitScreen )
-        gOut_Output[ pixelPos ] = gIn_Input[ pixelPos ];
+        NRD_SURFACE( gOut_Output, pixelPos ) = NRD_SURFACE( gIn_Input, pixelPos );
 }

@@ -37,7 +37,7 @@ NRD_EXPORT void NRD_CS_MAIN( uint2 threadPos : SV_GroupThreadID, uint2 tilePos :
         {
             int2 pos = pixelPos + int2( i, j );
             int2 clampedPos = min( pos, gRectSizeMinusOne );
-            float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( clampedPos ) ] );
+            float viewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, clampedPos ) );
 
             sum += ( any( pos > gRectSizeMinusOne ) || !IsInDenoisingRange( viewZ ) ) ? 1 : 0;
         }
@@ -51,6 +51,6 @@ NRD_EXPORT void NRD_CS_MAIN( uint2 threadPos : SV_GroupThreadID, uint2 tilePos :
     {
         float isSky = s_Sum == 256 ? 1.0 : 0.0;
 
-        gOut_Tiles[ tilePos ] = isSky;
+        NRD_SURFACE( gOut_Tiles, tilePos ) = isSky;
     }
 }

@@ -27,12 +27,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     NRD_CTA_ORDER_REVERSED;
 
     // Tile-based early out
-    float isSky = gIn_Tiles[pixelPos >> 4];
+    float isSky = NRD_SURFACE( gIn_Tiles, pixelPos >> 4 );
     if (isSky != 0.0 || any(pixelPos >= gRectSize))
         return;
 
     // Early out if linearZ is beyond denoising range
-    float centerViewZ = UnpackViewZ(gIn_ViewZ[WithRectOrigin(pixelPos)]);
+    float centerViewZ = UnpackViewZ(NRD_SURFACE( gIn_ViewZ, pixelPos ));
     if (!IsInDenoisingRange(centerViewZ))
         return;
 
@@ -55,12 +55,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if (gSpecCheckerboard != 2)
 #endif
     {
-        float viewZ0 = UnpackViewZ(gIn_ViewZ[WithRectOrigin(checkerboardPos.xz)]);
-        float viewZ1 = UnpackViewZ(gIn_ViewZ[WithRectOrigin(checkerboardPos.yz)]);
+        float viewZ0 = UnpackViewZ(NRD_SURFACE( gIn_ViewZ, checkerboardPos.xz ));
+        float viewZ1 = UnpackViewZ(NRD_SURFACE( gIn_ViewZ, checkerboardPos.yz ));
 
     #if( NRD_NORMAL_ENCODING == NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
-        NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(checkerboardPos.xz)], materialID0);
-        NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(checkerboardPos.yz)], materialID1);
+        NRD_FrontEnd_UnpackNormalAndRoughness(NRD_SURFACE( gIn_Normal_Roughness, checkerboardPos.xz ), materialID0);
+        NRD_FrontEnd_UnpackNormalAndRoughness(NRD_SURFACE( gIn_Normal_Roughness, checkerboardPos.yz ), materialID1);
     #endif
 
         checkerboardResolveWeights = GetBilateralWeight(float2(viewZ0, viewZ1), centerViewZ);
@@ -72,7 +72,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #endif
 
     float centerMaterialID;
-    float4 centerNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(pixelPos)], centerMaterialID);
+    float4 centerNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(NRD_SURFACE( gIn_Normal_Roughness, pixelPos ), centerMaterialID);
     float3 centerNormal = centerNormalRoughness.xyz;
     float centerRoughness = centerNormalRoughness.w;
 
@@ -93,9 +93,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #endif
 
     // Reading diffuse & resolving diffuse checkerboard
-    float4 diffuseIllumination = gIn_Diff[diffPos];
+    float4 diffuseIllumination = NRD_SURFACE( gIn_Diff, diffPos );
     #if( NRD_MODE == NRD_MODE_SH )
-        RELAX_SH_TYPE diffuseSH = gIn_DiffSh[diffPos];
+        RELAX_SH_TYPE diffuseSH = NRD_SURFACE( gIn_DiffSh, diffPos );
     #endif
 
 #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
@@ -108,15 +108,15 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
         wc *= Math::PositiveRcp( wc.x + wc.y );
 
-        float4 d0 = gIn_Diff[checkerboardPos.xz];
-        float4 d1 = gIn_Diff[checkerboardPos.yz];
+        float4 d0 = NRD_SURFACE( gIn_Diff, checkerboardPos.xz );
+        float4 d1 = NRD_SURFACE( gIn_Diff, checkerboardPos.yz );
         d0 = Denanify( wc.x, d0 );
         d1 = Denanify( wc.y, d1 );
         diffuseIllumination = d0 * wc.x + d1 * wc.y;
 
         #if( NRD_MODE == NRD_MODE_SH )
-            RELAX_SH_TYPE d0SH = gIn_DiffSh[checkerboardPos.xz];
-            RELAX_SH_TYPE d1SH = gIn_DiffSh[checkerboardPos.yz];
+            RELAX_SH_TYPE d0SH = NRD_SURFACE( gIn_DiffSh, checkerboardPos.xz );
+            RELAX_SH_TYPE d1SH = NRD_SURFACE( gIn_DiffSh, checkerboardPos.yz );
             d0SH = Denanify( wc.x, d0SH );
             d1SH = Denanify( wc.y, d1SH );
             diffuseSH = d0SH * wc.x + d1SH * wc.y;
@@ -177,8 +177,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             // Fetch data
             float sampleMaterialID;
-            float3 sampleNormal = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( samplePos ) ], sampleMaterialID ).rgb;
-            float sampleViewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( samplePos ) ] );
+            float3 sampleNormal = NRD_FrontEnd_UnpackNormalAndRoughness( NRD_SURFACE( gIn_Normal_Roughness, samplePos ), sampleMaterialID ).rgb;
+            float sampleViewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, samplePos ) );
             float3 sampleWorldPos = GetCurrentWorldPosFromClipSpaceXY( mirrorUv * 2.0 - 1.0, sampleViewZ );
 
             // Sample weight
@@ -195,7 +195,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float angle = Math::AcosApproxPositive(dot(centerNormal, sampleNormal));
             sampleWeight *= ComputeWeight(angle, normalWeightParam, 0.0);
 
-            float4 sampleDiffuseIllumination = gIn_Diff[ int2( checkerboardX, samplePos.y ) ];
+            float4 sampleDiffuseIllumination = NRD_SURFACE( gIn_Diff, int2( checkerboardX, samplePos.y ) );
             sampleDiffuseIllumination = Denanify( sampleWeight, sampleDiffuseIllumination );
 
             sampleWeight *= lerp(diffMinHitDistanceWeight, 1.0, ComputeExponentialWeight(sampleDiffuseIllumination.a, hitDistanceWeightParams.x, hitDistanceWeightParams.y));
@@ -205,7 +205,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             diffuseIllumination += sampleDiffuseIllumination * sampleWeight;
             #if( NRD_MODE == NRD_MODE_SH )
-                RELAX_SH_TYPE sampleDiffuseSH = gIn_DiffSh[ int2( checkerboardX, samplePos.y ) ];
+                RELAX_SH_TYPE sampleDiffuseSH = NRD_SURFACE( gIn_DiffSh, int2( checkerboardX, samplePos.y ) );
                 sampleDiffuseSH = Denanify( sampleWeight, sampleDiffuseSH );
                 diffuseSH += sampleDiffuseSH * sampleWeight;
             #endif
@@ -217,9 +217,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
     }
 
-    gOut_Diff[pixelPos] = clamp(diffuseIllumination, 0, NRD_FP16_MAX);
+    NRD_SURFACE( gOut_Diff, pixelPos ) = clamp(diffuseIllumination, 0, NRD_FP16_MAX);
     #if( NRD_MODE == NRD_MODE_SH )
-        gOut_DiffSh[pixelPos] = clamp(diffuseSH, -NRD_FP16_MAX, NRD_FP16_MAX);
+        NRD_SURFACE( gOut_DiffSh, pixelPos ) = clamp(diffuseSH, -NRD_FP16_MAX, NRD_FP16_MAX);
     #endif
 #endif
 
@@ -237,9 +237,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #endif
 
     // Reading specular & resolving specular checkerboard
-    float4 specularIllumination = gIn_Spec[specPos];
+    float4 specularIllumination = NRD_SURFACE( gIn_Spec, specPos );
     #if( NRD_MODE == NRD_MODE_SH )
-        RELAX_SH_TYPE specularSH = gIn_SpecSh[specPos];
+        RELAX_SH_TYPE specularSH = NRD_SURFACE( gIn_SpecSh, specPos );
     #endif
 
 #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
@@ -252,15 +252,15 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #endif
         wc *= Math::PositiveRcp( wc.x + wc.y );
 
-        float4 s0 = gIn_Spec[checkerboardPos.xz];
-        float4 s1 = gIn_Spec[checkerboardPos.yz];
+        float4 s0 = NRD_SURFACE( gIn_Spec, checkerboardPos.xz );
+        float4 s1 = NRD_SURFACE( gIn_Spec, checkerboardPos.yz );
         s0 = Denanify( wc.x, s0 );
         s1 = Denanify( wc.y, s1 );
         specularIllumination = s0 * wc.x + s1 * wc.y;
 
         #if( NRD_MODE == NRD_MODE_SH )
-            RELAX_SH_TYPE s0SH = gIn_SpecSh[checkerboardPos.xz];
-            RELAX_SH_TYPE s1SH = gIn_SpecSh[checkerboardPos.yz];
+            RELAX_SH_TYPE s0SH = NRD_SURFACE( gIn_SpecSh, checkerboardPos.xz );
+            RELAX_SH_TYPE s1SH = NRD_SURFACE( gIn_SpecSh, checkerboardPos.yz );
             s0SH = Denanify( wc.x, s0SH );
             s1SH = Denanify( wc.y, s1SH );
             specularSH = s0SH * wc.x + s1SH * wc.y;
@@ -340,10 +340,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             // Fetch data
             float sampleMaterialID;
-            float4 sampleNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( samplePos ) ], sampleMaterialID );
+            float4 sampleNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( NRD_SURFACE( gIn_Normal_Roughness, samplePos ), sampleMaterialID );
             float3 sampleNormal = sampleNormalRoughness.rgb;
             float sampleRoughness = sampleNormalRoughness.a;
-            float sampleViewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( samplePos ) ] );
+            float sampleViewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, samplePos ) );
 
             // Sample weight
             sampleWeight *= IsInDenoisingRange(sampleViewZ);
@@ -361,7 +361,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 sampleWorldPos,
                 gDepthThreshold);
 
-            float4 sampleSpecularIllumination = gIn_Spec[ int2( checkerboardX, samplePos.y ) ];
+            float4 sampleSpecularIllumination = NRD_SURFACE( gIn_Spec, int2( checkerboardX, samplePos.y ) );
             sampleSpecularIllumination = Denanify( sampleWeight, sampleSpecularIllumination );
 
             if (Rng::Hash::GetFloat() < sampleWeight * NoV)
@@ -380,7 +380,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             specularIllumination.rgb += sampleSpecularIllumination.rgb * sampleWeight;
             #if( NRD_MODE == NRD_MODE_SH )
-                RELAX_SH_TYPE sampleSpecularSH = gIn_SpecSh[ int2( checkerboardX, samplePos.y ) ];
+                RELAX_SH_TYPE sampleSpecularSH = NRD_SURFACE( gIn_SpecSh, int2( checkerboardX, samplePos.y ) );
                 sampleSpecularSH = Denanify( sampleWeight, sampleSpecularSH );
                 specularSH += sampleSpecularSH * sampleWeight;
             #endif
@@ -392,9 +392,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
     }
 
-    gOut_Spec[pixelPos] = clamp(specularIllumination, 0, NRD_FP16_MAX);
+    NRD_SURFACE( gOut_Spec, pixelPos ) = clamp(specularIllumination, 0, NRD_FP16_MAX);
     #if( NRD_MODE == NRD_MODE_SH )
-        gOut_SpecSh[pixelPos] = clamp(specularSH, -NRD_FP16_MAX, NRD_FP16_MAX);
+        NRD_SURFACE( gOut_SpecSh, pixelPos ) = clamp(specularSH, -NRD_FP16_MAX, NRD_FP16_MAX);
     #endif
 #endif
 }

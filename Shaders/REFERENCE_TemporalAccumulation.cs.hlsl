@@ -23,9 +23,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if( any( pixelPos >= gRectSize ) )
         return;
 
-    float4 input = gIn_Input[ pixelPos ];
-    float4 history = gInOut_History[ pixelPos ];
+    float4 input = NRD_SURFACE( gIn_Input, pixelPos );
+    float4 history = NRD_SURFACE( gInOut_History, pixelPos );
     float4 result = lerp( history, input, gAccumSpeed );
 
-    gInOut_History[ pixelPos ] = result;
+    NRD_SURFACE( gInOut_History, pixelPos ) = result;
 }

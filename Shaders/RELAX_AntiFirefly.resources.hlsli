@@ -18,27 +18,27 @@ NRD_SAMPLERS_START
 NRD_SAMPLERS_END
 
 NRD_INPUTS_START
-    NRD_INPUT( Texture2D, float, gIn_Tiles, t, 0 )
-    NRD_INPUT( Texture2D, float4, gIn_Normal_Roughness, t, 1 )
-    NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 2 )
+    NRD_INPUT( Texture2D, float, gIn_Tiles, t, 0, NRD_RESOURCE_TRANSIENT )
+    NRD_INPUT( Texture2D, float4, gIn_Normal_Roughness, t, 1, NRD_RESOURCE_IN )
+    NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 2, NRD_RESOURCE_IN )
     #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
-        NRD_INPUT( Texture2D, float4, gIn_Spec, t, 3 )
-        NRD_INPUT( Texture2D, float4, gIn_Diff, t, 4 )
+        NRD_INPUT( Texture2D, float4, gIn_Spec, t, 3, NRD_RESOURCE_OUT )
+        NRD_INPUT( Texture2D, float4, gIn_Diff, t, 4, NRD_RESOURCE_OUT )
     #elif( NRD_HAS_DIFF )
-        NRD_INPUT( Texture2D, float4, gIn_Diff, t, 3 )
+        NRD_INPUT( Texture2D, float4, gIn_Diff, t, 3, NRD_RESOURCE_OUT )
     #else
-        NRD_INPUT( Texture2D, float4, gIn_Spec, t, 3 )
+        NRD_INPUT( Texture2D, float4, gIn_Spec, t, 3, NRD_RESOURCE_OUT )
     #endif
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
     #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
-        NRD_OUTPUT( RWTexture2D, float4, gOut_Spec, u, 0 )
-        NRD_OUTPUT( RWTexture2D, float4, gOut_Diff, u, 1 )
+        NRD_OUTPUT( RWTexture2D, float4, gOut_Spec, u, 0, NRD_RESOURCE_PERMANENT )
+        NRD_OUTPUT( RWTexture2D, float4, gOut_Diff, u, 1, NRD_RESOURCE_PERMANENT )
     #elif( NRD_HAS_DIFF )
-        NRD_OUTPUT( RWTexture2D, float4, gOut_Diff, u, 0 )
+        NRD_OUTPUT( RWTexture2D, float4, gOut_Diff, u, 0, NRD_RESOURCE_PERMANENT )
     #else
-        NRD_OUTPUT( RWTexture2D, float4, gOut_Spec, u, 0 )
+        NRD_OUTPUT( RWTexture2D, float4, gOut_Spec, u, 0, NRD_RESOURCE_PERMANENT )
     #endif
 NRD_OUTPUTS_END
 

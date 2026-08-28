@@ -25,11 +25,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Tile-based early out
-    float isSky = gIn_Tiles[ pixelPos >> 4 ].x;
+    float isSky = NRD_SURFACE( gIn_Tiles, pixelPos >> 4 ).x;
     if( isSky != 0.0 && !gIsRectChanged )
         return;
 
     // TODO: introduce "CopyResource" in NRD API?
-    gOut_History[ pixelPos ] = gIn_History[ pixelPos ];
-    gOut_HistoryLength[ pixelPos ] = gIn_HistoryLength[ pixelPos ];
+    NRD_SURFACE( gOut_History, pixelPos ) = NRD_SURFACE( gIn_History, pixelPos );
+    NRD_SURFACE( gOut_HistoryLength, pixelPos ) = NRD_SURFACE( gIn_HistoryLength, pixelPos );
 }

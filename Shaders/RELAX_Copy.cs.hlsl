@@ -28,10 +28,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // TODO: introduce "CopyResource" in NRD API?
 #if( NRD_HAS_SPEC )
-    gOut_Spec[pixelPos.xy] = gIn_Spec[pixelPos.xy];
+    NRD_SURFACE( gOut_Spec, pixelPos ) = NRD_SURFACE( gIn_Spec, pixelPos );
 #endif
 
 #if( NRD_HAS_DIFF )
-    gOut_Diff[pixelPos.xy] = gIn_Diff[pixelPos.xy];
+    NRD_SURFACE( gOut_Diff, pixelPos ) = NRD_SURFACE( gIn_Diff, pixelPos );
 #endif
 }

@@ -25,15 +25,15 @@ void Preload( uint2 sharedPos, int2 globalPos )
 {
     globalPos = clamp( globalPos, 0, gRectSizeMinusOne );
 
-    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( globalPos ) ] );
+    float viewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, globalPos ) );
 
     #if( NRD_HAS_DIFF )
-        float diffFast = gIn_DiffFast[ globalPos ];
+        float diffFast = NRD_SURFACE( gIn_DiffFast, globalPos );
         s_DiffLuma[ sharedPos.y ][ sharedPos.x ] = !IsInDenoisingRange( viewZ ) ? REBLUR_INVALID : diffFast;
     #endif
 
     #if( NRD_HAS_SPEC )
-        float specFast = gIn_SpecFast[ globalPos ];
+        float specFast = NRD_SURFACE( gIn_SpecFast, globalPos );
         s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = !IsInDenoisingRange( viewZ ) ? REBLUR_INVALID : specFast;
     #endif
 }
@@ -47,7 +47,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     NRD_CTA_ORDER_REVERSED;
 
     // Preload
-    float isSky = gIn_Tiles[ pixelPos >> 4 ].x;
+    float isSky = NRD_SURFACE( gIn_Tiles, pixelPos >> 4 ).x;
     PRELOAD_INTO_SMEM_WITH_TILE_CHECK;
 
     // Tile-based early out ( quad uniform )
@@ -56,9 +56,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Blur stride
     int2 clampedPixelPos = min( pixelPos, gRectSizeMinusOne );
-    REBLUR_DATA1_TYPE frameNum = UnpackData1( gIn_Data1[ clampedPixelPos ] );
+    REBLUR_DATA1_TYPE frameNum = UnpackData1( NRD_SURFACE( gIn_Data1, clampedPixelPos ) );
 
-    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( clampedPixelPos ) ] );
+    float viewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, clampedPixelPos ) );
     frameNum = !IsInDenoisingRange( viewZ ) ? REBLUR_MAX_ACCUM_FRAME_NUM : frameNum; // less blur on "SKY" edges
 
     float2 stride = float2( frameNum < gHistoryFixFrameNum );
@@ -80,7 +80,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Center data
     float materialID;
-    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( pixelPos ) ], materialID );
+    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( NRD_SURFACE( gIn_Normal_Roughness, pixelPos ), materialID );
     float3 N = normalAndRoughness.xyz;
     float roughness = normalAndRoughness.w;
 
@@ -103,9 +103,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Diffuse
     #if( NRD_HAS_DIFF )
     {
-        REBLUR_TYPE diff = gIn_Diff[ pixelPos ];
+        REBLUR_TYPE diff = NRD_SURFACE( gIn_Diff, pixelPos );
         #if( NRD_MODE == NRD_MODE_SH )
-            REBLUR_SH_TYPE diffSh = gIn_DiffSh[ pixelPos ];
+            REBLUR_SH_TYPE diffSh = NRD_SURFACE( gIn_DiffSh, pixelPos );
         #endif
 
         float diffNonLinearAccumSpeed = 1.0 / ( 1.0 + frameNum.x );
@@ -161,11 +161,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     int2 pos = int2( uv * gRectSize );
 
                     // Fetch data
-                    float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
+                    float zs = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, pos ) );
                     float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
 
                     float materialIDs;
-                    float4 Ns = gIn_Normal_Roughness[ WithRectOrigin( pos ) ];
+                    float4 Ns = NRD_SURFACE( gIn_Normal_Roughness, pos );
                     Ns = NRD_FrontEnd_UnpackNormalAndRoughness( Ns, materialIDs );
 
                     // Weight
@@ -177,12 +177,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     // gaussian weight is not needed
 
                     #if( REBLUR_PERFORMANCE_MODE == 0 )
-                        w *= 1.0 + UnpackData1( gIn_Data1[ pos ] ).x;
+                        w *= 1.0 + UnpackData1( NRD_SURFACE( gIn_Data1, pos ) ).x;
                     #endif
 
                     w = ApplyGeometryWeightLast( w, zs, NoX, geometryWeightParams );
 
-                    REBLUR_TYPE s = gIn_Diff[ pos ];
+                    REBLUR_TYPE s = NRD_SURFACE( gIn_Diff, pos );
                     s = Denanify( w, s );
 
                     // A-trous weight
@@ -193,7 +193,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                     diff += s * w;
                     #if( NRD_MODE == NRD_MODE_SH )
-                        REBLUR_SH_TYPE sh = gIn_DiffSh[ pos ];
+                        REBLUR_SH_TYPE sh = NRD_SURFACE( gIn_DiffSh, pos );
                         sh = Denanify( w, sh );
 
                         diffSh += sh * w;
@@ -216,7 +216,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float diffFastCenter = s_DiffLuma[ smemPos.y ][ smemPos.x ];
         diffFastCenter = lerp( diffLuma, diffFastCenter, f );
 
-        gOut_DiffFast[ pixelPos ] = diffFastCenter;
+        NRD_SURFACE( gOut_DiffFast, pixelPos ) = diffFastCenter;
 
         // Local variance
         float diffFastM1 = diffFastCenter;
@@ -289,9 +289,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         // Output
-        gOut_Diff[ pixelPos ] = diff;
+        NRD_SURFACE( gOut_Diff, pixelPos ) = diff;
         #if( NRD_MODE == NRD_MODE_SH )
-            gOut_DiffSh[ pixelPos ] = diffSh;
+            NRD_SURFACE( gOut_DiffSh, pixelPos ) = diffSh;
         #endif
     }
     #endif
@@ -299,9 +299,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Specular
     #if( NRD_HAS_SPEC )
     {
-        REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
+        REBLUR_TYPE spec = NRD_SURFACE( gIn_Spec, pixelPos );
         #if( NRD_MODE == NRD_MODE_SH )
-            REBLUR_SH_TYPE specSh = gIn_SpecSh[ pixelPos ];
+            REBLUR_SH_TYPE specSh = NRD_SURFACE( gIn_SpecSh, pixelPos );
         #endif
 
         float smc = GetSpecMagicCurve( roughness );
@@ -311,7 +311,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float hitDist = ExtractHitDist( spec ) * hitDistScale;
         #if( NRD_MODE != NRD_MODE_OCCLUSION )
             // "gIn_SpecHitDistForTracking" is better for low roughness, but doesn't suit for high roughness ( because it's min )
-            hitDist = lerp( gIn_SpecHitDistForTracking[ pixelPos ], hitDist, smc );
+            hitDist = lerp( NRD_SURFACE( gIn_SpecHitDistForTracking, pixelPos ), hitDist, smc );
         #endif
         float hitDistFactor = GetHitDistFactor( hitDist, frustumSize );
         hitDist = saturate( hitDist / hitDistScale );
@@ -364,11 +364,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     int2 pos = int2( uv * gRectSize );
 
                     // Fetch data
-                    float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
+                    float zs = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, pos ) );
                     float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
 
                     float materialIDs;
-                    float4 Ns = gIn_Normal_Roughness[ WithRectOrigin( pos ) ];
+                    float4 Ns = NRD_SURFACE( gIn_Normal_Roughness, pos );
                     Ns = NRD_FrontEnd_UnpackNormalAndRoughness( Ns, materialIDs );
 
                     // Weight
@@ -381,12 +381,12 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     // gaussian weight is not needed
 
                     #if( REBLUR_PERFORMANCE_MODE == 0 )
-                        w *= 1.0 + UnpackData1( gIn_Data1[ pos ] ).y;
+                        w *= 1.0 + UnpackData1( NRD_SURFACE( gIn_Data1, pos ) ).y;
                     #endif
 
                     w = ApplyGeometryWeightLast( w, zs, NoX, geometryWeightParams );
 
-                    REBLUR_TYPE s = gIn_Spec[ pos ];
+                    REBLUR_TYPE s = NRD_SURFACE( gIn_Spec, pos );
                     s = Denanify( w, s );
 
                     // A-trous weight
@@ -397,7 +397,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
                     spec += s * w;
                     #if( NRD_MODE == NRD_MODE_SH )
-                        REBLUR_SH_TYPE sh = gIn_SpecSh[ pos ];
+                        REBLUR_SH_TYPE sh = NRD_SURFACE( gIn_SpecSh, pos );
                         sh = Denanify( w, sh );
 
                         specSh += sh * w;
@@ -421,7 +421,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float specFastCenter = s_SpecLuma[ smemPos.y ][ smemPos.x ];
         specFastCenter = lerp( specLuma, specFastCenter, f );
 
-        gOut_SpecFast[ pixelPos ] = specFastCenter;
+        NRD_SURFACE( gOut_SpecFast, pixelPos ) = specFastCenter;
 
         // Local variance
         float specFastM1 = specFastCenter;
@@ -498,9 +498,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         // Output
-        gOut_Spec[ pixelPos ] = spec;
+        NRD_SURFACE( gOut_Spec, pixelPos ) = spec;
         #if( NRD_MODE == NRD_MODE_SH )
-            gOut_SpecSh[ pixelPos ] = specSh;
+            NRD_SURFACE( gOut_SpecSh, pixelPos ) = specSh;
         #endif
     }
     #endif

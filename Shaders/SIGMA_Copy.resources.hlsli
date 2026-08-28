@@ -13,14 +13,14 @@ NRD_CONSTANTS_START( SIGMA_CopyConstants )
 NRD_CONSTANTS_END
 
 NRD_INPUTS_START
-    NRD_INPUT( Texture2D, float2, gIn_Tiles, t, 0 )
-    NRD_INPUT( Texture2D, float4, gIn_History, t, 1 )
-    NRD_INPUT( Texture2D, uint, gIn_HistoryLength, t, 2 )
+    NRD_INPUT( Texture2D, float2, gIn_Tiles, t, 0, NRD_RESOURCE_TRANSIENT )
+    NRD_INPUT( Texture2D, float4, gIn_History, t, 1, NRD_RESOURCE_OUT )
+    NRD_INPUT( Texture2D, uint, gIn_HistoryLength, t, 2, NRD_RESOURCE_PERMANENT )
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
-    NRD_OUTPUT( RWTexture2D, float4, gOut_History, u, 0 )
-    NRD_OUTPUT( RWTexture2D, uint, gOut_HistoryLength, u, 1 )
+    NRD_OUTPUT( RWTexture2D, float4, gOut_History, u, 0, NRD_RESOURCE_TRANSIENT )
+    NRD_OUTPUT( RWTexture2D, uint, gOut_HistoryLength, u, 1, NRD_RESOURCE_TRANSIENT )
 NRD_OUTPUTS_END
 
 // Macro magic

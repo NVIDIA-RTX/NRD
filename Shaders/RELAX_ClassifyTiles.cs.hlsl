@@ -37,7 +37,7 @@ NRD_EXPORT void NRD_CS_MAIN( uint2 threadPos : SV_GroupThreadID, uint2 tilePos :
         {
             int2 pos = pixelPos + int2( i, j );
             int2 clampedPos = min( pos, gRectSize - 1 );
-            float viewZ = abs( gIn_ViewZ[ WithRectOrigin( clampedPos ) ] );
+            float viewZ = abs( NRD_SURFACE( gIn_ViewZ, clampedPos ) );
 
             isSky += ( any( pos >= gRectSize ) || !IsInDenoisingRange( viewZ ) ) ? 1 : 0;
         }
@@ -48,5 +48,5 @@ NRD_EXPORT void NRD_CS_MAIN( uint2 threadPos : SV_GroupThreadID, uint2 tilePos :
     GroupMemoryBarrierWithGroupSync();
 
     if( threadIndex == 0 )
-        gOut_Tiles[ tilePos ] = s_isSky == 256 ? 1.0 : 0.0;
+        NRD_SURFACE( gOut_Tiles, tilePos ) = s_isSky == 256 ? 1.0 : 0.0;
 }

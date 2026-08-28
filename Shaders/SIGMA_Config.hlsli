@@ -61,7 +61,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float2, gRectSizePrev ) \
     NRD_CONSTANT( float2, gResolutionScale ) \
     NRD_CONSTANT( uint2, gPrintfAt ) \
-    NRD_CONSTANT( int2, gRectOrigin ) \
+    NRD_CONSTANT( int2, gInputRectOrigin ) \
+    NRD_CONSTANT( int2, gOutputRectOrigin ) \
     NRD_CONSTANT( int2, gRectSizeMinusOne ) \
     NRD_CONSTANT( int2, gTilesSizeMinusOne ) \
     NRD_CONSTANT( float, gOrthoMode ) \

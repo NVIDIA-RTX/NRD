@@ -40,7 +40,10 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float2, gRectSizePrev ) \
     NRD_CONSTANT( float2, gResourceSizeInvPrev ) \
     NRD_CONSTANT( uint2, gPrintfAt ) \
-    NRD_CONSTANT( int2, gRectOrigin ) \
+    NRD_CONSTANT( int2, gInputRectOrigin ) \
+    NRD_CONSTANT( int2, gOutputRectOrigin ) \
+    NRD_CONSTANT( int2, gDispatchInputRectOrigin ) \
+    NRD_CONSTANT( int2, gDispatchOutputRectOrigin ) \
     NRD_CONSTANT( int2, gRectSize ) \
     NRD_CONSTANT( float, gSpecMaxAccumulatedFrameNum ) \
     NRD_CONSTANT( float, gSpecMaxFastAccumulatedFrameNum ) \

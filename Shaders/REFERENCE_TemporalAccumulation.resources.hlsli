@@ -10,6 +10,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 NRD_CONSTANTS_START( REFERENCE_TemporalAccumulationConstants )
     NRD_CONSTANT( int2, gRectSize )
+    NRD_CONSTANT( int2, gInputRectOrigin )
+    NRD_CONSTANT( int2, gOutputRectOrigin )
     NRD_CONSTANT( float, gAccumSpeed )
     // Only for availability in "Common.hlsl"
     NRD_CONSTANT( float, gDebug )
@@ -18,11 +20,11 @@ NRD_CONSTANTS_START( REFERENCE_TemporalAccumulationConstants )
 NRD_CONSTANTS_END
 
 NRD_INPUTS_START
-    NRD_INPUT( Texture2D, float4, gIn_Input, t, 0 )
+    NRD_INPUT( Texture2D, float4, gIn_Input, t, 0, NRD_RESOURCE_IN )
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
-    NRD_OUTPUT( RWTexture2D, float4, gInOut_History, u, 0 )
+    NRD_OUTPUT( RWTexture2D, float4, gInOut_History, u, 0, NRD_RESOURCE_PERMANENT )
 NRD_OUTPUTS_END
 
 // Macro magic

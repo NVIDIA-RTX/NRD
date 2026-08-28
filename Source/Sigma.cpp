@@ -60,14 +60,18 @@ void nrd::InstanceImpl::Update_SigmaShadow(const DenoiserData& denoiserData) {
     }
 
     { // BLUR
-        void* consts = PushDispatch(denoiserData, AsUint(Dispatch::BLUR));
+        SIGMA_BlurConstants* consts = (SIGMA_BlurConstants*)PushDispatch(denoiserData, AsUint(Dispatch::BLUR));
         AddSharedConstants_Sigma(settings, consts);
+        consts->gDispatchInputRectOrigin = consts->gInputRectOrigin;
+        consts->gDispatchOutputRectOrigin = int2(0, 0);
     }
 
     { // POST_BLUR
         uint32_t passIndex = AsUint(Dispatch::POST_BLUR) + (settings.maxStabilizedFrameNum ? 1 : 0);
-        void* consts = PushDispatch(denoiserData, passIndex);
+        SIGMA_BlurConstants* consts = (SIGMA_BlurConstants*)PushDispatch(denoiserData, passIndex);
         AddSharedConstants_Sigma(settings, consts);
+        consts->gDispatchInputRectOrigin = int2(0, 0);
+        consts->gDispatchOutputRectOrigin = settings.maxStabilizedFrameNum ? int2(0, 0) : consts->gOutputRectOrigin;
     }
 
     // TEMPORAL_STABILIZATION
@@ -131,7 +135,8 @@ void nrd::InstanceImpl::AddSharedConstants_Sigma(const SigmaSettings& settings, 
     consts->gRectSizePrev = float2(float(rectWprev), float(rectHprev));
     consts->gResolutionScale = float2(float(rectW) / float(resourceW), float(rectH) / float(resourceH));
     consts->gPrintfAt = uint2(m_CommonSettings.printfAt[0], m_CommonSettings.printfAt[1]);
-    consts->gRectOrigin = int2(m_CommonSettings.rectOrigin[0], m_CommonSettings.rectOrigin[1]);
+    consts->gInputRectOrigin = int2(m_CommonSettings.inputRectOrigin[0], m_CommonSettings.inputRectOrigin[1]);
+    consts->gOutputRectOrigin = int2(m_CommonSettings.outputRectOrigin[0], m_CommonSettings.outputRectOrigin[1]);
     consts->gRectSizeMinusOne = int2(rectW - 1, rectH - 1);
     consts->gTilesSizeMinusOne = int2(tilesW - 1, tilesH - 1);
     consts->gOrthoMode = m_OrthoMode;

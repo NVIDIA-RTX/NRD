@@ -25,15 +25,15 @@ void Preload( uint2 sharedPos, int2 globalPos )
 {
     globalPos = clamp( globalPos, 0, gRectSizeMinusOne );
 
-    float viewZ = UnpackViewZ( gIn_ViewZ[ globalPos ] );
+    float viewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, globalPos ) );
 
     #if( NRD_HAS_DIFF )
-        float diffLuma = GetLuma( gIn_Diff[ globalPos ] );
+        float diffLuma = GetLuma( NRD_SURFACE( gIn_Diff, globalPos ) );
         s_DiffLuma[ sharedPos.y ][ sharedPos.x ] = !IsInDenoisingRange( viewZ ) ? REBLUR_INVALID : diffLuma;
     #endif
 
     #if( NRD_HAS_SPEC )
-        float specLuma = GetLuma( gIn_Spec[ globalPos ] );
+        float specLuma = GetLuma( NRD_SURFACE( gIn_Spec, globalPos ) );
         s_SpecLuma[ sharedPos.y ][ sharedPos.x ] = !IsInDenoisingRange( viewZ ) ? REBLUR_INVALID : specLuma;
     #endif
 }
@@ -44,7 +44,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     NRD_CTA_ORDER_REVERSED;
 
     // Preload
-    float isSky = gIn_Tiles[ pixelPos >> 4 ].x;
+    float isSky = NRD_SURFACE( gIn_Tiles, pixelPos >> 4 ).x;
     PRELOAD_INTO_SMEM_WITH_TILE_CHECK;
 
     // Tile-based early out
@@ -52,7 +52,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Early out
-    float viewZ = UnpackViewZ( gIn_ViewZ[ pixelPos ] );
+    float viewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, pixelPos ) );
     if( !IsInDenoisingRange( viewZ ) )
         return;
 
@@ -62,7 +62,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 X = Geometry::RotateVector( gViewToWorld, Xv );
 
     // Previous position and surface motion uv
-    float4 inMv = gInOut_Mv[ WithRectOrigin( pixelPos ) ];
+    float4 inMv = NRD_SURFACE( gInOut_Mv, pixelPos );
     float3 mv = inMv.xyz * gMvScale.xyz;
     float3 Xprev = X;
     float2 smbPixelUv = pixelUv + mv.xy;
@@ -85,15 +85,15 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Normal and roughness
     float materialID;
-    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( pixelPos ) ], materialID );
+    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( NRD_SURFACE( gIn_Normal_Roughness, pixelPos ), materialID );
     float3 N = normalAndRoughness.xyz;
     float roughness = normalAndRoughness.w;
 
     // Shared data
     uint bits;
     bool smbAllowCatRom;
-    REBLUR_DATA1_TYPE data1 = UnpackData1( gIn_Data1[ pixelPos ] );
-    float2 data2 = UnpackData2( gIn_Data2[ pixelPos ], bits, smbAllowCatRom );
+    REBLUR_DATA1_TYPE data1 = UnpackData1( NRD_SURFACE( gIn_Data1, pixelPos ) );
+    float2 data2 = UnpackData2( NRD_SURFACE( gIn_Data2, pixelPos ), bits, smbAllowCatRom );
 
     // Surface motion footprint
     Filtering::Bilinear smbBilinearFilter = Filtering::GetBilinearFilter( smbPixelUv, gRectSizePrev );
@@ -145,7 +145,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float diffLumaHistory;
 
         BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(
-            saturate( smbPixelUv ) * gRectSizePrev, gResourceSizeInvPrev,
+            NRD_PIXEL_POS( gHistory_DiffLumaStabilized, saturate( smbPixelUv ) * gRectSizePrev ), gResourceSizeInvPrev,
             smbOcclusionWeights, smbAllowCatRom,
             gHistory_DiffLumaStabilized, diffLumaHistory
         );
@@ -170,20 +170,20 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float diffLumaStabilized = lerp( diffLuma, diffLumaHistory, min( diffHistoryWeight, gStabilizationStrength ) );
 
-        REBLUR_TYPE diff = gIn_Diff[ pixelPos ];
+        REBLUR_TYPE diff = NRD_SURFACE( gIn_Diff, pixelPos );
         diff = ChangeLuma( diff, diffLumaStabilized );
         #if( NRD_MODE == NRD_MODE_SH )
-            REBLUR_SH_TYPE diffSh = gIn_DiffSh[ pixelPos ];
+            REBLUR_SH_TYPE diffSh = NRD_SURFACE( gIn_DiffSh, pixelPos );
             diffSh *= GetLumaScale( length( diffSh ), diffLumaStabilized );
         #endif
 
         // Output
         diff.w = gReturnHistoryLengthInsteadOfOcclusion ? data1.x : diff.w;
 
-        gOut_Diff[ pixelPos ] = diff;
-        gOut_DiffLumaStabilized[ pixelPos ] = diffLumaStabilized;
+        NRD_SURFACE( gOut_Diff, pixelPos ) = diff;
+        NRD_SURFACE( gOut_DiffLumaStabilized, pixelPos ) = diffLumaStabilized;
         #if( NRD_MODE == NRD_MODE_SH )
-            gOut_DiffSh[ pixelPos ] = diffSh;
+            NRD_SURFACE( gOut_DiffSh, pixelPos ) = diffSh;
         #endif
     #endif
 
@@ -226,7 +226,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         // Hit distance for tracking ( tests 3, 6, 8, 67, 149, 155, 160, 217 )
         // This matches "vmbOcclusion" is computed for
         // TODO: adds pixelation in some cases, more fun if lobe trimming is off
-        float hitDistForTracking = gIn_SpecHitDistForTracking[ pixelPos ];
+        float hitDistForTracking = NRD_SURFACE( gIn_SpecHitDistForTracking, pixelPos );
 
         // Virtual motion
         float virtualHistoryAmount = data2.x;
@@ -258,7 +258,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float specLumaHistory;
 
         BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(
-            saturate( uv ) * gRectSizePrev, gResourceSizeInvPrev,
+            NRD_PIXEL_POS( gHistory_SpecLumaStabilized, saturate( uv ) * gRectSizePrev ), gResourceSizeInvPrev,
             occlusionWeights, allowCatRom,
             gHistory_SpecLumaStabilized, specLumaHistory
         );
@@ -297,22 +297,22 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float specLumaStabilized = lerp( specLuma, specLumaHistory, min( specHistoryWeight, gStabilizationStrength ) );
 
-        REBLUR_TYPE spec = gIn_Spec[ pixelPos ];
+        REBLUR_TYPE spec = NRD_SURFACE( gIn_Spec, pixelPos );
         spec = ChangeLuma( spec, specLumaStabilized );
         #if( NRD_MODE == NRD_MODE_SH )
-            REBLUR_SH_TYPE specSh = gIn_SpecSh[ pixelPos ];
+            REBLUR_SH_TYPE specSh = NRD_SURFACE( gIn_SpecSh, pixelPos );
             specSh *= GetLumaScale( length( specSh ), specLumaStabilized );
         #endif
 
         // Output
         spec.w = gReturnHistoryLengthInsteadOfOcclusion ? data1.y : spec.w;
 
-        gOut_Spec[ pixelPos ] = spec;
-        gOut_SpecLumaStabilized[ pixelPos ] = specLumaStabilized;
+        NRD_SURFACE( gOut_Spec, pixelPos ) = spec;
+        NRD_SURFACE( gOut_SpecLumaStabilized, pixelPos ) = specLumaStabilized;
         #if( NRD_MODE == NRD_MODE_SH )
-            gOut_SpecSh[ pixelPos ] = specSh;
+            NRD_SURFACE( gOut_SpecSh, pixelPos ) = specSh;
         #endif
     #endif
 
-    gOut_InternalData[ pixelPos ] = PackInternalData( data1.x, data1.y, materialID );
+    NRD_SURFACE( gOut_InternalData, pixelPos ) = PackInternalData( data1.x, data1.y, materialID );
 }

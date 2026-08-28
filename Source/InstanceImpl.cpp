@@ -292,6 +292,12 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
     isValid &= m_CommonSettings.rectSizePrev[0] != 0 && m_CommonSettings.rectSizePrev[1] != 0;
     assert("'rectSizePrev' can't be 0" && isValid);
 
+    isValid &= uint64_t(m_CommonSettings.inputRectOrigin[0]) + m_CommonSettings.rectSize[0] <= m_CommonSettings.resourceSize[0] && uint64_t(m_CommonSettings.inputRectOrigin[1]) + m_CommonSettings.rectSize[1] <= m_CommonSettings.resourceSize[1];
+    assert("'inputRectOrigin + rectSize' must not exceed 'resourceSize'" && isValid);
+
+    isValid &= uint64_t(m_CommonSettings.outputRectOrigin[0]) + m_CommonSettings.rectSize[0] <= m_CommonSettings.resourceSize[0] && uint64_t(m_CommonSettings.outputRectOrigin[1]) + m_CommonSettings.rectSize[1] <= m_CommonSettings.resourceSize[1];
+    assert("'outputRectOrigin + rectSize' must not exceed 'resourceSize'" && isValid);
+
     isValid &= ((m_CommonSettings.motionVectorScale[0] != 0.0f && m_CommonSettings.motionVectorScale[1] != 0.0f) || m_CommonSettings.isMotionVectorInWorldSpace);
     assert("'mvScale.xy' can't be 0" && isValid);
 
@@ -319,8 +325,11 @@ nrd::Result nrd::InstanceImpl::SetCommonSettings(const CommonSettings& commonSet
     isValid &= m_CommonSettings.historyFixAlternatePixelStrideMaterialID == 999.0f || GetLibraryDesc()->normalEncoding == NormalEncoding::R10_G10_B10_A2_UNORM;
     assert("'historyFixAlternatePixelStrideMaterialID' must be 999 if material ID is not supported by encoding" && isValid);
 
-    isValid &= NRD_SUPPORTS_VIEWPORT_OFFSET || (m_CommonSettings.rectOrigin[0] == 0 && m_CommonSettings.rectOrigin[1] == 0);
-    assert("'rectOrigin' must be 0 if 'NRD_SUPPORTS_VIEWPORT_OFFSET = 0'" && isValid);
+    isValid &= NRD_SUPPORTS_VIEWPORT_OFFSET || (m_CommonSettings.inputRectOrigin[0] == 0 && m_CommonSettings.inputRectOrigin[1] == 0);
+    assert("'inputRectOrigin' must be 0 if 'NRD_SUPPORTS_VIEWPORT_OFFSET = 0'" && isValid);
+
+    isValid &= NRD_SUPPORTS_VIEWPORT_OFFSET || (m_CommonSettings.outputRectOrigin[0] == 0 && m_CommonSettings.outputRectOrigin[1] == 0);
+    assert("'outputRectOrigin' must be 0 if 'NRD_SUPPORTS_VIEWPORT_OFFSET = 0'" && isValid);
 
     isValid &= NRD_SUPPORTS_HISTORY_CONFIDENCE || !m_CommonSettings.isHistoryConfidenceAvailable;
     assert("'isHistoryConfidenceAvailable' must be 'false' if 'NRD_SUPPORTS_HISTORY_CONFIDENCE = 0'" && isValid);
@@ -512,12 +521,18 @@ nrd::Result nrd::InstanceImpl::GetComputeDispatches(const Identifier* identifier
             // Add a clear dispatch
             const InternalDispatchDesc& internalDispatchDesc = m_Dispatches[m_DispatchClearIndex[clearResource.isInteger ? 1 : 0]];
 
-            uint16_t w = DivideUp(m_CommonSettings.resourceSize[0], clearResource.downsampleFactor);
-            uint16_t h = DivideUp(m_CommonSettings.resourceSize[1], clearResource.downsampleFactor);
+            bool isInput = clearResource.resource.type >= ResourceType::IN_MV && clearResource.resource.type <= ResourceType::IN_SIGNAL;
+            bool isOutput = clearResource.resource.type >= ResourceType::OUT_DIFF_RADIANCE_HITDIST && clearResource.resource.type <= ResourceType::OUT_VALIDATION;
+            bool useRect = isInput || isOutput || clearResource.resource.type == ResourceType::PERMANENT_POOL;
+
+            uint16_t w = useRect ? m_CommonSettings.rectSize[0] : DivideUp(m_CommonSettings.resourceSize[0], clearResource.downsampleFactor);
+            uint16_t h = useRect ? m_CommonSettings.rectSize[1] : DivideUp(m_CommonSettings.resourceSize[1], clearResource.downsampleFactor);
 
             ClearConstants* consts = (ClearConstants*)PushDispatch(internalDispatchDesc, clearResource.identifier, &clearResource.resource, 1, w, h);
-            if (consts)
+            if (consts) {
                 consts->gRectSize = int2(w, h);
+                consts->gDispatchOutputRectOrigin = isInput ? int2(m_CommonSettings.inputRectOrigin[0], m_CommonSettings.inputRectOrigin[1]) : useRect ? int2(m_CommonSettings.outputRectOrigin[0], m_CommonSettings.outputRectOrigin[1]) : int2(0, 0);
+            }
         }
     }
 

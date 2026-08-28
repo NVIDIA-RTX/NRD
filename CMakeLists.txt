@@ -13,7 +13,7 @@ endif()
 # Options
 option(NRD_STATIC_LIBRARY "Build static library" OFF)
 option(NRD_NRI "Pull, build and include NRI into NRD SDK package" OFF)
-option(NRD_SUPPORTS_VIEWPORT_OFFSET "Enable 'CommonSettings::rectOrigin' support" OFF)
+option(NRD_SUPPORTS_VIEWPORT_OFFSET "Enable 'CommonSettings::inputRectOrigin' and 'CommonSettings::outputRectOrigin' support" OFF)
 option(NRD_SUPPORTS_CHECKERBOARD "Enable 'checkerboardMode' support" ON)
 option(NRD_SUPPORTS_HISTORY_CONFIDENCE "Enable 'IN_DIFF_CONFIDENCE' and 'IN_SPEC_CONFIDENCE' support" ON)
 option(NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX "Enable 'IN_DISOCCLUSION_THRESHOLD_MIX' support" ON)
@@ -156,7 +156,7 @@ if(NOT TARGET NRI AND NRD_NRI)
         nri
         DOWNLOAD_EXTRACT_TIMESTAMP 1
         DOWNLOAD_NO_PROGRESS 1
-        URL https://github.com/NVIDIA-RTX/NRI/archive/refs/tags/v180.zip
+        URL https://github.com/NVIDIA-RTX/NRI/archive/fc09d7dd31566b14df040029a3360de0a4a44b2d.zip
     )
     list(APPEND DEPS nri)
 endif()

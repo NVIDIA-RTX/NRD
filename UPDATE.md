@@ -346,6 +346,13 @@ A single NRD instance can now include any combination of denoisers, including re
   - `ReblurResponsiveAccumulationSettings` renamed to `ReblurReblurResponsiveAccumulationSettings` (no changes in meaning)
   - added `ReblurConvergenceSettings`
 
+## To v4.18
+- *API*:
+  - renamed `CommonSettings::rectOrigin` to `CommonSettings::inputRectOrigin` and applied it to `IN_` resources, excluding `IN_DIFF_CONFIDENCE`, `IN_SPEC_CONFIDENCE` and `IN_DISOCCLUSION_THRESHOLD_MIX`
+  - added `CommonSettings::outputRectOrigin`, enabled by `NRD_SUPPORTS_VIEWPORT_OFFSET`. It is applied to all `OUT_` resources and resources from `PERMANENT_POOL` on both reads and writes, including previous-frame history. Changing it assumes `AccumulationMode::CLEAR_AND_RESTART`
+- *Custom shader compilation*:
+  - `NRD_INPUT` and `NRD_OUTPUT` now take `policy` as the 6th argument and must invoke `NRD_DECLARE_RESOURCE`
+
 ## Custom shader compilation
 - since v4.16 `NRDConfig.hlsli` is included into every shader (including `NRD.hlsli`), delivering shared compile-time options. So there is no need to "copy-paste" anything from CMake
 - `PipelineDesc::shaderIdentifier` defines a shader permutation as `fileName|macro1=value1|macro2=value2...` (or just `fileName`, no whitespace characters)

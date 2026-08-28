@@ -27,36 +27,36 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if( pixelUv.x > gSplitScreen || any( pixelPos >= gRectSize ) )
         return;
 
-    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pixelPos ) ] );
+    float viewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, pixelPos ) );
     uint2 checkerboardPos = pixelPos;
 
     #if( NRD_HAS_DIFF )
         checkerboardPos.x = pixelPos.x >> ( gDiffCheckerboard != 2 ? 1 : 0 );
 
-        float4 diff = gIn_Diff[ checkerboardPos ];
+        float4 diff = NRD_SURFACE( gIn_Diff, checkerboardPos );
         #if( NRD_MODE == NRD_MODE_SH )
             diff.xyz = _NRD_LinearToYCoCg( diff.xyz ); // TODO: RELAX uses RGB for SH instead of SG_Create (see NRD.hlsli)
         #endif
-        gOut_Diff[ pixelPos ] = diff * float( IsInDenoisingRange(viewZ) );
+        NRD_SURFACE( gOut_Diff, pixelPos ) = diff * float( IsInDenoisingRange(viewZ) );
 
         #if( NRD_MODE == NRD_MODE_SH )
-            RELAX_SH_TYPE diffSh = gIn_DiffSh[ checkerboardPos ];
-            gOut_DiffSh[ pixelPos ] = diffSh * float( IsInDenoisingRange(viewZ) );
+            RELAX_SH_TYPE diffSh = NRD_SURFACE( gIn_DiffSh, checkerboardPos );
+            NRD_SURFACE( gOut_DiffSh, pixelPos ) = diffSh * float( IsInDenoisingRange(viewZ) );
         #endif
     #endif
 
     #if( NRD_HAS_SPEC )
         checkerboardPos.x = pixelPos.x >> ( gSpecCheckerboard != 2 ? 1 : 0 );
 
-        float4 spec = gIn_Spec[ checkerboardPos ];
+        float4 spec = NRD_SURFACE( gIn_Spec, checkerboardPos );
         #if( NRD_MODE == NRD_MODE_SH )
             spec.xyz = _NRD_LinearToYCoCg( spec.xyz ); // TODO: RELAX uses RGB for SH instead of SG_Create (see NRD.hlsli)
         #endif
-        gOut_Spec[ pixelPos ] = spec * float( IsInDenoisingRange(viewZ) );
+        NRD_SURFACE( gOut_Spec, pixelPos ) = spec * float( IsInDenoisingRange(viewZ) );
 
         #if( NRD_MODE == NRD_MODE_SH )
-            RELAX_SH_TYPE specSh = gIn_SpecSh[ checkerboardPos ];
-            gOut_SpecSh[ pixelPos ] = specSh * float( IsInDenoisingRange(viewZ) );
+            RELAX_SH_TYPE specSh = NRD_SURFACE( gIn_SpecSh, checkerboardPos );
+            NRD_SURFACE( gOut_SpecSh, pixelPos ) = specSh * float( IsInDenoisingRange(viewZ) );
         #endif
     #endif
 }

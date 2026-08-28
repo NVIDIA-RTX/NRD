@@ -27,30 +27,30 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if( pixelUv.x > gSplitScreen || any( pixelPos > gRectSizeMinusOne ) )
         return;
 
-    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pixelPos ) ] );
+    float viewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, pixelPos ) );
     uint2 checkerboardPos = pixelPos;
 
     #if( NRD_HAS_DIFF )
         checkerboardPos.x = pixelPos.x >> ( gDiffCheckerboard != 2 ? 1 : 0 );
 
-        REBLUR_TYPE diff = gIn_Diff[ checkerboardPos ];
-        gOut_Diff[ pixelPos ] = diff * float( IsInDenoisingRange( viewZ ) );
+        REBLUR_TYPE diff = NRD_SURFACE( gIn_Diff, checkerboardPos );
+        NRD_SURFACE( gOut_Diff, pixelPos ) = diff * float( IsInDenoisingRange( viewZ ) );
 
         #if( NRD_MODE == NRD_MODE_SH )
-            REBLUR_SH_TYPE diffSh = gIn_DiffSh[ checkerboardPos ];
-            gOut_DiffSh[ pixelPos ] = diffSh * float( IsInDenoisingRange( viewZ ) );
+            REBLUR_SH_TYPE diffSh = NRD_SURFACE( gIn_DiffSh, checkerboardPos );
+            NRD_SURFACE( gOut_DiffSh, pixelPos ) = diffSh * float( IsInDenoisingRange( viewZ ) );
         #endif
     #endif
 
     #if( NRD_HAS_SPEC )
         checkerboardPos.x = pixelPos.x >> ( gSpecCheckerboard != 2 ? 1 : 0 );
 
-        REBLUR_TYPE spec = gIn_Spec[ checkerboardPos ];
-        gOut_Spec[ pixelPos ] = spec * float( IsInDenoisingRange( viewZ ) );
+        REBLUR_TYPE spec = NRD_SURFACE( gIn_Spec, checkerboardPos );
+        NRD_SURFACE( gOut_Spec, pixelPos ) = spec * float( IsInDenoisingRange( viewZ ) );
 
         #if( NRD_MODE == NRD_MODE_SH )
-            REBLUR_SH_TYPE specSh = gIn_SpecSh[ checkerboardPos ];
-            gOut_SpecSh[ pixelPos ] = specSh * float( IsInDenoisingRange( viewZ ) );
+            REBLUR_SH_TYPE specSh = NRD_SURFACE( gIn_SpecSh, checkerboardPos );
+            NRD_SURFACE( gOut_SpecSh, pixelPos ) = specSh * float( IsInDenoisingRange( viewZ ) );
         #endif
     #endif
 }

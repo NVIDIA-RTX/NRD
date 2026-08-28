@@ -25,14 +25,14 @@ void Preload( uint2 sharedPos, int2 globalPos )
 {
     globalPos = clamp( globalPos, 0, gRectSizeMinusOne );
 
-    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( globalPos ) ] );
+    float viewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, globalPos ) );
 
-    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( globalPos ) ] );
+    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( NRD_SURFACE( gIn_Normal_Roughness, globalPos ) );
     s_Normal_Roughness[ sharedPos.y ][ sharedPos.x ] = normalAndRoughness;
 
     float2 hitDist = 0.0;
     #if( NRD_HAS_DIFF )
-        hitDist.x = ExtractHitDist( gIn_Diff[ globalPos ] );
+        hitDist.x = ExtractHitDist( NRD_SURFACE( gIn_Diff, globalPos ) );
 
         #if( REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION == 1 )
             hitDist.x *= _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings.xyz, 1.0 );
@@ -40,7 +40,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
     #endif
 
     #if( NRD_HAS_SPEC )
-        hitDist.y = ExtractHitDist( gIn_Spec[ globalPos ] );
+        hitDist.y = ExtractHitDist( NRD_SURFACE( gIn_Spec, globalPos ) );
 
         #if( REBLUR_USE_DECOMPRESSED_HIT_DIST_IN_RECONSTRUCTION == 1 )
             hitDist.y *= _REBLUR_GetHitDistanceNormalization( viewZ, gHitDistSettings.xyz, normalAndRoughness.w );
@@ -56,7 +56,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     NRD_CTA_ORDER_DEFAULT;
 
     // Preload
-    float isSky = gIn_Tiles[ pixelPos >> 4 ].x;
+    float isSky = NRD_SURFACE( gIn_Tiles, pixelPos >> 4 ).x;
     PRELOAD_INTO_SMEM_WITH_TILE_CHECK;
 
     // Tile-based early out
@@ -149,19 +149,19 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Output
     #if( NRD_HAS_DIFF )
         #if( NRD_MODE == NRD_MODE_OCCLUSION )
-            gOut_Diff[ pixelPos ] = center.x;
+            NRD_SURFACE( gOut_Diff, pixelPos ) = center.x;
         #else
-            float3 diff = gIn_Diff[ pixelPos ].xyz;
-            gOut_Diff[ pixelPos ] = float4( diff, center.x );
+            float3 diff = NRD_SURFACE( gIn_Diff, pixelPos ).xyz;
+            NRD_SURFACE( gOut_Diff, pixelPos ) = float4( diff, center.x );
         #endif
     #endif
 
     #if( NRD_HAS_SPEC )
         #if( NRD_MODE == NRD_MODE_OCCLUSION )
-            gOut_Spec[ pixelPos ] = center.y;
+            NRD_SURFACE( gOut_Spec, pixelPos ) = center.y;
         #else
-            float3 spec = gIn_Spec[ pixelPos ].xyz;
-            gOut_Spec[ pixelPos ] = float4( spec, center.y );
+            float3 spec = NRD_SURFACE( gIn_Spec, pixelPos ).xyz;
+            NRD_SURFACE( gOut_Spec, pixelPos ) = float4( spec, center.y );
         #endif
     #endif
 }

@@ -24,19 +24,19 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     NRD_CTA_ORDER_REVERSED;
 
     // Tile-based early out ( quad uniform )
-    float isSky = gIn_Tiles[ pixelPos >> 4 ].x;
+    float isSky = NRD_SURFACE( gIn_Tiles, pixelPos >> 4 ).x;
     if( isSky != 0.0 )
         return;
 
     // Non-linear accum speed
     int2 clampedPixelPos = min( pixelPos, gRectSizeMinusOne );
-    REBLUR_DATA1_TYPE data1 = UnpackData1( gIn_Data1[ clampedPixelPos ] );
+    REBLUR_DATA1_TYPE data1 = UnpackData1( NRD_SURFACE( gIn_Data1, clampedPixelPos ) );
 
     REBLUR_DATA1_TYPE nonLinearAccumSpeed;
     nonLinearAccumSpeed.x = GetAdvancedNonLinearAccumSpeed( data1.x );
     nonLinearAccumSpeed.y = GetAdvancedNonLinearAccumSpeed( data1.y );
 
-    float viewZ = UnpackViewZ( gIn_ViewZ[ clampedPixelPos ] );
+    float viewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, clampedPixelPos ) );
     nonLinearAccumSpeed = !IsInDenoisingRange( viewZ ) ? 0.0 : nonLinearAccumSpeed; // less blur on "SKY" edges
 
     #if( NRD_SUPPORTS_QUAD_INTRINSICS == 1 )
@@ -57,7 +57,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Center data
     float materialID;
-    float4 normalAndRoughnessPacked = gIn_Normal_Roughness[ WithRectOrigin( pixelPos ) ];
+    float4 normalAndRoughnessPacked = NRD_SURFACE( gIn_Normal_Roughness, pixelPos );
     float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( normalAndRoughnessPacked, materialID );
     float3 N = normalAndRoughness.xyz;
     float3 Nv = Geometry::RotateVectorInverse( gViewToWorld, N );
@@ -74,11 +74,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Output
     #if( REBLUR_COPY_GBUFFER == 1 )
-        gOut_Normal_Roughness[ pixelPos ] = normalAndRoughnessPacked;
+        NRD_SURFACE( gOut_Normal_Roughness, pixelPos ) = normalAndRoughnessPacked;
     #endif
 
     #if( TEMPORAL_STABILIZATION == 0 )
-        gOut_InternalData[ pixelPos ] = PackInternalData( data1.x, data1.y, materialID );
+        NRD_SURFACE( gOut_InternalData, pixelPos ) = PackInternalData( data1.x, data1.y, materialID );
     #endif
 
     // Spatial filtering

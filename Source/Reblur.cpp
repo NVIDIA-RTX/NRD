@@ -136,16 +136,18 @@ void nrd::InstanceImpl::Update_Reblur(const DenoiserData& denoiserData) {
         uint32_t passIndex = AsUint(Dispatch::HITDIST_RECONSTRUCTION)
             + (settings.hitDistanceReconstructionMode == HitDistanceReconstructionMode::AREA_5X5 ? 2 : 0)
             + (!skipPrePass ? 1 : 0);
-        void* consts = PushDispatch(denoiserData, passIndex);
+        REBLUR_HitDistReconstructionConstants* consts = (REBLUR_HitDistReconstructionConstants*)PushDispatch(denoiserData, passIndex);
         AddSharedConstants_Reblur(settings, consts);
+        consts->gDispatchOutputRectOrigin = skipPrePass ? consts->gOutputRectOrigin : int2(0, 0);
     }
 
     // PREPASS
     if (!skipPrePass) {
         uint32_t passIndex = AsUint(Dispatch::PREPASS)
             + (enableHitDistanceReconstruction ? 1 : 0);
-        void* consts = PushDispatch(denoiserData, passIndex);
+        REBLUR_PrePassConstants* consts = (REBLUR_PrePassConstants*)PushDispatch(denoiserData, passIndex);
         AddSharedConstants_Reblur(settings, consts);
+        consts->gDispatchInputRectOrigin = enableHitDistanceReconstruction ? int2(0, 0) : consts->gInputRectOrigin;
     }
 
     { // TEMPORAL_ACCUMULATION
@@ -153,8 +155,9 @@ void nrd::InstanceImpl::Update_Reblur(const DenoiserData& denoiserData) {
             + (m_CommonSettings.isDisocclusionThresholdMixAvailable ? 4 : 0)
             + (m_CommonSettings.isHistoryConfidenceAvailable ? 2 : 0)
             + ((!skipPrePass || enableHitDistanceReconstruction) ? 1 : 0);
-        void* consts = PushDispatch(denoiserData, passIndex);
+        REBLUR_TemporalAccumulationConstants* consts = (REBLUR_TemporalAccumulationConstants*)PushDispatch(denoiserData, passIndex);
         AddSharedConstants_Reblur(settings, consts);
+        consts->gDispatchInputRectOrigin = (!skipPrePass || enableHitDistanceReconstruction) ? consts->gOutputRectOrigin : consts->gInputRectOrigin;
     }
 
     { // HISTORY_FIX
@@ -193,8 +196,8 @@ void nrd::InstanceImpl::Update_Reblur(const DenoiserData& denoiserData) {
     if (m_CommonSettings.enableValidation) {
         REBLUR_ValidationConstants* consts = (REBLUR_ValidationConstants*)PushDispatch(denoiserData, AsUint(Dispatch::VALIDATION));
         AddSharedConstants_Reblur(settings, consts);
-        consts->gHasDiffuse = props.hasDiffuse ? 1 : 0;   // TODO: push constant
-        consts->gHasSpecular = props.hasSpecular ? 1 : 0; // TODO: push constant
+        consts->gHasDiffuse = props.hasDiffuse ? 1 : 0;
+        consts->gHasSpecular = props.hasSpecular ? 1 : 0;
     }
 }
 
@@ -234,8 +237,9 @@ void nrd::InstanceImpl::Update_ReblurOcclusion(const DenoiserData& denoiserData)
     if (enableHitDistanceReconstruction) {
         uint32_t passIndex = AsUint(Dispatch::HITDIST_RECONSTRUCTION)
             + (settings.hitDistanceReconstructionMode == HitDistanceReconstructionMode::AREA_5X5 ? 1 : 0);
-        void* consts = PushDispatch(denoiserData, passIndex);
+        REBLUR_HitDistReconstructionConstants* consts = (REBLUR_HitDistReconstructionConstants*)PushDispatch(denoiserData, passIndex);
         AddSharedConstants_Reblur(settings, consts);
+        consts->gDispatchOutputRectOrigin = consts->gOutputRectOrigin;
     }
 
     { // TEMPORAL_ACCUMULATION
@@ -243,8 +247,9 @@ void nrd::InstanceImpl::Update_ReblurOcclusion(const DenoiserData& denoiserData)
             + (m_CommonSettings.isDisocclusionThresholdMixAvailable ? 4 : 0)
             + (m_CommonSettings.isHistoryConfidenceAvailable ? 2 : 0)
             + (enableHitDistanceReconstruction ? 1 : 0);
-        void* consts = PushDispatch(denoiserData, passIndex);
+        REBLUR_TemporalAccumulationConstants* consts = (REBLUR_TemporalAccumulationConstants*)PushDispatch(denoiserData, passIndex);
         AddSharedConstants_Reblur(settings, consts);
+        consts->gDispatchInputRectOrigin = enableHitDistanceReconstruction ? consts->gOutputRectOrigin : consts->gInputRectOrigin;
     }
 
     { // HISTORY_FIX
@@ -275,8 +280,8 @@ void nrd::InstanceImpl::Update_ReblurOcclusion(const DenoiserData& denoiserData)
     if (m_CommonSettings.enableValidation) {
         REBLUR_ValidationConstants* consts = (REBLUR_ValidationConstants*)PushDispatch(denoiserData, AsUint(Dispatch::VALIDATION));
         AddSharedConstants_Reblur(settings, consts);
-        consts->gHasDiffuse = props.hasDiffuse ? 1 : 0;   // TODO: push constant
-        consts->gHasSpecular = props.hasSpecular ? 1 : 0; // TODO: push constant
+        consts->gHasDiffuse = props.hasDiffuse ? 1 : 0;
+        consts->gHasSpecular = props.hasSpecular ? 1 : 0;
     }
 }
 
@@ -342,7 +347,10 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gResolutionScalePrev = float2(float(rectWprev) / float(resourceWprev), float(rectHprev) / float(resourceHprev));
     consts->gJitter = float2(m_CommonSettings.cameraJitter[0], m_CommonSettings.cameraJitter[1]);
     consts->gPrintfAt = uint2(m_CommonSettings.printfAt[0], m_CommonSettings.printfAt[1]);
-    consts->gRectOrigin = int2(m_CommonSettings.rectOrigin[0], m_CommonSettings.rectOrigin[1]);
+    consts->gInputRectOrigin = int2(m_CommonSettings.inputRectOrigin[0], m_CommonSettings.inputRectOrigin[1]);
+    consts->gOutputRectOrigin = int2(m_CommonSettings.outputRectOrigin[0], m_CommonSettings.outputRectOrigin[1]);
+    consts->gDispatchInputRectOrigin = int2(0, 0);
+    consts->gDispatchOutputRectOrigin = int2(0, 0);
     consts->gRectSizeMinusOne = int2(rectW - 1, rectH - 1);
     consts->gDisocclusionThreshold = m_CommonSettings.disocclusionThreshold + disocclusionThresholdBonus;
     consts->gDisocclusionThresholdAlternate = m_CommonSettings.disocclusionThresholdAlternate + disocclusionThresholdBonus;

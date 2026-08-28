@@ -42,7 +42,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     if( gResetHistory != 0 )
     {
-        gOut_Validation[ pixelPos ] = 0;
+        NRD_SURFACE( gOut_Validation, pixelPos ) = 0;
         return;
     }
 
@@ -57,21 +57,21 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     int2 diffPixelPos = int2( viewportUvScaled * float2( gDiffCheckerboard != 2 ? 0.5 : 1.0, 1.0 ) * gResourceSize );
     int2 specPixelPos = int2( viewportUvScaled * float2( gSpecCheckerboard != 2 ? 0.5 : 1.0, 1.0 ) * gResourceSize );
 
-    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( viewportPixelPos ) ] );
-    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( viewportPixelPos ) ] );
-    float3 mv = gIn_Mv[ WithRectOrigin( viewportPixelPos ) ] * gMvScale.xyz;
-    float4 diff = gIn_Diff[ diffPixelPos ];
-    float4 spec = gIn_Spec[ specPixelPos ];
+    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( NRD_SURFACE( gIn_Normal_Roughness, viewportPixelPos ) );
+    float viewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, viewportPixelPos ) );
+    float3 mv = NRD_SURFACE( gIn_Mv, viewportPixelPos ) * gMvScale.xyz;
+    float4 diff = NRD_SURFACE( gIn_Diff, diffPixelPos );
+    float4 spec = NRD_SURFACE( gIn_Spec, specPixelPos );
 
     // See "UnpackData1"
-    REBLUR_DATA1_TYPE data1 = gIn_Data1[ viewportPixelPos ];
+    REBLUR_DATA1_TYPE data1 = NRD_SURFACE( gIn_Data1, viewportPixelPos );
     if( !gHasDiffuse )
         data1.y = data1.x;
     data1 *= REBLUR_MAX_ACCUM_FRAME_NUM;
 
     uint bits;
     bool smbAllowCatRom;
-    float2 data2 = UnpackData2( gIn_Data2[ uint2( viewportUv * gRectSize ) ], bits, smbAllowCatRom );
+    float2 data2 = UnpackData2( NRD_SURFACE( gIn_Data2, uint2( viewportUv * gRectSize ) ), bits, smbAllowCatRom );
 
     float3 N = normalAndRoughness.xyz;
     float roughness = normalAndRoughness.w;
@@ -84,7 +84,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     uint4 textState = Text::Init( pixelPos, uint2( viewportId * gRectSize * VIEWPORT_SIZE + OFFSET ), 1 );
 
-    float4 result = gOut_Validation[ pixelPos ];
+    float4 result = NRD_SURFACE( gOut_Validation, pixelPos );
 
     if( viewportIndex == 4 )
     {
@@ -347,5 +347,5 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     }
 
     // Output
-    gOut_Validation[ pixelPos ] = result;
+    NRD_SURFACE( gOut_Validation, pixelPos ) = result;
 }

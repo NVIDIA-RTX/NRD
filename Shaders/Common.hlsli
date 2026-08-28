@@ -223,12 +223,6 @@ static const float3 g_Special8[ 8 ] =
 
 // Texture access
 
-#if( NRD_SUPPORTS_VIEWPORT_OFFSET == 1 )
-    #define WithRectOrigin( pos )               ( gRectOrigin + pos )
-#else
-    #define WithRectOrigin( pos )               ( pos )
-#endif
-
 #if( NRD_USE_DENANIFICATION == 1 )
     // clamp( uv * gRectSize, 0.0, gRectSize - 0.5 ) * gResourceSizeInv
     // = clamp( uv * gRectSize * gResourceSizeInv, 0.0, ( gRectSize - 0.5 ) * gResourceSizeInv )

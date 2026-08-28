@@ -24,18 +24,18 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     NRD_CTA_ORDER_REVERSED;
 
     // Tile-based early out
-    float isSky = gIn_Tiles[ pixelPos >> 4 ].x;
+    float isSky = NRD_SURFACE( gIn_Tiles, pixelPos >> 4 ).x;
     if( isSky != 0.0 || any( pixelPos > gRectSizeMinusOne ) )
         return;
 
     // Early out
-    float viewZ = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pixelPos ) ] );
+    float viewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, pixelPos ) );
     if( !IsInDenoisingRange( viewZ ) )
         return;
 
     // Center data
     float materialID;
-    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( pixelPos ) ], materialID );
+    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( NRD_SURFACE( gIn_Normal_Roughness, pixelPos ), materialID );
     float3 N = normalAndRoughness.xyz;
     float3 Nv = Geometry::RotateVectorInverse( gViewToWorld, N );
     float roughness = normalAndRoughness.w;
@@ -56,8 +56,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     int3 checkerboardPos = pixelPos.xxy + int3( -1, 1, 0 );
     checkerboardPos.x = max( checkerboardPos.x, 0 );
     checkerboardPos.y = min( checkerboardPos.y, gRectSizeMinusOne.x );
-    float viewZ0 = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( checkerboardPos.xz ) ] );
-    float viewZ1 = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( checkerboardPos.yz ) ] );
+    float viewZ0 = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, checkerboardPos.xz ) );
+    float viewZ1 = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, checkerboardPos.yz ) );
     float disocclusionThresholdCheckerboard = GetDisocclusionThreshold( NRD_DISOCCLUSION_THRESHOLD, frustumSize, NoV );
     float2 wc = GetDisocclusionWeight( float2( viewZ0, viewZ1 ), viewZ, disocclusionThresholdCheckerboard );
     wc.x = ( !IsInDenoisingRange( viewZ0 ) || pixelPos.x < 1 ) ? 0.0 : wc.x;

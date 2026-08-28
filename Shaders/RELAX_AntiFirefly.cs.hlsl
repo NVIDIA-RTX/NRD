@@ -34,15 +34,15 @@ void Preload(uint2 sharedPos, int2 globalPos)
     globalPos = clamp(globalPos, 0, gRectSize - 1.0);
 
     float materialID;
-    NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(globalPos)], materialID);
+    NRD_FrontEnd_UnpackNormalAndRoughness(NRD_SURFACE( gIn_Normal_Roughness, globalPos ), materialID);
     s_MaterialID[sharedPos.y][sharedPos.x] = materialID;
 
 #if( NRD_HAS_SPEC )
-    s_Spec[sharedPos.y][sharedPos.x] = gIn_Spec[globalPos];
+    s_Spec[sharedPos.y][sharedPos.x] = NRD_SURFACE( gIn_Spec, globalPos );
 #endif
 
 #if( NRD_HAS_DIFF )
-    s_Diff[sharedPos.y][sharedPos.x] = gIn_Diff[globalPos];
+    s_Diff[sharedPos.y][sharedPos.x] = NRD_SURFACE( gIn_Diff, globalPos );
 #endif
 }
 
@@ -174,7 +174,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 {
     NRD_CTA_ORDER_DEFAULT;
 
-    float isSky = gIn_Tiles[pixelPos >> 4];
+    float isSky = NRD_SURFACE( gIn_Tiles, pixelPos >> 4 );
     PRELOAD_INTO_SMEM_WITH_TILE_CHECK;
 
     // Tile-based early out
@@ -182,7 +182,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Early out if linearZ is beyond denoising range
-    float centerViewZ = UnpackViewZ(gIn_ViewZ[WithRectOrigin(pixelPos)]);
+    float centerViewZ = UnpackViewZ(NRD_SURFACE( gIn_ViewZ, pixelPos ));
     if (!IsInDenoisingRange( centerViewZ ))
         return;
 
@@ -207,10 +207,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     );
 
 #if( NRD_HAS_SPEC )
-    gOut_Spec[pixelPos.xy] = outSpecularIlluminationAnd2ndMoment;
+    NRD_SURFACE( gOut_Spec, pixelPos ) = outSpecularIlluminationAnd2ndMoment;
 #endif
 
 #if( NRD_HAS_DIFF )
-    gOut_Diff[pixelPos.xy] = outDiffuseIlluminationAnd2ndMoment;
+    NRD_SURFACE( gOut_Diff, pixelPos ) = outDiffuseIlluminationAnd2ndMoment;
 #endif
 }

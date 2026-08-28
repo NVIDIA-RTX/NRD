@@ -28,11 +28,11 @@ SIGMA_TYPE LoadInput( int2 globalPos, out float penumbra )
         inputPos.x >>= gCheckerboard == 2 ? 0 : 1;
     #endif
 
-    penumbra = gIn_Penumbra[ inputPos ];
+    penumbra = NRD_SURFACE( gIn_Penumbra, inputPos );
 
     SIGMA_TYPE shadowTranslucency;
     #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
-        shadowTranslucency = gIn_Shadow_Translucency[ inputPos ];
+        shadowTranslucency = NRD_SURFACE( gIn_Shadow_Translucency, inputPos );
     #else
         shadowTranslucency = IsLit( penumbra );
     #endif
@@ -50,7 +50,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
 
     float2 data;
     SIGMA_TYPE s = LoadInput( globalPos, data.x );
-    data.y = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( globalPos ) ] );
+    data.y = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, globalPos ) );
 
     #if( NRD_SUPPORTS_CHECKERBOARD == 1 && FIRST_PASS == 1 )
         uint checkerboard = Sequence::CheckerBoard( globalPos, gFrameIndex );
@@ -59,8 +59,8 @@ void Preload( uint2 sharedPos, int2 globalPos )
             int3 checkerboardPos = globalPos.xxy + int3( -1, 1, 0 );
             checkerboardPos.x = max( checkerboardPos.x, 0 );
             checkerboardPos.y = min( checkerboardPos.y, gRectSizeMinusOne.x );
-            float viewZ0 = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( checkerboardPos.xz ) ] );
-            float viewZ1 = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( checkerboardPos.yz ) ] );
+            float viewZ0 = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, checkerboardPos.xz ) );
+            float viewZ1 = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, checkerboardPos.yz ) );
             float frustumSize = GetFrustumSize( gMinRectDimMulUnproject, gOrthoMode, data.y );
             float disocclusionThreshold = GetDisocclusionThreshold( NRD_DISOCCLUSION_THRESHOLD, frustumSize, 1.0 );
             float2 wc = GetDisocclusionWeight( float2( viewZ0, viewZ1 ), data.y, disocclusionThreshold );
@@ -105,7 +105,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #endif
 
     // Preload
-    float isSky = gIn_Tiles[ pixelPos >> 4 ].x;
+    float isSky = NRD_SURFACE( gIn_Tiles, pixelPos >> 4 ).x;
     PRELOAD_INTO_SMEM_WITH_TILE_CHECK;
 
     // Tile-based early out
@@ -131,9 +131,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #if( FIRST_PASS == 0 )
         if( gStabilizationStrength != 0 )
     #endif
-            gOut_Penumbra[ pixelPos ] = centerPenumbra;
+            NRD_SURFACE( gOut_Penumbra, pixelPos ) = centerPenumbra;
 
-        gOut_Shadow_Translucency[ pixelPos ] = PackShadow( s_Shadow_Translucency[ smemPos.y ][ smemPos.x ] );
+        NRD_SURFACE( gOut_Shadow_Translucency, pixelPos ) = PackShadow( s_Shadow_Translucency[ smemPos.y ][ smemPos.x ] );
 
         return;
     }
@@ -142,7 +142,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 Xv = Geometry::ReconstructViewPosition( pixelUv, gFrustum, viewZ, gOrthoMode );
 
     // Normal
-    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( gIn_Normal_Roughness[ WithRectOrigin( pixelPos ) ] );
+    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( NRD_SURFACE( gIn_Normal_Roughness, pixelPos ) );
     float3 N = normalAndRoughness.xyz;
     float3 Nv = Geometry::RotateVector( gWorldToView, N );
 
@@ -297,9 +297,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         // Fetch data
         int2 inputPos = int2( checkerboardX, pos.y );
-        float penum = gIn_Penumbra[ inputPos ];
+        float penum = NRD_SURFACE( gIn_Penumbra, inputPos );
 
-        float zs = UnpackViewZ( gIn_ViewZ[ WithRectOrigin( pos ) ] );
+        float zs = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, pos ) );
         float3 Xvs = Geometry::ReconstructViewPosition( float2( pos + 0.5 ) * gRectSizeInv, gFrustum, zs, gOrthoMode );
 
         // Sample weight
@@ -313,7 +313,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         SIGMA_TYPE s;
         #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
-            s = gIn_Shadow_Translucency[ inputPos ];
+            s = NRD_SURFACE( gIn_Shadow_Translucency, inputPos );
         #else
             s = IsLit( penum );
         #endif
@@ -343,7 +343,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #if( FIRST_PASS == 0 )
     if( gStabilizationStrength != 0 )
 #endif
-        gOut_Penumbra[ pixelPos ] = penumbra;
+        NRD_SURFACE( gOut_Penumbra, pixelPos ) = penumbra;
 
-    gOut_Shadow_Translucency[ pixelPos ] = PackShadow( result );
+    NRD_SURFACE( gOut_Shadow_Translucency, pixelPos ) = PackShadow( result );
 }

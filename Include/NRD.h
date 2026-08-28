@@ -37,9 +37,9 @@ Special thanks:
 #include <cstddef>
 
 #define NRD_VERSION_MAJOR 4
-#define NRD_VERSION_MINOR 17
-#define NRD_VERSION_BUILD 4
-#define NRD_VERSION_DATE "17 August 2026"
+#define NRD_VERSION_MINOR 18
+#define NRD_VERSION_BUILD 0
+#define NRD_VERSION_DATE "27 August 2026"
 
 #if defined(_WIN32)
     #define NRD_CALL __stdcall

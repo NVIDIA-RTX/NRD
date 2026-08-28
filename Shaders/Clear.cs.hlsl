@@ -23,5 +23,5 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if( any( pixelPos >= gRectSize ) )
         return;
 
-    gOut[ pixelPos ] = 0;
+    NRD_SURFACE( gOut, pixelPos ) = 0;
 }

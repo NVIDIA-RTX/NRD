@@ -29,20 +29,20 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     NRD_CTA_ORDER_REVERSED;
 
     // Tile-based early out
-    float isSky = gIn_Tiles[pixelPos >> 4];
+    float isSky = NRD_SURFACE( gIn_Tiles, pixelPos >> 4 );
     if (isSky != 0.0 || any(pixelPos >= gRectSize))
         return;
 
     // Early out if linearZ is beyond denoising range
     // Early out if no disocclusion detected
-    float centerViewZ = UnpackViewZ(gIn_ViewZ[WithRectOrigin(pixelPos)]);
-    float historyLength = 255.0 * gIn_HistoryLength[pixelPos];
+    float centerViewZ = UnpackViewZ(NRD_SURFACE( gIn_ViewZ, pixelPos ));
+    float historyLength = 255.0 * NRD_SURFACE( gIn_HistoryLength, pixelPos );
     if ((!IsInDenoisingRange( centerViewZ )) || (historyLength > gHistoryFixFrameNum || gHistoryFixFrameNum == 1.0))
         return;
 
     // Loading center data
     float centerMaterialID;
-    float4 centerNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(pixelPos)], centerMaterialID);
+    float4 centerNormalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(NRD_SURFACE( gIn_Normal_Roughness, pixelPos ), centerMaterialID);
     float3 centerNormal = centerNormalRoughness.rgb;
     float centerRoughness = centerNormalRoughness.a;
     float3 centerWorldPos = GetCurrentWorldPosFromPixelPos(pixelPos, centerViewZ);
@@ -50,16 +50,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float depthThreshold = gDepthThreshold * (gOrthoMode == 0 ? centerViewZ : 1.0);
 
 #if( NRD_HAS_DIFF )
-    float4 diffuseIlluminationAnd2ndMomentSum = gIn_Diff[pixelPos];
+    float4 diffuseIlluminationAnd2ndMomentSum = NRD_SURFACE( gIn_Diff, pixelPos );
     #if( NRD_MODE == NRD_MODE_SH )
-        RELAX_SH_TYPE diffuseSumSH = gIn_DiffSh[pixelPos];
+        RELAX_SH_TYPE diffuseSumSH = NRD_SURFACE( gIn_DiffSh, pixelPos );
     #endif
     float diffuseWSum = 1;
 #endif
 #if( NRD_HAS_SPEC )
-    float4 specularIlluminationAnd2ndMomentSum = gIn_Spec[pixelPos];
+    float4 specularIlluminationAnd2ndMomentSum = NRD_SURFACE( gIn_Spec, pixelPos );
     #if( NRD_MODE == NRD_MODE_SH )
-        RELAX_SH_TYPE specularSumSH = gIn_SpecSh[pixelPos];
+        RELAX_SH_TYPE specularSumSH = NRD_SURFACE( gIn_SpecSh, pixelPos );
     #endif
     float specularWSum = 1;
     float2 specularNormalWeightParams = GetNormalWeightParams_ATrous(
@@ -93,9 +93,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             samplePosInt = uv * gRectSize;
 
             float sampleMaterialID;
-            float3 sampleNormal = NRD_FrontEnd_UnpackNormalAndRoughness(gIn_Normal_Roughness[WithRectOrigin(samplePosInt)], sampleMaterialID).rgb;
+            float3 sampleNormal = NRD_FrontEnd_UnpackNormalAndRoughness(NRD_SURFACE( gIn_Normal_Roughness, samplePosInt ), sampleMaterialID).rgb;
 
-            float sampleViewZ = UnpackViewZ(gIn_ViewZ[WithRectOrigin(samplePosInt)]);
+            float sampleViewZ = UnpackViewZ(NRD_SURFACE( gIn_ViewZ, samplePosInt ));
             float3 sampleWorldPos = GetCurrentWorldPosFromPixelPos(samplePosInt, sampleViewZ);
 
             float geometryWeight = GetPlaneDistanceWeight_Atrous(centerWorldPos, centerNormal, sampleWorldPos, depthThreshold);
@@ -109,10 +109,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             if (diffuseW > 1e-4)
             {
-                float4 sampleDiffuseIlluminationAnd2ndMoment = gIn_Diff[samplePosInt];
+                float4 sampleDiffuseIlluminationAnd2ndMoment = NRD_SURFACE( gIn_Diff, samplePosInt );
                 diffuseIlluminationAnd2ndMomentSum += sampleDiffuseIlluminationAnd2ndMoment * diffuseW;
                 #if( NRD_MODE == NRD_MODE_SH )
-                    RELAX_SH_TYPE sampleDiffuseSH = gIn_DiffSh[samplePosInt];
+                    RELAX_SH_TYPE sampleDiffuseSH = NRD_SURFACE( gIn_DiffSh, samplePosInt );
                     diffuseSumSH += sampleDiffuseSH * diffuseW;
                 #endif
                 diffuseWSum += diffuseW;
@@ -131,10 +131,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             if (specularW > 1e-4)
             {
-                float4 sampleSpecularIlluminationAnd2ndMoment = gIn_Spec[samplePosInt];
+                float4 sampleSpecularIlluminationAnd2ndMoment = NRD_SURFACE( gIn_Spec, samplePosInt );
                 specularIlluminationAnd2ndMomentSum += sampleSpecularIlluminationAnd2ndMoment * specularW;
                 #if( NRD_MODE == NRD_MODE_SH )
-                    RELAX_SH_TYPE sampleSpecularSH = gIn_SpecSh[samplePosInt];
+                    RELAX_SH_TYPE sampleSpecularSH = NRD_SURFACE( gIn_SpecSh, samplePosInt );
                     specularSumSH += sampleSpecularSH * specularW;
                 #endif
                 specularWSum += specularW;
@@ -147,17 +147,17 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // The next shader will have to copy these areas to normal and responsive history buffers.
 #if( NRD_HAS_DIFF )
     float4 outDiffuseIlluminationAnd2ndMoment = diffuseIlluminationAnd2ndMomentSum / diffuseWSum;
-    gOut_Diff[pixelPos] = outDiffuseIlluminationAnd2ndMoment;
+    NRD_SURFACE( gOut_Diff, pixelPos ) = outDiffuseIlluminationAnd2ndMoment;
     #if( NRD_MODE == NRD_MODE_SH )
-        gOut_DiffSh[pixelPos] = diffuseSumSH / diffuseWSum;
+        NRD_SURFACE( gOut_DiffSh, pixelPos ) = diffuseSumSH / diffuseWSum;
     #endif
 #endif
 
 #if( NRD_HAS_SPEC )
     float4 outSpecularIlluminationAnd2ndMoment = specularIlluminationAnd2ndMomentSum / specularWSum;
-    gOut_Spec[pixelPos] = outSpecularIlluminationAnd2ndMoment;
+    NRD_SURFACE( gOut_Spec, pixelPos ) = outSpecularIlluminationAnd2ndMoment;
     #if( NRD_MODE == NRD_MODE_SH )
-        gOut_SpecSh[pixelPos] = specularSumSH / specularWSum;
+        NRD_SURFACE( gOut_SpecSh, pixelPos ) = specularSumSH / specularWSum;
     #endif
 #endif
 }

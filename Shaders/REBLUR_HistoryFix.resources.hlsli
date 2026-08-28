@@ -18,61 +18,61 @@ NRD_SAMPLERS_START
 NRD_SAMPLERS_END
 
 NRD_INPUTS_START
-    NRD_INPUT( Texture2D, REBLUR_TILE_TYPE, gIn_Tiles, t, 0 )
-    NRD_INPUT( Texture2D, float4, gIn_Normal_Roughness, t, 1 )
-    NRD_INPUT( Texture2D, REBLUR_DATA1_TYPE, gIn_Data1, t, 2 )
-    NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 3 )
+    NRD_INPUT( Texture2D, REBLUR_TILE_TYPE, gIn_Tiles, t, 0, NRD_RESOURCE_TRANSIENT )
+    NRD_INPUT( Texture2D, float4, gIn_Normal_Roughness, t, 1, NRD_RESOURCE_IN )
+    NRD_INPUT( Texture2D, REBLUR_DATA1_TYPE, gIn_Data1, t, 2, NRD_RESOURCE_TRANSIENT )
+    NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 3, NRD_RESOURCE_IN )
     #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
-        NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Diff, t, 4 )
-        NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Spec, t, 5 )
-        NRD_INPUT( Texture2D, REBLUR_FAST_TYPE, gIn_DiffFast, t, 6 )
-        NRD_INPUT( Texture2D, REBLUR_FAST_TYPE, gIn_SpecFast, t, 7 )
+        NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Diff, t, 4, NRD_RESOURCE_TRANSIENT )
+        NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Spec, t, 5, NRD_RESOURCE_TRANSIENT )
+        NRD_INPUT( Texture2D, REBLUR_FAST_TYPE, gIn_DiffFast, t, 6, NRD_RESOURCE_TRANSIENT )
+        NRD_INPUT( Texture2D, REBLUR_FAST_TYPE, gIn_SpecFast, t, 7, NRD_RESOURCE_TRANSIENT )
         #if( NRD_MODE != NRD_MODE_OCCLUSION )
-            NRD_INPUT( Texture2D, float, gIn_SpecHitDistForTracking, t, 8 )
+            NRD_INPUT( Texture2D, float, gIn_SpecHitDistForTracking, t, 8, NRD_RESOURCE_PERMANENT )
         #endif
         #if( NRD_MODE == NRD_MODE_SH )
-            NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_DiffSh, t, 9 )
-            NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_SpecSh, t, 10 )
+            NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_DiffSh, t, 9, NRD_RESOURCE_TRANSIENT )
+            NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_SpecSh, t, 10, NRD_RESOURCE_TRANSIENT )
         #endif
     #elif( NRD_HAS_DIFF )
-        NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Diff, t, 4 )
-        NRD_INPUT( Texture2D, REBLUR_FAST_TYPE, gIn_DiffFast, t, 5 )
+        NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Diff, t, 4, NRD_RESOURCE_TRANSIENT )
+        NRD_INPUT( Texture2D, REBLUR_FAST_TYPE, gIn_DiffFast, t, 5, NRD_RESOURCE_TRANSIENT )
         #if( NRD_MODE == NRD_MODE_SH )
-            NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_DiffSh, t, 6 )
+            NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_DiffSh, t, 6, NRD_RESOURCE_TRANSIENT )
         #endif
     #else
-        NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Spec, t, 4 )
-        NRD_INPUT( Texture2D, REBLUR_FAST_TYPE, gIn_SpecFast, t, 5 )
+        NRD_INPUT( Texture2D, REBLUR_TYPE, gIn_Spec, t, 4, NRD_RESOURCE_TRANSIENT )
+        NRD_INPUT( Texture2D, REBLUR_FAST_TYPE, gIn_SpecFast, t, 5, NRD_RESOURCE_TRANSIENT )
         #if( NRD_MODE != NRD_MODE_OCCLUSION )
-            NRD_INPUT( Texture2D, float, gIn_SpecHitDistForTracking, t, 6 )
+            NRD_INPUT( Texture2D, float, gIn_SpecHitDistForTracking, t, 6, NRD_RESOURCE_PERMANENT )
         #endif
         #if( NRD_MODE == NRD_MODE_SH )
-            NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_SpecSh, t, 7 )
+            NRD_INPUT( Texture2D, REBLUR_SH_TYPE, gIn_SpecSh, t, 7, NRD_RESOURCE_TRANSIENT )
         #endif
     #endif
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
     #if( NRD_HAS_DIFF && NRD_HAS_SPEC )
-        NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Diff, u, 0 )
-        NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Spec, u, 1 )
-        NRD_OUTPUT( RWTexture2D, REBLUR_FAST_TYPE, gOut_DiffFast, u, 2 )
-        NRD_OUTPUT( RWTexture2D, REBLUR_FAST_TYPE, gOut_SpecFast, u, 3 )
+        NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Diff, u, 0, NRD_RESOURCE_OUT )
+        NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Spec, u, 1, NRD_RESOURCE_OUT )
+        NRD_OUTPUT( RWTexture2D, REBLUR_FAST_TYPE, gOut_DiffFast, u, 2, NRD_RESOURCE_PERMANENT )
+        NRD_OUTPUT( RWTexture2D, REBLUR_FAST_TYPE, gOut_SpecFast, u, 3, NRD_RESOURCE_PERMANENT )
         #if( NRD_MODE == NRD_MODE_SH )
-            NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_DiffSh, u, 4 )
-            NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_SpecSh, u, 5 )
+            NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_DiffSh, u, 4, NRD_RESOURCE_OUT )
+            NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_SpecSh, u, 5, NRD_RESOURCE_OUT )
         #endif
     #elif( NRD_HAS_DIFF )
-        NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Diff, u, 0 )
-        NRD_OUTPUT( RWTexture2D, REBLUR_FAST_TYPE, gOut_DiffFast, u, 1 )
+        NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Diff, u, 0, NRD_RESOURCE_OUT )
+        NRD_OUTPUT( RWTexture2D, REBLUR_FAST_TYPE, gOut_DiffFast, u, 1, NRD_RESOURCE_PERMANENT )
         #if( NRD_MODE == NRD_MODE_SH )
-            NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_DiffSh, u, 2 )
+            NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_DiffSh, u, 2, NRD_RESOURCE_OUT )
         #endif
     #else
-        NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Spec, u, 0 )
-        NRD_OUTPUT( RWTexture2D, REBLUR_FAST_TYPE, gOut_SpecFast, u, 1 )
+        NRD_OUTPUT( RWTexture2D, REBLUR_TYPE, gOut_Spec, u, 0, NRD_RESOURCE_OUT )
+        NRD_OUTPUT( RWTexture2D, REBLUR_FAST_TYPE, gOut_SpecFast, u, 1, NRD_RESOURCE_PERMANENT )
         #if( NRD_MODE == NRD_MODE_SH )
-            NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_SpecSh, u, 2 )
+            NRD_OUTPUT( RWTexture2D, REBLUR_SH_TYPE, gOut_SpecSh, u, 2, NRD_RESOURCE_OUT )
         #endif
     #endif
 NRD_OUTPUTS_END

@@ -11,7 +11,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #pragma once
 
 #define NRD_SETTINGS_VERSION_MAJOR 4
-#define NRD_SETTINGS_VERSION_MINOR 17
+#define NRD_SETTINGS_VERSION_MINOR 18
 
 static_assert(NRD_VERSION_MAJOR == NRD_SETTINGS_VERSION_MAJOR && NRD_VERSION_MINOR == NRD_SETTINGS_VERSION_MINOR, "Please, update all NRD SDK files");
 
@@ -165,11 +165,15 @@ namespace nrd
         uint16_t printfAt[2] = {9999, 9999}; // thread (pixel) position
         float debug = 0.0f;
 
-        // (Optional) (pixels) - viewport origin
-        // IMPORTANT: gets applied only to non-noisy guides (aka g-buffer):
-        // - excluding: "IN_DIFF_CONFIDENCE", "IN_SPEC_CONFIDENCE" and "IN_DISOCCLUSION_THRESHOLD_MIX"
+        // (Optional) (pixels) - input viewport origin
+        // Applied to "IN_" resources, excluding: "IN_DIFF_CONFIDENCE", "IN_SPEC_CONFIDENCE" and "IN_DISOCCLUSION_THRESHOLD_MIX"
         // Used only if "NRD_SUPPORTS_VIEWPORT_OFFSET = 1"
-        uint32_t rectOrigin[2] = {};
+        uint32_t inputRectOrigin[2] = {};
+
+        // (Optional) (pixels) - output viewport origin, changing it assumes "CLEAR_AND_RESTART"
+        // Applied to all "OUT_" resources and resources from "PERMANENT_POOL" on both reads and writes
+        // Used only if "NRD_SUPPORTS_VIEWPORT_OFFSET = 1"
+        uint32_t outputRectOrigin[2] = {};
 
         // A consecutively growing number. Valid usage:
         // - must be incremented by 1 on each frame, not on each "SetCommonSettings" call

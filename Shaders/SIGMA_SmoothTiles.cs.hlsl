@@ -24,7 +24,7 @@ void Preload( uint2 sharedPos, int2 globalPos )
 {
     globalPos = clamp( globalPos, 0, gTilesSizeMinusOne );
 
-    s_Tile[ sharedPos.y ][ sharedPos.x ] = gIn_Tiles[ globalPos ].x;
+    s_Tile[ sharedPos.y ][ sharedPos.x ] = NRD_SURFACE( gIn_Tiles, globalPos ).x;
 }
 
 [numthreads( GROUP_X, GROUP_X, 1 )]
@@ -36,7 +36,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     if( any( pixelPos > gTilesSizeMinusOne ) )
         return;
 
-    float3 center = gIn_Tiles[ pixelPos ];
+    float3 center = NRD_SURFACE( gIn_Tiles, pixelPos );
     float blurry = 0.0;
     float sum = 0.0;
     float k = 1.01 / ( center.y + 0.01 );
@@ -57,5 +57,5 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     blurry /= sum;
 
-    gOut_Tiles[ pixelPos ] = float2( center.z, blurry );
+    NRD_SURFACE( gOut_Tiles, pixelPos ) = float2( center.z, blurry );
 }

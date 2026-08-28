@@ -10,6 +10,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 NRD_CONSTANTS_START( SIGMA_BlurConstants )
     SIGMA_SHARED_CONSTANTS
+    NRD_CONSTANT( int2, gDispatchInputRectOrigin )
+    NRD_CONSTANT( int2, gDispatchOutputRectOrigin )
 NRD_CONSTANTS_END
 
 NRD_SAMPLERS_START
@@ -18,18 +20,18 @@ NRD_SAMPLERS_START
 NRD_SAMPLERS_END
 
 NRD_INPUTS_START
-    NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 0 )
-    NRD_INPUT( Texture2D, float4, gIn_Normal_Roughness, t, 1 )
-    NRD_INPUT( Texture2D, float, gIn_Penumbra, t, 2 )
-    NRD_INPUT( Texture2D, float2, gIn_Tiles, t, 3 )
+    NRD_INPUT( Texture2D, float, gIn_ViewZ, t, 0, NRD_RESOURCE_IN )
+    NRD_INPUT( Texture2D, float4, gIn_Normal_Roughness, t, 1, NRD_RESOURCE_IN )
+    NRD_INPUT( Texture2D, float, gIn_Penumbra, t, 2, NRD_RESOURCE_IN_DISPATCH )
+    NRD_INPUT( Texture2D, float2, gIn_Tiles, t, 3, NRD_RESOURCE_TRANSIENT )
     #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
-        NRD_INPUT( Texture2D, SIGMA_TYPE, gIn_Shadow_Translucency, t, 4 )
+        NRD_INPUT( Texture2D, SIGMA_TYPE, gIn_Shadow_Translucency, t, 4, NRD_RESOURCE_IN_DISPATCH )
     #endif
 NRD_INPUTS_END
 
 NRD_OUTPUTS_START
-    NRD_OUTPUT( RWTexture2D, float, gOut_Penumbra, u, 0 )
-    NRD_OUTPUT( RWTexture2D, SIGMA_TYPE, gOut_Shadow_Translucency, u, 1 )
+    NRD_OUTPUT( RWTexture2D, float, gOut_Penumbra, u, 0, NRD_RESOURCE_TRANSIENT )
+    NRD_OUTPUT( RWTexture2D, SIGMA_TYPE, gOut_Shadow_Translucency, u, 1, NRD_RESOURCE_OUT_DISPATCH )
 NRD_OUTPUTS_END
 
 // Macro magic
