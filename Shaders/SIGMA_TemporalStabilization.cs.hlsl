@@ -74,9 +74,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Early out #2
     float2 pixelUv = float2( pixelPos + 0.5 ) * gRectSizeInv;
     float tileValue = TextureCubic( gIn_Tiles, pixelUv * gResolutionScale ).y;
-    bool isHardShadow = ( ( tileValue == 0.0 && NRD_USE_TILE_CHECK ) || centerPenumbra == 0.0 ) && SIGMA_USE_EARLY_OUT_IN_TS;
+    bool earlyOut = CanSkipTemporal( tileValue ) || centerPenumbra == 0.0;
 
-    if( isHardShadow && SIGMA_SHOW == 0 )
+    if( earlyOut && SIGMA_SHOW == 0 )
     {
         NRD_SURFACE( gOut_Shadow_Translucency, pixelPos ) = PackShadow( s_Shadow_Translucency[ smemPos.y ][ smemPos.x ] );
         NRD_SURFACE( gOut_HistoryLength, pixelPos ) = PackViewZAndHistoryLength( viewZ, SIGMA_MAX_ACCUM_FRAME_NUM ); // TODO: yes, SIGMA_MAX_ACCUM_FRAME_NUM to allow accumulation in neighbors
@@ -216,7 +216,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Debug ( don't forget that ".x" is used in antilag computations! )
     #if( SIGMA_SHOW == SIGMA_SHOW_TILES )
         tileValue = NRD_SURFACE( gIn_Tiles, pixelPos >> 4 ).y;
-        tileValue = float( tileValue != 0.0 ); // optional, just to show fully discarded tiles
+        tileValue = !CanSkipSpatial( tileValue ); // optional, just to show fully discarded tiles
 
         #if( TRANSLUCENCY == 1 )
             result = lerp( float4( 0, 0, 1, 0 ), result, tileValue );

@@ -9,7 +9,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
 // Switches ( default 1 )
-#define SIGMA_USE_EARLY_OUT_IN_TS                       1 // improves performance in regions with hard shadow
+#define SIGMA_USE_EARLY_OUT_IN_BLURS                    1 // improves performance of spatial filters in tiles with expected 0 blur radius ( fully in shadow, hard shadow )
+#define SIGMA_USE_EARLY_OUT_IN_TS                       1 // improves performance of temporal stabilization pass in tiles with expected 0 blur radius ( fully in shadow, hard shadow )
 #define SIGMA_USE_CATROM                                1 // sharper reprojection
 #define SIGMA_5X5_TEMPORAL_KERNEL                       1 // provides variance estimation in a wider radius
 #define SIGMA_5X5_BLUR_RADIUS_ESTIMATION_KERNEL         1 // helps to improve stability, but adds 10% of overhead

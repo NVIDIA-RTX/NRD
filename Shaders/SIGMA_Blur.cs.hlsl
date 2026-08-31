@@ -126,7 +126,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float2 pixelUv = float2( pixelPos + 0.5 ) * gRectSizeInv;
     float tileValue = TextureCubic( gIn_Tiles, pixelUv * gResolutionScale ).y;
 
-    if( ( tileValue == 0.0 && NRD_USE_TILE_CHECK ) || centerPenumbra == 0.0 )
+    if( CanSkipSpatial( tileValue ) || centerPenumbra == 0.0 )
     {
     #if( FIRST_PASS == 0 )
         if( gStabilizationStrength != 0 )

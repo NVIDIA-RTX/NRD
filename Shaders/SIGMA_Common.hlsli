@@ -13,6 +13,16 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define PackShadow( s )         Math::Sqrt01( s ) // must match "SIGMA_BackEnd_UnpackShadow"
 #define IsLit( p )              ( p >= NRD_FP16_MAX )
 
+bool CanSkipSpatial( float tileValue )
+{
+    return tileValue == 0.0 && SIGMA_USE_EARLY_OUT_IN_BLURS;
+}
+
+bool CanSkipTemporal( float tileValue )
+{
+    return tileValue == 0.0 && SIGMA_USE_EARLY_OUT_IN_TS;
+}
+
 float3 GetViewVector( float3 X, bool isViewSpace = false )
 {
     return gOrthoMode == 0.0 ? normalize( -X ) : ( isViewSpace ? float3( 0, 0, -1 ) : gViewVectorWorld.xyz );
