@@ -156,7 +156,7 @@ if(NOT TARGET NRI AND NRD_NRI)
         nri
         DOWNLOAD_EXTRACT_TIMESTAMP 1
         DOWNLOAD_NO_PROGRESS 1
-        URL https://github.com/NVIDIA-RTX/NRI/archive/6f98e6f5bf36a481d184d6f0cbcb9b9876912c12.zip
+        URL https://github.com/NVIDIA-RTX/NRI/archive/2570781660cf50f4b9ab2a7050a882058cc03db7.zip
     )
     list(APPEND DEPS nri)
 endif()
