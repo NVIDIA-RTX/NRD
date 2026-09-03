@@ -177,10 +177,22 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             bool isValid = all( saturate( uv ) == uv );
             int2 a = int2( saturate( uv ) * MINI_DIM );
             int2 b = int2( jitterUv * MINI_DIM );
+            float3 color = 0.66;
 
+            { // Detect projection matrix jittering
+                float2 centerUv = -gFrustum.xy / gFrustum.zw;
+                float2 centerUvPrev = -gFrustumPrev.xy / gFrustumPrev.zw;
+                float2 centerDeltaInPixels = ( centerUv - centerUvPrev ) * gRectSize;
+
+                if( length( centerDeltaInPixels ) > 1e-3 )
+                    color = float3( 1.0, 0.0, 0.0 );
+            }
+
+            // Good
             if( all( abs( a - b ) <= 1 ) && isValid )
-                result.xyz = 0.66;
+                result.xyz = color;
 
+            // Out of bounds
             if( all( abs( a - b ) <= 3 ) && !isValid )
                 result.xyz = float3( 1.0, 0.0, 0.0 );
 

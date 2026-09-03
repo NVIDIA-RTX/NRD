@@ -550,8 +550,11 @@ where:
 - Viewport 0 - world-space grid:
   - 1 cube = `1 unit`
   - REBLUR additionally overlays two "mini" viewports:
-    - the first represents a pixel with accumulated jitter samples
-    - a red boundary marks jittering outside of the pixel area
+    - the first represents a pixel with accumulated jitter samples:
+      - jitter samples in the expected `[-0.5; 0.5]` pixel range are shown as *gray* dots
+      - out-of-range values are snapped to the mini viewport boundary and shown as *red* dots
+      - projection matrix jittering changes all dots to *red*
+      - known limitation: dynamic FOV changes with an asymmetric projection matrix are also detected as projection matrix jittering
     - the attached viewport visualizes kernel rotators in time
 - Viewport 1 - linear roughness
 - Viewport 2 - linear viewZ
