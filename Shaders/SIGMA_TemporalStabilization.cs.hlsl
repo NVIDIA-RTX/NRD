@@ -125,7 +125,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 Xv = Geometry::ReconstructViewPosition( pixelUv, gFrustum, viewZ, gOrthoMode );
     float3 X = Geometry::RotateVectorInverse( gWorldToView, Xv );
 
-    float3 mv = NRD_SURFACE( gIn_Mv, pixelPos ) * gMvScale.xyz;
+    float3 mv = NRD_SURFACE( gIn_Mv, pixelPos ) * gMvScale.xyz + gMvBias.xyz;
     float3 Xprev = X;
     float2 smbPixelUv = pixelUv + mv.xy;
 

@@ -335,6 +335,7 @@ void nrd::InstanceImpl::AddSharedConstants_Reblur(const ReblurSettings& settings
     consts->gViewVectorWorld = m_ViewDirection.xmm;
     consts->gViewVectorWorldPrev = m_ViewDirectionPrev.xmm;
     consts->gMvScale = float4(m_CommonSettings.motionVectorScale[0], m_CommonSettings.motionVectorScale[1], m_CommonSettings.motionVectorScale[2], m_CommonSettings.isMotionVectorInWorldSpace ? 1.0f : 0.0f);
+    consts->gMvBias = float4(m_CommonSettings.motionVectorBias[0], m_CommonSettings.motionVectorBias[1], m_CommonSettings.motionVectorBias[2], 0.0f);
     consts->gConvergenceSettings = float4(settings.convergenceSettings.s, settings.convergenceSettings.b, settings.convergenceSettings.p, 0.0f);
     consts->gAntilagSettings = float2(settings.antilagSettings.luminanceSigmaScale, settings.antilagSettings.luminanceSensitivity);
     consts->gResourceSize = float2(float(resourceW), float(resourceH));

@@ -59,7 +59,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness( NRD_SURFACE( gIn_Normal_Roughness, viewportPixelPos ) );
     float viewZ = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, viewportPixelPos ) );
-    float3 mv = NRD_SURFACE( gIn_Mv, viewportPixelPos ) * gMvScale.xyz;
+    float3 mv = NRD_SURFACE( gIn_Mv, viewportPixelPos ) * gMvScale.xyz + gMvBias.xyz;
     float4 diff = NRD_SURFACE( gIn_Diff, diffPixelPos );
     float4 spec = NRD_SURFACE( gIn_Spec, specPixelPos );
 
@@ -76,7 +76,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 N = normalAndRoughness.xyz;
     float roughness = normalAndRoughness.w;
 
-    float3 Xv = Geometry::ReconstructViewPosition( viewportUv, gFrustum, abs( viewZ ), gOrthoMode );
+    float2 viewportPixelUv = float2( viewportPixelPos + 0.5 ) * gRectSizeInv;
+    float3 Xv = Geometry::ReconstructViewPosition( viewportPixelUv, gFrustum, abs( viewZ ), gOrthoMode );
     float3 X = Geometry::RotateVector( gViewToWorld, Xv );
 
     bool isInf = !IsInDenoisingRange( abs( viewZ ) );
@@ -143,13 +144,23 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float2 viewportUvPrevExpected = Geometry::GetScreenUv( gWorldToClipPrev, X );
 
-        float2 viewportUvPrev = viewportUv + mv.xy;
+        float2 viewportUvPrev = viewportPixelUv + mv.xy;
         if( gMvScale.w != 0.0 )
             viewportUvPrev = Geometry::GetScreenUv( gWorldToClipPrev, X + mv );
 
         float2 uvDelta = ( viewportUvPrev - viewportUvPrevExpected ) * gRectSize;
 
-        result.xyz = IsInScreenNearest( viewportUvPrev ) ? float3( abs( uvDelta ), 0 ) : float3( 0, 0, 1 );
+        bool isMvLikelyJittered = false;
+        if( gMvScale.w == 0.0 && length( gJitter ) > 0.01 )
+        {
+            float jitterError = length( uvDelta - gJitter );
+            float noJitterError = length( uvDelta );
+
+            isMvLikelyJittered = jitterError < noJitterError && jitterError < 0.1;
+        }
+        result.xyz = isMvLikelyJittered ? float3( 1, 0, 1 ) : float3( abs( uvDelta ), 0 );
+
+        result.xyz = IsInScreenNearest( viewportUvPrev ) ? result.xyz : float3( 0, 0, 1 );
         result.w = 1.0;
     }
     else if( viewportIndex == 0 )

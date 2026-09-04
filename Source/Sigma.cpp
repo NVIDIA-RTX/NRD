@@ -128,6 +128,7 @@ void nrd::InstanceImpl::AddSharedConstants_Sigma(const SigmaSettings& settings, 
     consts->gFrustumPrev = m_FrustumPrev;
     consts->gCameraDelta = m_CameraDelta.xmm;
     consts->gMvScale = float4(m_CommonSettings.motionVectorScale[0], m_CommonSettings.motionVectorScale[1], m_CommonSettings.motionVectorScale[2], m_CommonSettings.isMotionVectorInWorldSpace ? 1.0f : 0.0f);
+    consts->gMvBias = float4(m_CommonSettings.motionVectorBias[0], m_CommonSettings.motionVectorBias[1], m_CommonSettings.motionVectorBias[2], 0.0f);
     consts->gResourceSizeInv = float2(1.0f / float(resourceW), 1.0f / float(resourceH));
     consts->gResourceSizeInvPrev = float2(1.0f / float(resourceWprev), 1.0f / float(resourceHprev));
     consts->gRectSize = float2(float(rectW), float(rectH));

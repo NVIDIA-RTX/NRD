@@ -63,7 +63,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Previous position and surface motion uv
     float4 inMv = NRD_SURFACE( gInOut_Mv, pixelPos );
-    float3 mv = inMv.xyz * gMvScale.xyz;
+    float3 mv = inMv.xyz * gMvScale.xyz + gMvBias.xyz;
     float3 Xprev = X;
     float2 smbPixelUv = pixelUv + mv.xy;
 

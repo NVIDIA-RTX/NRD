@@ -116,9 +116,10 @@ namespace nrd
             0.0f, 0.0f, 0.0f, 1.0f
         };
 
-        // Used as "mv = IN_MV * motionVectorScale" (use .z = 0 for 2D screen-space motion)
+        // Used as "mv = IN_MV * motionVectorScale + motionVectorBias" (use .z = 0 for 2D screen-space motion)
         // Expected usage: "pixelUvPrev = pixelUv + mv.xy" (where "pixelUv" is in (0; 1) range)
         float motionVectorScale[3] = {1.0f, 1.0f, 0.0f};
+        float motionVectorBias[3] = {}; // can be used for de-jittering
 
         // [-0.5; 0.5] - sampleUv = pixelUv + cameraJitter
         float cameraJitter[2] = {};
@@ -191,8 +192,8 @@ namespace nrd
         // To reset history set to RESTART or CLEAR_AND_RESTART for one frame
         AccumulationMode accumulationMode = AccumulationMode::CONTINUE;
 
-        // If "true" "IN_MV" is 3D motion in world-space (0 should be everywhere if the scene is static, camera motion must not be included),
-        // otherwise it's 2D (+ optional Z delta) screen-space motion (0 should be everywhere if the camera doesn't move)
+        // If "true" the resulting motion after scaling and bias is 3D motion in world-space (0 should be everywhere if the scene is static,
+        // camera motion must not be included), otherwise it's 2D (+ optional Z delta) screen-space motion (0 should be everywhere if the camera doesn't move)
         bool isMotionVectorInWorldSpace = false;
 
         // If "true" "IN_DIFF_CONFIDENCE" and "IN_SPEC_CONFIDENCE" are available

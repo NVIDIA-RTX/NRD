@@ -129,6 +129,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float4, gViewVectorWorld ) \
     NRD_CONSTANT( float4, gViewVectorWorldPrev ) \
     NRD_CONSTANT( float4, gMvScale ) \
+    NRD_CONSTANT( float4, gMvBias ) \
     NRD_CONSTANT( float4, gConvergenceSettings ) \
     NRD_CONSTANT( float2, gAntilagSettings ) \
     NRD_CONSTANT( float2, gResourceSize ) \

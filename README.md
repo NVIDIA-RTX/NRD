@@ -432,14 +432,14 @@ else
 
 *NRD* doesn't use "baseColor" and "metalness" anywhere for denoising. All materials must be de-modulated before denoising on the application side (see [material demodulation](#material-demodulation)). Here are commons inputs, provided for primary hits (or *PSR*):
 
-* **IN\_MV** - non-jittered surface motion (`old = new + MV`)
+* **IN\_MV** - surface motion (`old = new + MV`), which must be non-jittered after scaling and bias
 
   Modes:
   - *2D screen-space motion* - 2D motion doesn't provide information about movement along the view direction. *NRD* can reject history on dynamic objects in this case
   - *2.5D screen-space motion (recommended)* - similar to the 2D screen-space motion, but `.z = viewZprev - viewZ` (see [NRD sample/GetMotion](https://github.com/NVIDIA-RTX/NRD-Sample/blob/9deb12a5408c4e2e07a6ff261f0a1051dd22f5d6/Shaders/Include/Shared.hlsli#L358))
   - *3D world-space motion* - camera motion should not be included (it's already in the matrices). In other words, if there are no moving objects, all motion vectors must be `0` even if the camera is moving
 
-  Motion vector scaling can be provided via `CommonSettings::motionVectorScale`. *NRD* expectations:
+  Motion vector scaling and bias can be provided via `CommonSettings::motionVectorScale` and `CommonSettings::motionVectorBias` respectively. The bias is applied after scaling and uses the resulting units: `mv = IN_MV * motionVectorScale + motionVectorBias`. *NRD* expectations:
   - Use `CommonSettings::isMotionVectorInWorldSpace = true` for 3D world-space motion
   - Use `CommonSettings::isMotionVectorInWorldSpace = false` and `CommonSettings::motionVectorScale[2] == 0` for 2D screen-space motion
   - Use `CommonSettings::isMotionVectorInWorldSpace = false` and `CommonSettings::motionVectorScale[2] != 0` for 2.5D screen-space motion
@@ -562,6 +562,7 @@ where:
   - blue = `-`
   - red = `out of denoising range`
 - Viewport 3 - difference between MVs, coming from `IN_MV`, and expected MVs, assuming that the scene is static
+  - magenta = likely jittered MVs (the mismatch matches `CommonSettings::cameraJitter`)
   - blue = `out of screen`
   - pixels with moving objects have non-0 values
 - Viewport 4 - world-space normals
@@ -832,7 +833,7 @@ float hitDist = lerp( indirectDiffuseHitDist, directDiffuseHitDist, directHitDis
 
 **[NRD]** All denoisers work with positive RGB inputs (some denoisers can change color space in *front end* functions). For better image quality, HDR color inputs need to be in a sane range [0; 250], because the internal pipeline uses FP16 and *RELAX* tracks second moments of the input signal, i.e. `x^2` must fit into FP16 range. If the color input is in a wider range, any form of non-aggressive color compression can be applied (linear scaling, pow-based or log-based methods). *REBLUR* supports wider HDR ranges, because it doesn't track second moments. Passing pre-exposured colors (i.e. `color * exposure`) is not recommended, because a significant momentary change in exposure is hard to react to in this case.
 
-**[NRD]** *NRD* can track camera motion internally. For the first time pass all MVs set to 0 (you can use `CommonSettings::motionVectorScale = {0}` for this) and set `CommonSettings::isMotionVectorInWorldSpace = true`, it will allow you to simplify the initial integration. Enable application-provided MVs after getting denoising working on static objects.
+**[NRD]** *NRD* can track camera motion internally. For the first time pass all MVs set to 0 (you can use `CommonSettings::motionVectorScale = {0}` and `CommonSettings::motionVectorBias = {0}` for this) and set `CommonSettings::isMotionVectorInWorldSpace = true`, it will allow you to simplify the initial integration. Enable application-provided MVs after getting denoising working on static objects.
 
 **[NRD]** Using 2D MVs can lead to massive history reset on moving objects, because 2D motion provides information only about pixel screen position but not about real 3D world position. Consider using 2.5D or 3D MVs instead. 2.5D motion, which is 2D motion with additionally provided `viewZ` delta (i.e. `viewZprev = viewZ + MV.z`), is even better, because it has the same benefits as 3D motion, but doesn't suffer from imprecision problems caused by world-space delta rounding to FP16 during MV patching on the *NRD* side.
 

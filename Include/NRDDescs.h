@@ -40,7 +40,7 @@ namespace nrd
         // NON-NOISY INPUTS
         //=============================================================================================================================
 
-        // 3D world-space motion (RGBA16f+) or 2D screen-space motion (RG16f+), MVs must be non-jittered, MV = previous - current
+        // 3D world-space motion (RGBA16f+) or 2D screen-space motion (RG16f+), MVs after scaling and bias must be non-jittered, MV = previous - current
         IN_MV,
 
         // Data must match encoding in "NRD_FrontEnd_PackNormalAndRoughness" and "NRD_FrontEnd_UnpackNormalAndRoughness" (RGBA8+)

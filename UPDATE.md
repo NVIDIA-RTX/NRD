@@ -350,7 +350,12 @@ A single NRD instance can now include any combination of denoisers, including re
 - *API*:
   - renamed `CommonSettings::rectOrigin` to `CommonSettings::inputRectOrigin` and applied it to `IN_` resources, excluding `IN_DIFF_CONFIDENCE`, `IN_SPEC_CONFIDENCE` and `IN_DISOCCLUSION_THRESHOLD_MIX`
   - added `CommonSettings::outputRectOrigin`, enabled by `NRD_SUPPORTS_VIEWPORT_OFFSET`. It is applied to all `OUT_` resources and resources from `PERMANENT_POOL` on both reads and writes, including previous-frame history. Changing it assumes `AccumulationMode::CLEAR_AND_RESTART`
+  - added `CommonSettings::motionVectorBias` for post-scale unpacking and de-jittering of `IN_MV`
   - clarified `GetMaxAccumulatedFrameNum` usage: pass low pass filtered FPS to keep the accumulation duration stable
+- *REBLUR*:
+  - Validation: added projection matrix jittering detection to the "jitter" nano viewport
+- *REBLUR/RELAX*:
+  - Validation: added likely `IN_MV` jittering detection to the "MV" viewport
 - *Custom shader compilation*:
   - `NRD_INPUT` and `NRD_OUTPUT` now take `policy` as the 6th argument and must invoke `NRD_DECLARE_RESOURCE`
 

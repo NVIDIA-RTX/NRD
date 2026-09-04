@@ -409,7 +409,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Getting previous position
     float2 pixelUv = float2(pixelPos + 0.5) * gRectSizeInv;
-    float3 mv = NRD_SURFACE( gIn_Mv, pixelPos ) * gMvScale.xyz;
+    float3 mv = NRD_SURFACE( gIn_Mv, pixelPos ) * gMvScale.xyz + gMvBias.xyz;
     float3 prevWorldPos = currentWorldPos;
     float2 prevUVSMB = pixelUv + mv.xy;
 

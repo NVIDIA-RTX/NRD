@@ -111,6 +111,7 @@ void nrd::InstanceImpl::AddSharedConstants_Relax(const RelaxSettings& settings, 
     consts->gPrevFrustumForward = float4(prevFrustumForward, 0.0f);
     consts->gCameraDelta = float4(m_CameraDelta, 0.0f);
     consts->gMvScale = float4(m_CommonSettings.motionVectorScale[0], m_CommonSettings.motionVectorScale[1], m_CommonSettings.motionVectorScale[2], m_CommonSettings.isMotionVectorInWorldSpace ? 1.0f : 0.0f);
+    consts->gMvBias = float4(m_CommonSettings.motionVectorBias[0], m_CommonSettings.motionVectorBias[1], m_CommonSettings.motionVectorBias[2], 0.0f);
     consts->gJitter = float2(m_CommonSettings.cameraJitter[0], m_CommonSettings.cameraJitter[1]);
     consts->gResolutionScale = float2(float(rectW) / float(resourceW), float(rectH) / float(resourceH));
     consts->gResourceSizeInv = float2(1.0f / resourceW, 1.0f / resourceH);
