@@ -21,13 +21,20 @@ namespace nrd
     // COMMON
     //====================================================================================================================================================
 
-    // IMPORTANT: despite that all NRD accumulation related settings are measured in "frames" (for simplicity), it's recommended to recalculate the
-    // number of accumulated frames from the accumulation time (in seconds). It allows to minimize lags if FPS is low and maximize IQ if FPS is high.
-    // All default values provided for 60 FPS. Each denoiser has a recommended accumulation time constant and absolute maximum of accumulated frames
-    // to clamp to:
-    inline uint32_t GetMaxAccumulatedFrameNum(float accumulationTime, float fps)
+    // IMPORTANT: Although all NRD accumulation-related settings are expressed in frames for simplicity, it is recommended to make the accumulated
+    // frame count FPS-dependent. This minimizes lag at low FPS and maximizes IQ at high FPS. All default values assume 60 FPS. Each denoiser has a
+    // recommended accumulation time (in seconds) and an absolute maximum accumulated frame count; clamp the calculated value to this maximum. The
+    // FPS passed to this function must be low pass filtered to reduce reactions to transient drops (stutters). Without filtering, a momentary
+    // 60 => 30 => 60 FPS change with a 0.5-second accumulation time changes the limit from 30 => 15 => 30 frames. When the limit returns to 30,
+    // the history contains only 15 frames and needs time to rebuild. The following implements an approximately FPS-independent low pass filter with
+    // a 0.2-second time constant. Both frame-time variables are in milliseconds. "m_VerySmoothedFrameTime" must be initialized to a positive value:
+    //    float smoothedFPSprev = 1000.0f / m_VerySmoothedFrameTime;
+    //    float n = smoothedFPSprev * 0.2f;
+    //    m_VerySmoothedFrameTime = m_VerySmoothedFrameTime + (frameTime - m_VerySmoothedFrameTime) / (1.0f + n);
+    //    float smoothedFPS = 1000.0f / m_VerySmoothedFrameTime;
+    inline uint32_t GetMaxAccumulatedFrameNum(float accumulationTime, float smoothedFPS)
     {
-        return (uint32_t)(accumulationTime * fps + 0.5f);
+        return (uint32_t)(accumulationTime * smoothedFPS + 0.5f);
     }
 
     // Sequence is based on "CommonSettings::frameIndex":
