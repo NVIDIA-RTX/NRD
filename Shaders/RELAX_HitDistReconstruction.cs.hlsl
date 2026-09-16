@@ -104,7 +104,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             int2 pos = threadPos + int2(dx, dy);
             float4 sampleNormalRoughness = s_Normal_Roughness[pos.y][pos.x];
             float3 sampleNormal = sampleNormalRoughness.xyz;
-            float3 sampleRoughness = sampleNormalRoughness.w;
             float3 sampleHitdistViewZ = s_HitDist_ViewZ[pos.y][pos.x];
             float sampleViewZ = sampleHitdistViewZ.z;
             float cosa = dot(centerNormal, sampleNormal);
@@ -118,7 +117,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #if( NRD_HAS_SPEC )
             float specularWeight = w;
             specularWeight *= ComputeExponentialWeight(angle, specularNormalWeightParam, 0.0);
-            specularWeight *= ComputeExponentialWeight(normalAndRoughness.w * normalAndRoughness.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y);
+            specularWeight *= ComputeExponentialWeight(sampleNormalRoughness.w * sampleNormalRoughness.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y);
 
             float sampleSpecularHitDist = sampleHitdistViewZ.x;
             sampleSpecularHitDist = Denanify( specularWeight, sampleSpecularHitDist );
