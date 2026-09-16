@@ -481,26 +481,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         Filtering::Bilinear vmbBilinearFilter = Filtering::GetBilinearFilter( vmbPixelUv, gRectSizePrev );
         float2 vmbBilinearGatherUv = ( NRD_PIXEL_POS( gPrev_ViewZ, vmbBilinearFilter.origin ) + 1.0 ) * gResourceSizeInvPrev;
 
-        // Virtual motion - confidence: roughness
-        float virtualHistoryConfidence;
-        float4 roughnessWeights;
-        {
-            float2 relaxedRoughnessWeightParams = GetRelaxedRoughnessWeightParams( roughness * roughness, gRoughnessFraction, REBLUR_ROUGHNESS_SENSITIVITY_IN_TA ); // TODO: GetRoughnessWeightParams with 0.05 sensitivity?
-
-            // TODO: unprotected filtering if "outputRectOrigin" != 0
-            #if( NRD_NORMAL_ENCODING == NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
-                float4 vmbRoughness = NRD_FrontEnd_UnpackRoughness( gPrev_Normal_Roughness.GatherBlue( gNearestClamp, vmbBilinearGatherUv ).wzxy );
-            #else
-                float4 vmbRoughness = NRD_FrontEnd_UnpackRoughness( gPrev_Normal_Roughness.GatherAlpha( gNearestClamp, vmbBilinearGatherUv ).wzxy );
-            #endif
-
-            roughnessWeights = ComputeNonExponentialWeight( vmbRoughness * vmbRoughness, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
-            roughnessWeights = lerp( 1.0, roughnessWeights, Math::SmoothStep01( vmbPixelsTraveled ) ); // jitter friendly
-
-            float roughnessWeight = Filtering::ApplyBilinearFilter( roughnessWeights.x, roughnessWeights.y, roughnessWeights.z, roughnessWeights.w, vmbBilinearFilter );
-            virtualHistoryConfidence = roughnessWeight;
-        }
-
+        float4 vmbRoughness;
         float4 vmbN;
         float4 vmbNoN2x2;
         float vmbNoN;
@@ -518,6 +499,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 n01 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p, int2( 0, 1 ) ) );
             float4 n11 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p, int2( 1, 1 ) ) );
 
+            vmbRoughness = float4( n00.w, n10.w, n01.w, n11.w );
+
             vmbNoN2x2.x = dot( n00.xyz, Nt );
             vmbNoN2x2.y = dot( n10.xyz, Nt );
             vmbNoN2x2.z = dot( n01.xyz, Nt );
@@ -531,6 +514,19 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             #if( NRD_USE_PREV_WORLD_SPACE_MATRIX == 1 )
                 vmbN.xyz = Geometry::RotateVector( gWorldPrevToWorld, vmbN.xyz ); // from "prev" world space
             #endif
+        }
+
+        // Virtual motion - confidence: roughness
+        float virtualHistoryConfidence;
+        float4 roughnessWeights;
+        {
+            float2 relaxedRoughnessWeightParams = GetRelaxedRoughnessWeightParams( roughness * roughness, gRoughnessFraction, REBLUR_ROUGHNESS_SENSITIVITY_IN_TA ); // TODO: GetRoughnessWeightParams with 0.05 sensitivity?
+
+            roughnessWeights = ComputeNonExponentialWeight( vmbRoughness * vmbRoughness, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
+            roughnessWeights = lerp( 1.0, roughnessWeights, Math::SmoothStep01( vmbPixelsTraveled ) ); // jitter friendly
+
+            float roughnessWeight = Filtering::ApplyBilinearFilter( roughnessWeights.x, roughnessWeights.y, roughnessWeights.z, roughnessWeights.w, vmbBilinearFilter );
+            virtualHistoryConfidence = roughnessWeight;
         }
 
         // Virtual motion - disocclusion

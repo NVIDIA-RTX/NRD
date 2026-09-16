@@ -662,24 +662,6 @@ float _NRD_SG_InnerProduct( NRD_SG a, NRD_SG b )
 // FRONT-END - NORMAL AND ROUGHNESS
 //=================================================================================================================================
 
-// Used to decode linear roughness accessed via "Gather" instructions
-float4 NRD_FrontEnd_UnpackRoughness( float4 r )
-{
-    // This is a part of improved oct-packing
-    #if( NRD_NORMAL_ENCODING == NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
-        r = abs( r * 2.0 - 1.0 );
-    #endif
-
-    // Decode to linear roughness
-    #if( NRD_ROUGHNESS_ENCODING == NRD_ROUGHNESS_ENCODING_SQRT_LINEAR )
-        r.w = saturate( r.w * r.w );
-    #elif( NRD_ROUGHNESS_ENCODING == NRD_ROUGHNESS_ENCODING_SQ_LINEAR )
-        r.w = sqrt( saturate( r.w ) );
-    #endif
-
-    return r;
-}
-
 // This function is used in all denoisers to decode normal, linear roughness and optional materialID
 // IN_NORMAL_ROUGHNESS => X
 float4 NRD_FrontEnd_UnpackNormalAndRoughness( float4 p, out float materialID )
