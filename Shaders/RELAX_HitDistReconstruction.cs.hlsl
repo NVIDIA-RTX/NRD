@@ -23,7 +23,7 @@ groupshared float3 s_HitDist_ViewZ[BUFFER_Y][BUFFER_X];
 
 void Preload(uint2 sharedPos, int2 globalPos)
 {
-    globalPos = clamp(globalPos, 0, gRectSize - 1.0);
+    globalPos = clamp(globalPos, 0, int2( gRectSize ) - 1);
 
     // It's ok that we don't use materialID in Hitdist reconstruction
     float4 normalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(NRD_SURFACE( gIn_Normal_Roughness, globalPos ));
@@ -111,7 +111,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float angle = Math::AcosApproxPositive(cosa);
 
             float w = IsInScreenNearest(pixelUv + o * gRectSizeInv);
-            w *= IsInDenoisingRange( sampleViewZ );
+            w *= float( IsInDenoisingRange( sampleViewZ ) );
             w *= GetGaussianWeight(length(o) * 0.5);
             w *= GetBilateralWeight(sampleViewZ, centerViewZ);
 

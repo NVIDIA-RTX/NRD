@@ -129,10 +129,10 @@ float loadSurfaceMotionBasedPrevData(
     float3 tapsValid3 = step(planeDist3, smbDisocclusionThreshold.w);
 
     float minMaterialID = min(gSpecMinMaterial, gDiffMinMaterial); // TODO: separation is expensive
-    tapsValid0 *= CompareMaterials(currentMaterialID.xxx, prevMaterialIDs00.yzw, minMaterialID);
-    tapsValid1 *= CompareMaterials(currentMaterialID.xxx, prevMaterialIDs10.xzw, minMaterialID);
-    tapsValid2 *= CompareMaterials(currentMaterialID.xxx, prevMaterialIDs01.xyw, minMaterialID);
-    tapsValid3 *= CompareMaterials(currentMaterialID.xxx, prevMaterialIDs11.xyz, minMaterialID);
+    tapsValid0 *= float3( CompareMaterials(currentMaterialID.xxx, prevMaterialIDs00.yzw, minMaterialID) );
+    tapsValid1 *= float3( CompareMaterials(currentMaterialID.xxx, prevMaterialIDs10.xzw, minMaterialID) );
+    tapsValid2 *= float3( CompareMaterials(currentMaterialID.xxx, prevMaterialIDs01.xyw, minMaterialID) );
+    tapsValid3 *= float3( CompareMaterials(currentMaterialID.xxx, prevMaterialIDs11.xyz, minMaterialID) );
 
     float bicubicFootprintValid = dot(tapsValid0 + tapsValid1 + tapsValid2 + tapsValid3, 1.0) > 11.5 ? 1.0 : 0.0;
     float4 bilinearTapsValid = float4(tapsValid0.z, tapsValid1.y, tapsValid2.y, tapsValid3.x);
@@ -296,7 +296,7 @@ float loadVirtualMotionBasedPrevData(
     prevWorldPosInTap = GetPreviousWorldPosFromPixelPos(bilinearOrigin + int2(1, 1), prevViewZs.w);
     bilinearTapsValid.w = isReprojectionTapValid(currentWorldPos, prevWorldPosInTap, currentNormal, vmbDisocclusionThreshold.w);
 
-    bilinearTapsValid *= CompareMaterials(currentMaterialID.xxxx, prevMaterialIDs.xyzw, gSpecMinMaterial);
+    bilinearTapsValid *= float4( CompareMaterials(currentMaterialID.xxxx, prevMaterialIDs.xyzw, gSpecMinMaterial) );
 
     // Applying reprojection
     prevSpecularIllumAnd2ndMoment = 0;
@@ -362,7 +362,7 @@ float loadVirtualMotionBasedPrevData(
 
 void Preload(uint2 sharedPos, int2 globalPos)
 {
-    globalPos = clamp(globalPos, 0, gRectSize - 1.0);
+    globalPos = clamp(globalPos, 0, int2( gRectSize ) - 1);
 
     float4 normalRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(NRD_SURFACE( gIn_Normal_Roughness, globalPos ));
     float4 normalSpecHitT = normalRoughness;
@@ -492,7 +492,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float disocclusionThresholdMix = 0;
     if(currentMaterialID == gStrandMaterialID)
         disocclusionThresholdMix = NRD_GetNormalizedStrandThickness(gStrandThickness, pixelSize);
-    if(gHasDisocclusionThresholdMix && NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX)
+    if(gHasDisocclusionThresholdMix != 0 && NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX == 1)
         disocclusionThresholdMix = NRD_SURFACE( gIn_DisocclusionThresholdMix, pixelPos );
 
     float disocclusionThreshold = lerp(gDisocclusionThreshold, gDisocclusionThresholdAlternate, disocclusionThresholdMix);
@@ -600,7 +600,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float diffMaxAccumulatedFrameNum = gDiffMaxAccumulatedFrameNum;
     float diffMaxFastAccumulatedFrameNum = gDiffMaxFastAccumulatedFrameNum;
 
-    if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
+    if (gHasHistoryConfidence != 0 && NRD_SUPPORTS_HISTORY_CONFIDENCE == 1)
     {
         float inDiffConfidence = saturate(gIn_DiffConfidence.SampleLevel(gLinearClamp, prevUVSMB, 0));
         diffMaxAccumulatedFrameNum *= inDiffConfidence;
@@ -643,7 +643,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 #if( NRD_HAS_SPEC )
     float specMaxAccumulatedFrameNum = gSpecMaxAccumulatedFrameNum;
     float specMaxFastAccumulatedFrameNum = gSpecMaxFastAccumulatedFrameNum;
-    if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
+    if (gHasHistoryConfidence != 0 && NRD_SUPPORTS_HISTORY_CONFIDENCE == 1)
     {
         float inSpecConfidence = saturate(gIn_SpecConfidence.SampleLevel(gLinearClamp, prevUVSMB, 0));
         specMaxAccumulatedFrameNum *= inSpecConfidence;
@@ -702,7 +702,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float2 motionUvHigh = pixelUv + smbParallaxInPixelsMin * deltaUv * gRectSizeInv;
 
         // sqrt( 2.0 ) offers a smooth transition from one calculations to another without a hard border
-        if( smbParallaxInPixelsMin > sqrt( 2.0 ) && IsInScreenNearest( motionUvHigh ) )
+        if( smbParallaxInPixelsMin > sqrt( 2.0 ) && IsInScreenNearest( motionUvHigh ) != 0.0 )
         {
             float2 uvScaled = ClampUvToViewport( motionUvHigh ) + float2( NRD_PIXEL_POS( gIn_ViewZ, int2( 0, 0 ) ) ) * gResourceSizeInv;
 
@@ -816,8 +816,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         backNormalRoughness1.rgb = Geometry::RotateVector(gWorldPrevToWorld, backNormalRoughness1.rgb);
         backNormalRoughness2.rgb = Geometry::RotateVector(gWorldPrevToWorld, backNormalRoughness2.rgb);
     #endif
-    float prevPrevNormalWeight = IsInScreenNearest(backUV1) ? GetEncodingAwareNormalWeight(prevNormalVMB, backNormalRoughness1.rgb, lobeHalfAngle, curvatureAngle * 2.0, RELAX_NORMAL_ULP) : 1.0;
-    prevPrevNormalWeight *= IsInScreenNearest(backUV2) ? GetEncodingAwareNormalWeight(prevNormalVMB, backNormalRoughness2.rgb, lobeHalfAngle, curvatureAngle * 3.0, RELAX_NORMAL_ULP) : 1.0;
+    float prevPrevNormalWeight = IsInScreenNearest(backUV1) != 0.0 ? GetEncodingAwareNormalWeight(prevNormalVMB, backNormalRoughness1.rgb, lobeHalfAngle, curvatureAngle * 2.0, RELAX_NORMAL_ULP) : 1.0;
+    prevPrevNormalWeight *= IsInScreenNearest(backUV2) != 0.0 ? GetEncodingAwareNormalWeight(prevNormalVMB, backNormalRoughness2.rgb, lobeHalfAngle, curvatureAngle * 3.0, RELAX_NORMAL_ULP) : 1.0;
     virtualHistoryAmount *= 0.33 + 0.67 * prevPrevNormalWeight;
     specVMBConfidence *= 0.33 + 0.67 * prevPrevNormalWeight;
     // Taking in account roughness 1 and 2 frames back helps cleaning up surfaces wigh varying roughness

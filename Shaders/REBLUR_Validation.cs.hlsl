@@ -65,7 +65,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // See "UnpackData1"
     REBLUR_DATA1_TYPE data1 = NRD_SURFACE( gIn_Data1, viewportPixelPos );
-    if( !gHasDiffuse )
+    if( gHasDiffuse == 0 )
         data1.y = data1.x;
     data1 *= REBLUR_MAX_ACCUM_FRAME_NUM;
 
@@ -81,7 +81,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 X = Geometry::RotateVector( gViewToWorld, Xv );
 
     bool isInf = !IsInDenoisingRange( abs( viewZ ) );
-    bool checkerboard = Sequence::CheckerBoard( pixelPos >> 2, 0 );
+    bool checkerboard = Sequence::CheckerBoard( pixelPos >> 2, 0 ) != 0;
 
     uint4 textState = Text::Init( pixelPos, uint2( viewportId * gRectSize * VIEWPORT_SIZE + OFFSET ), 1 );
 
@@ -160,7 +160,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
         result.xyz = isMvLikelyJittered ? float3( 1, 0, 1 ) : float3( abs( uvDelta ), 0 );
 
-        result.xyz = IsInScreenNearest( viewportUvPrev ) ? result.xyz : float3( 0, 0, 1 );
+        result.xyz = IsInScreenNearest( viewportUvPrev ) != 0.0 ? result.xyz : float3( 0, 0, 1 );
         result.w = 1.0;
     }
     else if( viewportIndex == 0 )
@@ -227,14 +227,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     float2 uv = 0.5 + Geometry::RotateVector( gRotator, offset * REBLUR_BLUR_RADIUS_SCALE );
                     int2 a = int2( saturate( uv ) * MINI_DIM );
 
-                    result.x += all( abs( a - b ) <= 1 );
+                    result.x += float( all( abs( a - b ) <= 1 ) );
                 }
 
                 {
                     float2 uv = 0.5 + Geometry::RotateVector( gRotatorPost, offset * REBLUR_POST_BLUR_RADIUS_SCALE );
                     int2 a = int2( saturate( uv ) * MINI_DIM );
 
-                    result.y += all( abs( a - b ) <= 1 );
+                    result.y += float( all( abs( a - b ) <= 1 ) );
                 }
             }
 
@@ -250,7 +250,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         result.w = 1.0;
     }
-    else if( viewportIndex == 7 && gHasSpecular )
+    else if( viewportIndex == 7 && gHasSpecular != 0 )
     {
         // Virtual history
         Text::Print_ch( 'V', textState );
@@ -272,7 +272,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         result.xyz = data2.x * float( !isInf );
         result.w = 1.0;
     }
-    else if( viewportIndex == 8 && gHasDiffuse )
+    else if( viewportIndex == 8 && gHasDiffuse != 0 )
     {
         // Diffuse frames
         Text::Print_ch( 'D', textState );
@@ -293,7 +293,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         result.xyz = Color::ColorizeZucconi( viewportUv.y > 0.95 ? 1.0 - viewportUv.x : f * float( !isInf ) );
         result.w = 1.0;
     }
-    else if( viewportIndex == 11 && gHasSpecular )
+    else if( viewportIndex == 11 && gHasSpecular != 0 )
     {
         // Specular frames
         Text::Print_ch( 'S', textState );
@@ -314,7 +314,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         result.xyz = Color::ColorizeZucconi( viewportUv.y > 0.95 ? 1.0 - viewportUv.x : f * float( !isInf ) );
         result.w = 1.0;
     }
-    else if( viewportIndex == 12 && gHasDiffuse )
+    else if( viewportIndex == 12 && gHasDiffuse != 0 )
     {
         // Diff hitT
         Text::Print_ch( 'D', textState );
@@ -335,7 +335,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         result.xyz *= float( !isInf );
         result.w = 1.0;
     }
-    else if( viewportIndex == 15 && gHasSpecular )
+    else if( viewportIndex == 15 && gHasSpecular != 0 )
     {
         // Spec hitT
         Text::Print_ch( 'S', textState );

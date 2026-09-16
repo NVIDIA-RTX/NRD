@@ -12,6 +12,10 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     #error REBLUR_SPATIAL_PASS must be defined!
 #endif
 
+#ifndef TEMPORAL_STABILIZATION
+    #define TEMPORAL_STABILIZATION 0
+#endif
+
 #ifndef REBLUR_SPATIAL_LOBE
     #error REBLUR_SPATIAL_LOBE must be defined!
 #endif
@@ -228,7 +232,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
             float angle = Math::AcosApproxPositive( dot( N, Ns.xyz ) );
             float NoX = dot( Nv, Xvs );
 
-            w *= CompareMaterials( materialID, materialIDs, MIN_MATERIAL );
+            w *= float( CompareMaterials( materialID, materialIDs, MIN_MATERIAL ) );
             w *= ComputeWeight( angle, normalWeightParam, 0.0 );
         #if( REBLUR_SPATIAL_LOBE == REBLUR_SPEC )
             w *= ComputeWeight( Ns.w, roughnessWeightParams.x, roughnessWeightParams.y );
@@ -325,7 +329,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 #if( REBLUR_SPATIAL_PASS == REBLUR_POST_BLUR && TEMPORAL_STABILIZATION == 0 )
     #if( NRD_MODE != NRD_MODE_OCCLUSION && NRD_MODE != NRD_MODE_DO )
-        result.w = gReturnHistoryLengthInsteadOfOcclusion ? ACCUM_SPEED : result.w;
+        result.w = gReturnHistoryLengthInsteadOfOcclusion != 0 ? ACCUM_SPEED : result.w;
     #endif
 
     NRD_SURFACE( OUTPUT_COPY, pixelPos ) = result;

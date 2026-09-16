@@ -30,7 +30,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 void Preload(uint2 sharedPos, int2 globalPos)
 {
-    globalPos = clamp(globalPos, 0, gRectSize - 1.0);
+    globalPos = clamp(globalPos, 0, int2( gRectSize ) - 1);
 
     float viewZ = NRD_SURFACE( gIn_ViewZ, globalPos );
     float isValid = float(IsInDenoisingRange( viewZ ));

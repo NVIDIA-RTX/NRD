@@ -133,7 +133,7 @@ NOISY INPUTS:
     #define NRD_EXPORT
 
 // DXC
-#elif( defined( NRD_COMPILER_DXC ) || defined( __hlsl_dx_compiler ) )
+#elif( defined( NRD_COMPILER_DXC ) || defined( __hlsl_dx_compiler ) || defined( __SLANG__ ) )
 
     #ifdef __spirv__
         // Make VK validation happy...
@@ -348,7 +348,9 @@ NOISY INPUTS:
     #define NRD_SURFACE( resourceName, pos )                                            resourceName[ NRD_PIXEL_POS( resourceName, pos ) ]
 
     // Explicitly set matrix layout for shader compilation outside of NRD environment
-    #pragma pack_matrix( column_major )
+    #ifndef __SLANG__
+        #pragma pack_matrix( column_major )
+    #endif
 #endif
 
 // Permutations

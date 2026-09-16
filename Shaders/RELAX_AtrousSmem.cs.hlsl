@@ -95,7 +95,7 @@ void computeVariance(
 
 void Preload(uint2 sharedPos, int2 globalPos)
 {
-    globalPos = clamp(globalPos, 0, gRectSize - 1.0);
+    globalPos = clamp(globalPos, 0, int2( gRectSize ) - 1);
 
 #if( NRD_HAS_SPEC )
     s_Spec[sharedPos.y][sharedPos.x] = NRD_SURFACE( gIn_Spec_Variance, globalPos );
@@ -203,7 +203,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float specularReprojectionConfidence = NRD_SURFACE( gIn_SpecReprojectionConfidence, pixelPos );
         float specularLuminanceWeightRelaxation = lerp(1.0, specularReprojectionConfidence, gLuminanceEdgeStoppingRelaxation);
-        if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
+        if (gHasHistoryConfidence != 0 && NRD_SUPPORTS_HISTORY_CONFIDENCE == 1)
         {
             // TODO: confidence is for previous frame, so "prev uv" should be used
             float specConfidenceDrivenRelaxation = saturate(gConfidenceDrivenRelaxationMultiplier * (1.0 - saturate(gIn_SpecConfidence.SampleLevel(gLinearClamp, pixelUv, 0))));
@@ -241,7 +241,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float diffusePhiLIlluminationInv = 1.0 / max(1.0e-4, gDiffPhiLuminance * sqrt(centerDiffuseVar));
 
         float diffuseLuminanceWeightRelaxation = 1.0;
-        if (gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE)
+        if (gHasHistoryConfidence != 0 && NRD_SUPPORTS_HISTORY_CONFIDENCE == 1)
         {
             // TODO: confidence is for previous frame, so "prev uv" should be used
             float diffConfidenceDrivenRelaxation = saturate(gConfidenceDrivenRelaxationMultiplier * (1.0 - saturate(gIn_DiffConfidence.SampleLevel(gLinearClamp, pixelUv, 0))));
@@ -317,8 +317,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 specularLuminanceW *= specularLuminanceWeightRelaxation;
 
                 float wSpecular = geometryW * exp(-specularLuminanceW);
-                wSpecular *= gRoughnessEdgeStoppingEnabled ? (normalWSpecular * roughnessWSpecular) : normalWSpecularSimplified;
-                wSpecular *= CompareMaterials(sampleMaterialID, centerMaterialID, gSpecMinMaterial);
+                wSpecular *= gRoughnessEdgeStoppingEnabled != 0 ? (normalWSpecular * roughnessWSpecular) : normalWSpecularSimplified;
+                wSpecular *= float( CompareMaterials(sampleMaterialID, centerMaterialID, gSpecMinMaterial) );
                 wSpecular = isCenter ? kernel : wSpecular;
 
                 sumWSpecular += wSpecular;
@@ -341,7 +341,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 diffuseLuminanceW *= diffuseLuminanceWeightRelaxation;
 
                 float wDiffuse = geometryW * normalWDiffuse * exp(-diffuseLuminanceW);
-                wDiffuse *= CompareMaterials(sampleMaterialID, centerMaterialID, gDiffMinMaterial);
+                wDiffuse *= float( CompareMaterials(sampleMaterialID, centerMaterialID, gDiffMinMaterial) );
                 wDiffuse = isCenter ? kernel : wDiffuse;
 
                 sumWDiffuse += wDiffuse;
@@ -427,7 +427,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float sampleSpecular1stMoment = Color::Luminance(sampleSpecularIllumination);
                 float sampleSpecular2ndMoment = sampleSpecular.a;
                 float specularW = normalW * depthW;
-                specularW *= CompareMaterials(sampleMaterialID, centerMaterialID, gSpecMinMaterial);
+                specularW *= float( CompareMaterials(sampleMaterialID, centerMaterialID, gSpecMinMaterial) );
 
                 sumWSpecularIllumination += specularW;
                 sumSpecularIllumination += sampleSpecularIllumination.rgb * specularW;
@@ -444,7 +444,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 float sampleDiffuse1stMoment = Color::Luminance(sampleDiffuseIllumination);
                 float sampleDiffuse2ndMoment = sampleDiffuse.a;
                 float diffuseW = normalW * depthW;
-                diffuseW *= CompareMaterials(sampleMaterialID, centerMaterialID, gDiffMinMaterial);
+                diffuseW *= float( CompareMaterials(sampleMaterialID, centerMaterialID, gDiffMinMaterial) );
 
                 sumWDiffuseIllumination += diffuseW;
                 sumDiffuseIllumination += sampleDiffuseIllumination.rgb * diffuseW;

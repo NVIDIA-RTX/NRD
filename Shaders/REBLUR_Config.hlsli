@@ -8,6 +8,14 @@ distribution of this software and related documentation without an express
 license agreement from NVIDIA CORPORATION is strictly prohibited.
 */
 
+#ifndef NRD_MODE
+    #define NRD_MODE                                             NRD_MODE_RADIANCE
+#endif
+
+#ifndef NRD_SIGNAL
+    #define NRD_SIGNAL                                           NRD_SIGNAL_BOTH
+#endif
+
 // CMake options
 #ifndef REBLUR_PERFORMANCE_MODE
     #define REBLUR_PERFORMANCE_MODE                             0

@@ -146,8 +146,6 @@ float GetLumaScale( float currLuma, float newLuma )
 
 #if( NRD_MODE == NRD_MODE_OCCLUSION )
 
-    #define REBLUR_TYPE float
-
     float MixHistoryAndCurrent( float history, float current, float f, float roughness = 1.0 )
     {
         float r = lerp( history, current, max( f, GetMinAllowedLimitForHitDistNonLinearAccumSpeed( roughness ) ) );
@@ -168,8 +166,6 @@ float GetLumaScale( float currLuma, float newLuma )
     { return ClampNegativeHitDistToZero( input ); }
 
 #elif( NRD_MODE == NRD_MODE_DO )
-
-    #define REBLUR_TYPE float4
 
     float4 MixHistoryAndCurrent( float4 history, float4 current, float f, float roughness = 1.0 )
     {
@@ -193,8 +189,6 @@ float GetLumaScale( float currLuma, float newLuma )
     { return ChangeLuma( input, ClampNegativeHitDistToZero( input.w ) ); }
 
 #else
-
-    #define REBLUR_TYPE float4
 
     float4 MixHistoryAndCurrent( float4 history, float4 current, float f, float roughness = 1.0 )
     {

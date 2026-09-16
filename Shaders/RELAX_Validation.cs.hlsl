@@ -65,9 +65,9 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 X = GetCurrentWorldPosFromClipSpaceXY( viewportPixelUv * 2.0 - 1.0, abs( viewZ ) );
 
     bool isInf = !IsInDenoisingRange(abs( viewZ ));
-    bool checkerboard = Sequence::CheckerBoard( pixelPos >> 2, 0 );
+    bool checkerboard = Sequence::CheckerBoard( pixelPos >> 2, 0 ) != 0;
 
-    uint4 textState = Text::Init( pixelPos, viewportId * gRectSize * VIEWPORT_SIZE + OFFSET, 1 );
+    uint4 textState = Text::Init( pixelPos, uint2( viewportId * gRectSize * VIEWPORT_SIZE + OFFSET ), 1 );
 
     float4 result = NRD_SURFACE( gOut_Validation, pixelPos );
 
@@ -142,7 +142,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
         result.xyz = isMvLikelyJittered ? float3( 1, 0, 1 ) : float3( abs( uvDelta ), 0 );
 
-        result.xyz = IsInScreenNearest( viewportUvPrev ) ? result.xyz : float3( 0, 0, 1 );
+        result.xyz = IsInScreenNearest( viewportUvPrev ) != 0.0 ? result.xyz : float3( 0, 0, 1 );
         result.w = 1.0;
     }
     else if( viewportIndex == 0 )

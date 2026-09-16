@@ -31,7 +31,7 @@ groupshared float s_MaterialID[BUFFER_Y][BUFFER_X];
 // Helper functions
 void Preload(uint2 sharedPos, int2 globalPos)
 {
-    globalPos = clamp(globalPos, 0, gRectSize - 1.0);
+    globalPos = clamp(globalPos, 0, int2( gRectSize ) - 1);
 
     float materialID;
     NRD_FrontEnd_UnpackNormalAndRoughness(NRD_SURFACE( gIn_Normal_Roughness, globalPos ), materialID);

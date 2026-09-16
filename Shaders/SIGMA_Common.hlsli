@@ -15,12 +15,12 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 bool CanSkipSpatial( float tileValue )
 {
-    return tileValue == 0.0 && SIGMA_USE_EARLY_OUT_IN_BLURS;
+    return tileValue == 0.0 && SIGMA_USE_EARLY_OUT_IN_BLURS == 1;
 }
 
 bool CanSkipTemporal( float tileValue )
 {
-    return tileValue == 0.0 && SIGMA_USE_EARLY_OUT_IN_TS;
+    return tileValue == 0.0 && SIGMA_USE_EARLY_OUT_IN_TS == 1;
 }
 
 float3 GetViewVector( float3 X, bool isViewSpace = false )

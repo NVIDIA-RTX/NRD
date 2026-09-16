@@ -35,6 +35,10 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define SIGMA_MAX_ACCUM_FRAME_NUM                       7
 
 // Data type
+#ifndef TRANSLUCENCY
+    #define TRANSLUCENCY 0
+#endif
+
 #if( TRANSLUCENCY == 1 )
     #define SIGMA_TYPE                                  float4
 #else

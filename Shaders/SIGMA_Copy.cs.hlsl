@@ -26,7 +26,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Tile-based early out
     float isSky = NRD_SURFACE( gIn_Tiles, pixelPos >> 4 ).x;
-    if( isSky != 0.0 && !gIsRectChanged )
+    if( isSky != 0.0 && gIsRectChanged == 0 )
         return;
 
     // TODO: introduce "CopyResource" in NRD API?

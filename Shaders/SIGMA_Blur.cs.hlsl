@@ -34,7 +34,7 @@ SIGMA_TYPE LoadInput( int2 globalPos, out float penumbra )
     #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
         shadowTranslucency = NRD_SURFACE( gIn_Shadow_Translucency, inputPos );
     #else
-        shadowTranslucency = IsLit( penumbra );
+        shadowTranslucency = float( IsLit( penumbra ) );
     #endif
 
     #if( FIRST_PASS == 0 )
@@ -194,7 +194,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             sum.x += w;
 
             w *= pixelSize / ( pixelSize + penum ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
-            w *= !IsLit( penum );
+            w *= float( !IsLit( penum ) );
 
             penumbra += w == 0.0 ? 0.0 : penum * w;
             sum.y += w;
@@ -281,7 +281,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float w = any( uv != mirrorUv ) ? 1.0 : GetGaussianWeight( offset.z );
 
         // "uv" to "pos"
-        int2 pos = mirrorUv * gRectSize;
+        int2 pos = int2( mirrorUv * gRectSize );
 
         // Move to a "valid" pixel in checkerboard mode
         int checkerboardX = pos.x;
@@ -315,7 +315,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
             s = NRD_SURFACE( gIn_Shadow_Translucency, inputPos );
         #else
-            s = IsLit( penum );
+            s = float( IsLit( penum ) );
         #endif
 
         #if( FIRST_PASS == 0 )
@@ -329,7 +329,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         sum.x += w;
 
         w *= pixelSize / ( pixelSize + penum ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
-        w *= !IsLit( penum );
+        w *= float( !IsLit( penum ) );
 
         penumbra += w == 0.0 ? 0.0 : penum * w;
         sum.y += w;

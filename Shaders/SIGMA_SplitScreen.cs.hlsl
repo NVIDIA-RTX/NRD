@@ -39,7 +39,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #if( TRANSLUCENCY == 1 )
         s = NRD_SURFACE( gIn_Shadow_Translucency, inputPos );
     #else
-        s = IsLit( data.x );
+        s = float( IsLit( data.x ) );
     #endif
 
     #if( SIGMA_SHOW == SIGMA_SHOW_PENUMBRA_SIZE )

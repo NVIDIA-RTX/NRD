@@ -172,7 +172,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     float angle = Math::AcosApproxPositive( dot( Ns.xyz, N ) );
                     float NoX = dot( Nv, Xvs );
 
-                    float w = CompareMaterials( materialID, materialIDs, gDiffMinMaterial );
+                    float w = float( CompareMaterials( materialID, materialIDs, gDiffMinMaterial ) );
                     w *= ComputeExponentialWeight( angle, normalWeightParam, 0.0 );
                     // gaussian weight is not needed
 
@@ -246,7 +246,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 }
 
                 // Variance in "NRD_BORDER x NRD_BORDER" skipping central 3x3 for anti-firefly
-                if( NRD_SUPPORTS_ANTIFIREFLY && !( abs( i ) <= 1 && abs( j ) <= 1 ) )
+                if( NRD_SUPPORTS_ANTIFIREFLY == 1 && !( abs( i ) <= 1 && abs( j ) <= 1 ) )
                 {
                     diffAntiFireflyM1 += d;
                     diffAntiFireflyM2 += d * d;
@@ -255,7 +255,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         // Anti-firefly
-        if( NRD_SUPPORTS_ANTIFIREFLY && gAntiFirefly )
+        if( NRD_SUPPORTS_ANTIFIREFLY == 1 && gAntiFirefly != 0.0 )
         {
             float invNorm = 1.0 / ( ( NRD_BORDER * 2 + 1 ) * ( NRD_BORDER * 2 + 1 ) - 3 * 3 ); // -9 samples
             diffAntiFireflyM1 *= invNorm;
@@ -375,7 +375,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     float angle = Math::AcosApproxPositive( dot( Ns.xyz, N ) );
                     float NoX = dot( Nv, Xvs );
 
-                    float w = CompareMaterials( materialID, materialIDs, gSpecMinMaterial );
+                    float w = float( CompareMaterials( materialID, materialIDs, gSpecMinMaterial ) );
                     w *= ComputeExponentialWeight( angle, normalWeightParam, 0.0 );
                     w *= ComputeExponentialWeight( Ns.w * Ns.w, relaxedRoughnessWeightParams.x, relaxedRoughnessWeightParams.y );
                     // gaussian weight is not needed
@@ -451,7 +451,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 }
 
                 // Variance in "NRD_BORDER x NRD_BORDER" skipping central 3x3 for anti-firefly
-                if( NRD_SUPPORTS_ANTIFIREFLY && !( abs( i ) <= 1 && abs( j ) <= 1 ) )
+                if( NRD_SUPPORTS_ANTIFIREFLY == 1 && !( abs( i ) <= 1 && abs( j ) <= 1 ) )
                 {
                     specAntiFireflyM1 += s;
                     specAntiFireflyM2 += s * s;
@@ -460,7 +460,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         }
 
         // Anti-firefly
-        if( NRD_SUPPORTS_ANTIFIREFLY && gAntiFirefly )
+        if( NRD_SUPPORTS_ANTIFIREFLY == 1 && gAntiFirefly != 0.0 )
         {
             float invNorm = 1.0 / ( ( NRD_BORDER * 2 + 1 ) * ( NRD_BORDER * 2 + 1 ) - 3 * 3 ); // -9 samples
             specAntiFireflyM1 *= invNorm;

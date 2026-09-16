@@ -178,7 +178,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         // Output
-        diff.w = gReturnHistoryLengthInsteadOfOcclusion ? data1.x : diff.w;
+        diff.w = gReturnHistoryLengthInsteadOfOcclusion != 0 ? data1.x : diff.w;
 
         NRD_SURFACE( gOut_Diff, pixelPos ) = diff;
         NRD_SURFACE( gOut_DiffLumaStabilized, pixelPos ) = diffLumaStabilized;
@@ -244,7 +244,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float4 vmbOcclusion = float4( ( bits & uint4( 16, 32, 64, 128 ) ) != 0 );
         float4 vmbOcclusionWeights = Filtering::GetBilinearCustomWeights( vmbBilinearFilter, vmbOcclusion );
 
-        bool vmbAllowCatRom = dot( vmbOcclusion, 1.0 ) > 3.5 && REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TS;
+        bool vmbAllowCatRom = dot( vmbOcclusion, 1.0 ) > 3.5 && REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TS == 1;
         vmbAllowCatRom = vmbAllowCatRom && smbAllowCatRom; // helps to reduce over-sharpening in disoccluded areas
 
         float vmbFootprintQuality = Filtering::ApplyBilinearFilter( vmbOcclusion.x, vmbOcclusion.y, vmbOcclusion.z, vmbOcclusion.w, vmbBilinearFilter );
@@ -305,7 +305,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         // Output
-        spec.w = gReturnHistoryLengthInsteadOfOcclusion ? data1.y : spec.w;
+        spec.w = gReturnHistoryLengthInsteadOfOcclusion != 0 ? data1.y : spec.w;
 
         NRD_SURFACE( gOut_Spec, pixelPos ) = spec;
         NRD_SURFACE( gOut_SpecLumaStabilized, pixelPos ) = specLumaStabilized;

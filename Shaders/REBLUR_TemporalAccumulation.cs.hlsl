@@ -201,7 +201,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         #endif
 
         // TODO: unprotected filtering if "outputRectOrigin" != 0
-        int3 p = int3( NRD_PIXEL_POS( gPrev_Normal_Roughness, smbBilinearFilter.origin ), 0 );
+        int3 p = int3( int2( NRD_PIXEL_POS( gPrev_Normal_Roughness, smbBilinearFilter.origin ) ), 0 );
         float3 n00 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p ) ).xyz;
         float3 n10 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p, int2( 1, 0 ) ) ).xyz;
         float3 n01 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p, int2( 0, 1 ) ) ).xyz;
@@ -229,7 +229,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float disocclusionThresholdMix = 0;
     if( materialID == gStrandMaterialID )
         disocclusionThresholdMix = NRD_GetNormalizedStrandThickness( gStrandThickness, pixelSize );
-    if( gHasDisocclusionThresholdMix && NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX )
+    if( gHasDisocclusionThresholdMix != 0 && NRD_SUPPORTS_DISOCCLUSION_THRESHOLD_MIX == 1 )
         disocclusionThresholdMix = NRD_SURFACE( gIn_DisocclusionThresholdMix, pixelPos );
 
     float disocclusionThreshold = lerp( gDisocclusionThreshold, gDisocclusionThresholdAlternate, disocclusionThresholdMix );
@@ -261,10 +261,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float3 smbPlaneDist1 = abs( prevViewZ1 - Xvprev.z );
     float3 smbPlaneDist2 = abs( prevViewZ2 - Xvprev.z );
     float3 smbPlaneDist3 = abs( prevViewZ3 - Xvprev.z );
-    float3 smbOcclusion0 = step( smbPlaneDist0, smbDisocclusionThreshold.x ) * IsInDenoisingRange( prevViewZ0 );
-    float3 smbOcclusion1 = step( smbPlaneDist1, smbDisocclusionThreshold.y ) * IsInDenoisingRange( prevViewZ1 );
-    float3 smbOcclusion2 = step( smbPlaneDist2, smbDisocclusionThreshold.z ) * IsInDenoisingRange( prevViewZ2 );
-    float3 smbOcclusion3 = step( smbPlaneDist3, smbDisocclusionThreshold.w ) * IsInDenoisingRange( prevViewZ3 );
+    float3 smbOcclusion0 = step( smbPlaneDist0, smbDisocclusionThreshold.x ) * float3( IsInDenoisingRange( prevViewZ0 ) );
+    float3 smbOcclusion1 = step( smbPlaneDist1, smbDisocclusionThreshold.y ) * float3( IsInDenoisingRange( prevViewZ1 ) );
+    float3 smbOcclusion2 = step( smbPlaneDist2, smbDisocclusionThreshold.z ) * float3( IsInDenoisingRange( prevViewZ2 ) );
+    float3 smbOcclusion3 = step( smbPlaneDist3, smbDisocclusionThreshold.w ) * float3( IsInDenoisingRange( prevViewZ3 ) );
 
     // Disocclusion: materialID
     #if( NRD_NORMAL_ENCODING == NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
@@ -279,10 +279,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float3 smbMaterialID3 = float3( UnpackInternalData( smbInternalData3.x ).z, UnpackInternalData( smbInternalData3.y ).z, UnpackInternalData( smbInternalData3.z ).z );
 
         float minMaterialID = min( gSpecMinMaterial, gDiffMinMaterial ); // TODO: separation is expensive
-        smbOcclusion0 *= CompareMaterials( materialID, smbMaterialID0, minMaterialID );
-        smbOcclusion1 *= CompareMaterials( materialID, smbMaterialID1, minMaterialID );
-        smbOcclusion2 *= CompareMaterials( materialID, smbMaterialID2, minMaterialID );
-        smbOcclusion3 *= CompareMaterials( materialID, smbMaterialID3, minMaterialID );
+        smbOcclusion0 *= float3( CompareMaterials( materialID, smbMaterialID0, minMaterialID ) );
+        smbOcclusion1 *= float3( CompareMaterials( materialID, smbMaterialID1, minMaterialID ) );
+        smbOcclusion2 *= float3( CompareMaterials( materialID, smbMaterialID2, minMaterialID ) );
+        smbOcclusion3 *= float3( CompareMaterials( materialID, smbMaterialID3, minMaterialID ) );
 
         uint4 smbInternalData = uint4( smbInternalData0.w, smbInternalData1.z, smbInternalData2.y, smbInternalData3.x );
     #else
@@ -292,7 +292,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // 2x2 occlusion weights
     float4 smbOcclusionWeights = Filtering::GetBilinearCustomWeights( smbBilinearFilter, float4( smbOcclusion0.z, smbOcclusion1.y, smbOcclusion2.y, smbOcclusion3.x ) );
-    bool smbAllowCatRom = dot( smbOcclusion0 + smbOcclusion1 + smbOcclusion2 + smbOcclusion3, 1.0 ) > 11.5 && REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA;
+    bool smbAllowCatRom = dot( smbOcclusion0 + smbOcclusion1 + smbOcclusion2 + smbOcclusion3, 1.0 ) > 11.5 && REBLUR_USE_CATROM_FOR_SURFACE_MOTION_IN_TA == 1;
 
     // Save disocclusion bits
     float fbits = smbOcclusion0.z * 1.0;
@@ -347,7 +347,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #if( NRD_HAS_SPEC )
         // Accumulation speed
         float smbSpecHistoryConfidence = smbFootprintQuality;
-        if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
+        if( gHasHistoryConfidence != 0 && NRD_SUPPORTS_HISTORY_CONFIDENCE == 1 )
         {
             float confidence = saturate( gIn_SpecConfidence.SampleLevel( gLinearClamp, smbPixelUv, 0 ) );
             smbSpecHistoryConfidence = min( smbSpecHistoryConfidence, confidence );
@@ -431,7 +431,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float2 motionUvHigh = pixelUv + smbParallaxInPixelsMin * deltaUv * gRectSizeInv;
 
             // sqrt( 2.0 ) offers a smooth transition from one calculations to another without a hard border
-            if( smbParallaxInPixelsMin > sqrt( 2.0 ) && IsInScreenNearest( motionUvHigh ) )
+            if( smbParallaxInPixelsMin > sqrt( 2.0 ) && IsInScreenNearest( motionUvHigh ) != 0.0 )
             {
                 float2 uvScaled = ClampUvToViewport( motionUvHigh ) + float2( NRD_PIXEL_POS( gIn_ViewZ, int2( 0, 0 ) ) ) * gResourceSizeInv;
 
@@ -512,7 +512,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             #endif
 
             // TODO: unprotected filtering if "outputRectOrigin" != 0
-            int3 p = int3( NRD_PIXEL_POS( gPrev_Normal_Roughness, vmbBilinearFilter.origin ), 0 );
+            int3 p = int3( int2( NRD_PIXEL_POS( gPrev_Normal_Roughness, vmbBilinearFilter.origin ) ), 0 );
             float4 n00 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p ) );
             float4 n10 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p, int2( 1, 0 ) ) );
             float4 n01 = NRD_FrontEnd_UnpackNormalAndRoughness( gPrev_Normal_Roughness.Load( p, int2( 0, 1 ) ) );
@@ -553,7 +553,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             float4 NoXprev = ( Nv.x * vmbVv.x + Nv.y * vmbVv.y ) * ( gOrthoMode == 0 ? vmbViewZ : gOrthoMode ) + Nv.z * vmbVv.z * vmbViewZ;
             float4 vmbPlaneDist = abs( NoXprev - NoXcurr );
 
-            float4 vmbOcclusion = step( vmbPlaneDist, vmbOcclusionThreshold ) * IsInDenoisingRange( vmbViewZ );
+            float4 vmbOcclusion = step( vmbPlaneDist, vmbOcclusionThreshold ) * float4( IsInDenoisingRange( vmbViewZ ) );
 
             // Prev data
             uint4 vmbInternalData = gPrev_InternalData.GatherRed( gNearestClamp, vmbBilinearGatherUv ).wzxy;
@@ -566,7 +566,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             #if( NRD_NORMAL_ENCODING == NRD_NORMAL_ENCODING_R10G10B10A2_UNORM )
                 // Disocclusion: material ID
                 float4 vmbMaterialID = float4( vmbInternalData00.z, vmbInternalData10.z, vmbInternalData01.z, vmbInternalData11.z  );
-                vmbOcclusion *= CompareMaterials( materialID, vmbMaterialID, gSpecMinMaterial );
+                vmbOcclusion *= float4( CompareMaterials( materialID, vmbMaterialID, gSpecMinMaterial ) );
             #endif
 
             // Save disocclusion bits
@@ -583,7 +583,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             vmbFootprintQuality = Math::Sqrt01( vmbFootprintQuality );
 
             float vmbSpecHistoryConfidence = vmbFootprintQuality;
-            if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
+            if( gHasHistoryConfidence != 0 && NRD_SUPPORTS_HISTORY_CONFIDENCE == 1 )
             {
                 float confidence = saturate( gIn_SpecConfidence.SampleLevel( gLinearClamp, vmbPixelUv, 0 ) );
                 vmbSpecHistoryConfidence = min( vmbSpecHistoryConfidence, confidence );
@@ -591,7 +591,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             vmbSpecAccumSpeed *= lerp( vmbSpecHistoryConfidence, 1.0, 1.0 / ( 1.0 + vmbSpecAccumSpeed ) );
 
             // Is CatRom allowed? ( requires complete "vmbOcclusion" )
-            vmbAllowCatRom = dot( vmbOcclusion, 1.0 ) > 3.5 && REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TA;
+            vmbAllowCatRom = dot( vmbOcclusion, 1.0 ) > 3.5 && REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TA == 1;
             vmbAllowCatRom = vmbAllowCatRom && smbAllowCatRom; // helps to reduce over-sharpening in disoccluded areas
         }
 
@@ -681,7 +681,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                     w = lerp( 1.0, w, saturate( stepBetweenTaps ) );
                 #endif
 
-                w = IsInScreenNearest( vmbPixelUvPrev ) ? w : 1.0;
+                w = IsInScreenNearest( vmbPixelUvPrev ) != 0.0 ? w : 1.0;
 
                 // For "min" usage "virtualHistoryConfidence" must include only "roughness" and "normal" weights before this line
                 virtualHistoryConfidence = min( virtualHistoryConfidence, w );
@@ -899,7 +899,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #if( NRD_HAS_DIFF )
         // Accumulation speed
         float diffHistoryConfidence = smbFootprintQuality;
-        if( gHasHistoryConfidence && NRD_SUPPORTS_HISTORY_CONFIDENCE )
+        if( gHasHistoryConfidence != 0 && NRD_SUPPORTS_HISTORY_CONFIDENCE == 1 )
         {
             float confidence = saturate( gIn_DiffConfidence.SampleLevel( gLinearClamp, smbPixelUv, 0 ) );
             diffHistoryConfidence = min( diffHistoryConfidence, confidence );
