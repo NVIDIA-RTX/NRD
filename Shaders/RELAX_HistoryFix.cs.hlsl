@@ -73,8 +73,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Running sparse cross-bilateral filter
     float baseStride = centerMaterialID == gHistoryFixAlternatePixelStrideMaterialID ? gHistoryFixAlternatePixelStride : gHistoryFixBasePixelStride;
-    float r = baseStride / ( 1.0 + historyLength );
-    r = round( r );
+    int r = int( round( baseStride / ( 1.0 + historyLength ) ) );
 
     [unroll]
     for (int j = -2; j <= 2; j++)

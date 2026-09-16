@@ -79,9 +79,9 @@ float3 GetCurrentWorldPosFromClipSpaceXY(float2 clipSpaceXY, float viewZ)
         viewZ * gFrustumForward.xyz + gFrustumRight.xyz * clipSpaceXY.x - gFrustumUp.xyz * clipSpaceXY.y;
 }
 
-float3 GetPreviousWorldPosFromPixelPos(int2 pixelPos, float viewZ)
+float3 GetPreviousWorldPosFromPixelPos(float2 pixelPos, float viewZ)
 {
-    float2 clipSpaceXY = ((float2)pixelPos + float2(0.5, 0.5)) * (1.0 / gRectSizePrev) * 2.0 - 1.0;
+    float2 clipSpaceXY = (pixelPos + float2(0.5, 0.5)) * (1.0 / gRectSizePrev) * 2.0 - 1.0;
 
     return (gOrthoMode == 0) ?
         viewZ * (gPrevFrustumForward.xyz + gPrevFrustumRight.xyz * clipSpaceXY.x - gPrevFrustumUp.xyz * clipSpaceXY.y) :

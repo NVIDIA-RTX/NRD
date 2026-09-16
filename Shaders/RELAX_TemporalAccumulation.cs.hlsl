@@ -80,7 +80,8 @@ float loadSurfaceMotionBasedPrevData(
     float2 prevPixelPosFloat = prevUVSMB * gRectSizePrev;
 
     // Calculating footprint origin and weights
-    int2 bilinearOrigin = int2(floor(prevPixelPosFloat - 0.5));
+    float2 bilinearOriginFloat = floor(prevPixelPosFloat - 0.5);
+    int2 bilinearOrigin = int2(bilinearOriginFloat);
     int2 historyBilinearOrigin = NRD_PIXEL_POS(gPrev_ViewZ, bilinearOrigin);
     float2 bilinearWeights = frac(prevPixelPosFloat - 0.5);
 
@@ -114,7 +115,7 @@ float loadSurfaceMotionBasedPrevData(
     float frustumSize = pixelSize * min(gRectSize.x, gRectSize.y);
     float disocclusionThresholdSlopeScale = 1.0 / lerp(lerp(0.05, 1.0, NoV), 1.0, saturate(smbParallaxInPixelsMax / 30.0));
     float4 smbDisocclusionThreshold = saturate(disocclusionThreshold * disocclusionThresholdSlopeScale) * frustumSize;
-    smbDisocclusionThreshold *= IsInScreenBilinear(bilinearOrigin, gRectSizePrev);
+    smbDisocclusionThreshold *= IsInScreenBilinear(bilinearOriginFloat, gRectSizePrev);
     smbDisocclusionThreshold -= NRD_EPS;
 
     // Calculating validity of 12 bicubic taps, 4 of those are bilinear taps
@@ -268,7 +269,8 @@ float loadVirtualMotionBasedPrevData(
     float2 prevVirtualPixelPosFloat = prevUVVMB * gRectSizePrev;
 
     // Calculating footprint origin and weights
-    int2 bilinearOrigin = int2(floor(prevVirtualPixelPosFloat - 0.5));
+    float2 bilinearOriginFloat = floor(prevVirtualPixelPosFloat - 0.5);
+    int2 bilinearOrigin = int2(bilinearOriginFloat);
     int2 historyBilinearOrigin = NRD_PIXEL_POS(gPrev_ViewZ, bilinearOrigin);
     float2 bilinearWeights = frac(prevVirtualPixelPosFloat - 0.5);
     float2 gatherOrigin = (historyBilinearOrigin + 1.0) * gResourceSizeInvPrev;
@@ -278,7 +280,7 @@ float loadVirtualMotionBasedPrevData(
 
     // Calculating disocclusion threshold
     float4 vmbDisocclusionThreshold = disocclusionThreshold * (gOrthoMode == 0 ? currentLinearZ : 1.0);
-    vmbDisocclusionThreshold *= IsInScreenBilinear(bilinearOrigin, gRectSizePrev);
+    vmbDisocclusionThreshold *= IsInScreenBilinear(bilinearOriginFloat, gRectSizePrev);
     vmbDisocclusionThreshold -= NRD_EPS;
 
     // Checking bilinear footprint only for virtual motion based specular reprojection
@@ -287,13 +289,13 @@ float loadVirtualMotionBasedPrevData(
     float3 prevWorldPosInTap;
     float4 bilinearTapsValid;
 
-    prevWorldPosInTap = GetPreviousWorldPosFromPixelPos(bilinearOrigin + int2(0, 0), prevViewZs.x);
+    prevWorldPosInTap = GetPreviousWorldPosFromPixelPos(bilinearOriginFloat + float2(0, 0), prevViewZs.x);
     bilinearTapsValid.x = isReprojectionTapValid(currentWorldPos, prevWorldPosInTap, currentNormal, vmbDisocclusionThreshold.x);
-    prevWorldPosInTap = GetPreviousWorldPosFromPixelPos(bilinearOrigin + int2(1, 0), prevViewZs.y);
+    prevWorldPosInTap = GetPreviousWorldPosFromPixelPos(bilinearOriginFloat + float2(1, 0), prevViewZs.y);
     bilinearTapsValid.y = isReprojectionTapValid(currentWorldPos, prevWorldPosInTap, currentNormal, vmbDisocclusionThreshold.y);
-    prevWorldPosInTap = GetPreviousWorldPosFromPixelPos(bilinearOrigin + int2(0, 1), prevViewZs.z);
+    prevWorldPosInTap = GetPreviousWorldPosFromPixelPos(bilinearOriginFloat + float2(0, 1), prevViewZs.z);
     bilinearTapsValid.z = isReprojectionTapValid(currentWorldPos, prevWorldPosInTap, currentNormal, vmbDisocclusionThreshold.z);
-    prevWorldPosInTap = GetPreviousWorldPosFromPixelPos(bilinearOrigin + int2(1, 1), prevViewZs.w);
+    prevWorldPosInTap = GetPreviousWorldPosFromPixelPos(bilinearOriginFloat + float2(1, 1), prevViewZs.w);
     bilinearTapsValid.w = isReprojectionTapValid(currentWorldPos, prevWorldPosInTap, currentNormal, vmbDisocclusionThreshold.w);
 
     bilinearTapsValid *= float4( CompareMaterials(currentMaterialID.xxxx, prevMaterialIDs.xyzw, gSpecMinMaterial) );
