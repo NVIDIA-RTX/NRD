@@ -30,7 +30,7 @@ NRD_EXPORT void NRD_CS_MAIN( uint2 threadPos : SV_GroupThreadID, uint2 tilePos :
         s_Radius = 0;
     }
 
-    GroupMemoryBarrier();
+    GroupMemoryBarrierWithGroupSync();
 
     uint2 pixelPos = tilePos * 16 + threadPos * uint2( 2, 4 );
 
@@ -78,7 +78,7 @@ NRD_EXPORT void NRD_CS_MAIN( uint2 threadPos : SV_GroupThreadID, uint2 tilePos :
     InterlockedAdd( s_Mask, mask );
     InterlockedMax( s_Radius, asuint( maxRadius ) );
 
-    GroupMemoryBarrier();
+    GroupMemoryBarrierWithGroupSync();
 
     if( threadIndex == 0 )
     {
