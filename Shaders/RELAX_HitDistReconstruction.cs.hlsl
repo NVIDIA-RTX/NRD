@@ -66,7 +66,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         return;
 
     // Center data
-    float4 normalAndRoughness = NRD_FrontEnd_UnpackNormalAndRoughness(NRD_SURFACE( gIn_Normal_Roughness, pixelPos ));
+    float4 normalAndRoughness = s_Normal_Roughness[smemPos.y][smemPos.x];
     float3 centerNormal = normalAndRoughness.xyz;
     float centerRoughness = normalAndRoughness.w;
 
