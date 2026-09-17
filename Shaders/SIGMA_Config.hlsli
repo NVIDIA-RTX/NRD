@@ -31,6 +31,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define SIGMA_POISSON_SAMPLE_NUM                        8
 #define SIGMA_POISSON_SAMPLES                           g_Special8
 #define SIGMA_MAX_PIXEL_RADIUS                          32.0
+#define SIGMA_NOISE_SUPPRESSION_MIN_PIXEL_RADIUS        8.0
+#define SIGMA_NOISE_SUPPRESSION_MAX_PIXEL_RADIUS        16.0
 #define SIGMA_TS_SIGMA_SCALE                            3.0
 #define SIGMA_MAX_ACCUM_FRAME_NUM                       7
 

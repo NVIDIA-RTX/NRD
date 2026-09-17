@@ -156,6 +156,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Estimate penumbra size and filter shadow ( dense )
     float2 sum = 0;
     float penumbra = 0;
+    float2 relaxedPenumbra = 0;
     SIGMA_TYPE result = 0;
     SIGMA_TYPE centerTap;
 
@@ -193,7 +194,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             result += w == 0.0 ? 0.0 : s * w;
             sum.x += w;
 
-            w *= pixelSize / ( pixelSize + penum ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
+            float relaxedPenumWeight = w * float( !IsLit( penum ) );
+            relaxedPenumbra += float2( penum, 1.0 ) * relaxedPenumWeight;
+
+            float smallPenumWeight = pixelSize / ( pixelSize + penum ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
+            w *= smallPenumWeight;
             w *= float( !IsLit( penum ) );
 
             penumbra += w == 0.0 ? 0.0 : penum * w;
@@ -204,8 +209,16 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     result /= sum.x;
     sum.x = 1.0;
 
+    relaxedPenumbra.x /= max( relaxedPenumbra.y, NRD_EPS );
     penumbra /= max( sum.y, NRD_EPS ); // yes, without patching
     sum.y = float( sum.y != 0.0 );
+
+    float biasedPenumbra = penumbra;
+    float relaxedPenumbraInPixels = relaxedPenumbra.x / pixelSize;
+
+    float softShadowNoiseSuppression = float( gDebug != 0.0 ) * Math::SmoothStep( SIGMA_NOISE_SUPPRESSION_MIN_PIXEL_RADIUS, SIGMA_NOISE_SUPPRESSION_MAX_PIXEL_RADIUS, relaxedPenumbraInPixels );
+    penumbra = lerp( penumbra, relaxedPenumbra.x, softShadowNoiseSuppression );
+    float penumbraRelaxationProtection = saturate( biasedPenumbra / max( penumbra, NRD_EPS ) );
 
     // Avoid blurry result if penumbra size < NRD_BORDER
     float penumbraInPixels = penumbra / pixelSize;
@@ -302,15 +315,6 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float zs = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, pos ) );
         float3 Xvs = Geometry::ReconstructViewPosition( float2( pos + 0.5 ) * gRectSizeInv, gFrustum, zs, gOrthoMode );
 
-        // Sample weight
-        w *= AreBothLitOrUnlit( centerPenumbra, penum );
-
-        // Avoid umbra leaking inside wide penumbra
-        w *= saturate( penum * invEstimatedPenumbra ); // TODO: it works surprisingly well, keep an eye on it!
-
-        float NoX = dot( Nv, Xvs );
-        w = ApplyGeometryWeightLast( w, zs, NoX, geometryWeightParams );
-
         SIGMA_TYPE s;
         #if( FIRST_PASS == 0 || TRANSLUCENCY == 1 )
             s = NRD_SURFACE( gIn_Shadow_Translucency, inputPos );
@@ -322,13 +326,33 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             s = SIGMA_BackEnd_UnpackShadow( s );
         #endif
 
+        // Sample weight
+        w *= AreBothLitOrUnlit( centerPenumbra, penum );
+
+        // Avoid umbra leaking inside wide penumbra
+        float umbraProtection = saturate( penum * invEstimatedPenumbra ); // TODO: it works surprisingly well, keep an eye on it!
+        if( softShadowNoiseSuppression != 0.0 && !IsLit( centerPenumbra ) )
+        {
+            float centerUmbraProtection = saturate( centerPenumbra * invEstimatedPenumbra );
+            float centerShadow = centerTap.x;
+            float brighterSample = saturate( ( s.x - centerShadow ) / max( 1.0 - centerShadow, NRD_EPS ) );
+            float protectedWeight = umbraProtection * centerUmbraProtection * penumbraRelaxationProtection;
+            umbraProtection = lerp( umbraProtection, protectedWeight, brighterSample );
+        }
+        w *= umbraProtection;
+
+        float NoX = dot( Nv, Xvs );
+        w = ApplyGeometryWeightLast( w, zs, NoX, geometryWeightParams );
+
         s = Denanify( w, s );
 
         // Accumulate
         result += s * w;
         sum.x += w;
 
-        w *= pixelSize / ( pixelSize + penum ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
+        float smallPenumWeight = pixelSize / ( pixelSize + penum ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
+        smallPenumWeight = lerp( smallPenumWeight, 1.0, softShadowNoiseSuppression );
+        w *= smallPenumWeight;
         w *= float( !IsLit( penum ) );
 
         penumbra += w == 0.0 ? 0.0 : penum * w;
