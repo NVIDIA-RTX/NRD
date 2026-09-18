@@ -194,7 +194,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             sum.x += w;
 
             // Accumulate penumbra
-            w *= pixelSize / ( pixelSize + penum ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
+            w *= pixelSize / ( pixelSize + penum * SIGMA_PRESERVE_SHADOWS_IN_PENUMBRA ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
             w *= float( !IsLit( penum ) );
 
             penumbra += w == 0.0 ? 0.0 : penum * w;
@@ -221,7 +221,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     penumbra *= f;
     sum *= f;
 
-    // Blur radius ( actually 2x larger to better suppress noise )
+    // Blur radius ( actually 2x larger to suppress noise better )
     float blurRadius = GetKernelRadiusInPixels( penumbra, pixelSize, 0.5 + tileValue * 0.5 ); // fade to 1x in "black" shadows
 
     // Tangent basis with anisotropy
@@ -331,7 +331,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         sum.x += w;
 
         // Accumulate penumbra
-        w *= pixelSize / ( pixelSize + penum ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
+        w *= pixelSize / ( pixelSize + penum * SIGMA_PRESERVE_SHADOWS_IN_PENUMBRA ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
         w *= float( !IsLit( penum ) );
 
         penumbra += w == 0.0 ? 0.0 : penum * w;

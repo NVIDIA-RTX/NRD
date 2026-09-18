@@ -17,6 +17,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define SIGMA_ADJUST_HISTORY_LENGTH_BY_ANTILAG          1 // TODO: is it needed?
 #define SIGMA_USE_SPARSE_BLUR                           1 // can be disabled for debugging purposes
 #define SIGMA_USE_SCREEN_SPACE_SAMPLING                 1 // almost matches world-space sampling but simpler code ( TODO: doesn't elongate shadow )
+#define SIGMA_PRESERVE_SHADOWS_IN_PENUMBRA              1 // it helps to preserve darker shadows in penumbras on average, but may worsen IQ in penumbras at the same time
 
 // Show
 #define SIGMA_SHOW_TILES                                1
