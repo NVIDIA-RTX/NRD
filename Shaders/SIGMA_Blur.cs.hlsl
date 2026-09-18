@@ -189,10 +189,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
                 w = ApplyGeometryWeightLast( w, zs, NoX, geometryWeightParams );
             }
 
-            // Accumulate
+            // Accumulate shadow
             result += w == 0.0 ? 0.0 : s * w;
             sum.x += w;
 
+            // Accumulate penumbra
             w *= pixelSize / ( pixelSize + penum ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
             w *= float( !IsLit( penum ) );
 
@@ -220,8 +221,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     penumbra *= f;
     sum *= f;
 
-    // Blur radius
-    float blurRadius = GetKernelRadiusInPixels( penumbra, pixelSize, tileValue );
+    // Blur radius ( actually 2x larger to better suppress noise )
+    float blurRadius = GetKernelRadiusInPixels( penumbra, pixelSize, 0.5 + tileValue * 0.5 ); // fade to 1x in "black" shadows
 
     // Tangent basis with anisotropy
     #if( FIRST_PASS == 1 )
@@ -305,14 +306,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float zs = UnpackViewZ( NRD_SURFACE( gIn_ViewZ, pos ) );
         float3 Xvs = Geometry::ReconstructViewPosition( mirrorUv, gFrustum, zs, gOrthoMode ); // use "mirrorUv" instead of "pos" to avoid expensive "itof"
+        float NoX = dot( Nv, Xvs );
 
         // Sample weight
         w *= AreBothLitOrUnlit( centerPenumbra, penum );
-
-        // Avoid umbra leaking inside wide penumbra
-        w *= saturate( penum * invEstimatedPenumbra ); // TODO: it works surprisingly well, keep an eye on it!
-
-        float NoX = dot( Nv, Xvs );
+        w *= saturate( penum * invEstimatedPenumbra ); // Avoid umbra leaking inside wide penumbra, it works surprisingly well, keep an eye on it!
         w = ApplyGeometryWeightLast( w, zs, NoX, geometryWeightParams );
 
         SIGMA_TYPE s;
@@ -328,10 +326,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         s = Denanify( w, s );
 
-        // Accumulate
+        // Accumulate shadow
         result += s * w;
         sum.x += w;
 
+        // Accumulate penumbra
         w *= pixelSize / ( pixelSize + penum ); // prefer smaller penumbra, same as "w /= 1.0 + penumInPixels", where penumInPixels = penum / pixelSize
         w *= float( !IsLit( penum ) );
 
