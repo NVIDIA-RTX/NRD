@@ -33,6 +33,9 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define SIGMA_MAX_PIXEL_RADIUS                          32.0
 #define SIGMA_NOISE_SUPPRESSION_MIN_PIXEL_RADIUS        8.0
 #define SIGMA_NOISE_SUPPRESSION_MAX_PIXEL_RADIUS        16.0
+#define SIGMA_NOISE_SUPPRESSION_RADIUS_RELAXATION       1.0
+#define SIGMA_NOISE_SUPPRESSION_REESTIMATION_RELAXATION 1.0
+#define SIGMA_NOISE_SUPPRESSION_UMBRA_PROTECTION        1.0
 #define SIGMA_TS_SIGMA_SCALE                            3.0
 #define SIGMA_MAX_ACCUM_FRAME_NUM                       7
 
