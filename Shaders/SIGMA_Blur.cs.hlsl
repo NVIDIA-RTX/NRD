@@ -81,10 +81,10 @@ void Preload( uint2 sharedPos, int2 globalPos )
             // If only valid lit samples remain, preserve the lit sentinel. If no depth-compatible sample remains, resolve to 0.
             data.x = penumbraWeight == 0.0 ? NRD_FP16_MAX * float( any( wc != 0.0 ) ) : dot( float2( penumbra0, penumbra1 ), penumbraWeights ) / penumbraWeight;
 
-            // A lit / occluded pair is a shadow boundary. Keep at least a 1-pixel radius to avoid the hard-shadow early out
+            // A lit / unlit pair is a shadow boundary. Keep at least a 1-pixel radius to avoid the hard-shadow early out
             bool hasLit = ( wc.x != 0.0 && IsLit( penumbra0 ) ) || ( wc.y != 0.0 && IsLit( penumbra1 ) );
-            bool hasOccluder = ( wc.x != 0.0 && !IsLit( penumbra0 ) ) || ( wc.y != 0.0 && !IsLit( penumbra1 ) );
-            if( hasLit && hasOccluder )
+            bool hasUnlit = ( wc.x != 0.0 && !IsLit( penumbra0 ) ) || ( wc.y != 0.0 && !IsLit( penumbra1 ) );
+            if( hasLit && hasUnlit )
                 data.x = max( data.x, PixelRadiusToWorld( gUnproject, gOrthoMode, 1.0, data.y ) );
 
             s = s0 * wc.x + s1 * wc.y;
@@ -126,7 +126,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float2 pixelUv = float2( pixelPos + 0.5 ) * gRectSizeInv;
     float tileValue = TextureCubic( gIn_Tiles, pixelUv * gResolutionScale ).y;
 
-    if( CanSkipSpatial( tileValue ) || centerPenumbra == 0.0 )
+    if( CanSkipSpatial( tileValue ) || IsBackfaced( centerPenumbra ) )
     {
     #if( FIRST_PASS == 0 )
         if( gStabilizationStrength != 0 )
@@ -154,10 +154,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float2 geometryWeightParams = GetGeometryWeightParams( gPlaneDistSensitivity, frustumSize, Xv, Nv );
 
     // Estimate penumbra size and filter shadow ( dense )
+    float invCenterPenumbraInPixels = pixelSize / centerPenumbra;
+
     float2 sum = 0;
     float penumbra = 0;
     SIGMA_TYPE result = 0;
-    SIGMA_TYPE centerTap;
 
     [unroll]
     for( j = 0; j <= NRD_BORDER * 2; j++ )
@@ -176,16 +177,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
             // Sample weight
             float w = 1.0;
-            if( i == NRD_BORDER && j == NRD_BORDER )
-                centerTap = s;
-            else
+            if( i != NRD_BORDER || j != NRD_BORDER )
             {
                 float2 uv = pixelUv + float2( i - NRD_BORDER, j - NRD_BORDER ) * gRectSizeInv;
                 float3 Xvs = Geometry::ReconstructViewPosition( uv, gFrustum, zs, gOrthoMode );
                 float NoX = dot( Nv, Xvs );
 
-                w *= AreBothLitOrUnlit( centerPenumbra, penum );
-                w *= GetGaussianWeight( length( float2( i - NRD_BORDER, j - NRD_BORDER ) / NRD_BORDER ) );
+                w *= !IsBackfaced( penum );
+                w *= GetGaussianWeight( length( float2( i - NRD_BORDER, j - NRD_BORDER ) * invCenterPenumbraInPixels ) );
                 w = ApplyGeometryWeightLast( w, zs, NoX, geometryWeightParams );
             }
 
@@ -208,19 +207,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     penumbra /= max( sum.y, NRD_EPS ); // yes, without patching
     sum.y = float( sum.y != 0.0 );
 
-    // Avoid blurry result if penumbra size < NRD_BORDER
-    float penumbraInPixels = penumbra / pixelSize;
-    float f = Math::SmoothStep( 0.0, NRD_BORDER, penumbraInPixels );
-    result = lerp( centerTap, result, f ); // TODO: not the best solution
-
 #if( SIGMA_USE_SPARSE_BLUR == 1 )
-    // Avoid unnecessary weight increase for the unfiltered center sample if the blur radius is small
-    f = lerp( 4.0, 1.0, f ); // TODO: adds blurriness
-
-    result *= f;
-    penumbra *= f;
-    sum *= f;
-
     // Blur radius ( actually 2x larger to suppress noise better )
     float blurRadius = GetKernelRadiusInPixels( penumbra, pixelSize, 0.5 + tileValue * 0.5 ); // fade to 1x in "black" shadows
 
@@ -309,7 +296,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float NoX = dot( Nv, Xvs );
 
         // Sample weight
-        w *= AreBothLitOrUnlit( centerPenumbra, penum );
+        w *= !IsBackfaced( penum );
         w *= saturate( penum * invEstimatedPenumbra ); // Avoid umbra leaking inside wide penumbra, it works surprisingly well, keep an eye on it!
         w = ApplyGeometryWeightLast( w, zs, NoX, geometryWeightParams );
 

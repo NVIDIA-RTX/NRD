@@ -74,7 +74,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     // Early out #2
     float2 pixelUv = float2( pixelPos + 0.5 ) * gRectSizeInv;
     float tileValue = TextureCubic( gIn_Tiles, pixelUv * gResolutionScale ).y;
-    bool earlyOut = CanSkipTemporal( tileValue ) || centerPenumbra == 0.0;
+    bool earlyOut = CanSkipTemporal( tileValue ) || IsBackfaced( centerPenumbra );
 
     if( earlyOut && SIGMA_SHOW == 0 )
     {
@@ -106,7 +106,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             {
                 float penum = s_Penumbra[ pos.y ][ pos.x ];
 
-                w = AreBothLitOrUnlit( centerPenumbra, penum );
+                w = float( IsBackfaced( centerPenumbra ) == IsBackfaced( penum ) );
                 w *= GetGaussianWeight( length( float2( i - NRD_BORDER, j - NRD_BORDER ) / NRD_BORDER ) );
             }
 
@@ -227,7 +227,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         result *= all( ( pixelPos & 15 ) != 0 );
     #elif( SIGMA_SHOW == SIGMA_SHOW_HISTORY_WEIGHT )
         #if( TRANSLUCENCY == 1 )
-            result.yzw = historyWeight * float( !isHardShadow );
+            result.yzw = historyWeight * float( !earlyOut );
         #endif
     #elif( SIGMA_SHOW == SIGMA_SHOW_HISTORY_LENGTH )
         #if( TRANSLUCENCY == 1 )
