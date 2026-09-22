@@ -14,7 +14,6 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #define SIGMA_USE_CATROM                                1 // sharper reprojection
 #define SIGMA_5X5_TEMPORAL_KERNEL                       1 // provides variance estimation in a wider radius
 #define SIGMA_5X5_BLUR_RADIUS_ESTIMATION_KERNEL         1 // helps to improve stability, but adds 10% of overhead
-#define SIGMA_ADJUST_HISTORY_LENGTH_BY_ANTILAG          1 // TODO: is it needed?
 #define SIGMA_USE_SPARSE_BLUR                           1 // can be disabled for debugging purposes
 #define SIGMA_USE_SCREEN_SPACE_SAMPLING                 1 // almost matches world-space sampling but simpler code ( TODO: doesn't elongate shadow )
 #define SIGMA_PRESERVE_SHADOWS_IN_PENUMBRA              1 // it helps to preserve darker shadows in penumbras on average, but may worsen IQ in penumbras at the same time
@@ -29,8 +28,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 // Settings
 #define SIGMA_ROTATOR_MODE                              NRD_FRAME
-#define SIGMA_POISSON_SAMPLE_NUM                        8
-#define SIGMA_POISSON_SAMPLES                           g_Special8
+#define SIGMA_POISSON_SAMPLE_NUM                        12              // was 8
+#define SIGMA_POISSON_SAMPLES                           g_Poisson12     // was g_Special8
 #define SIGMA_MAX_PIXEL_RADIUS                          32.0
 #define SIGMA_TS_SIGMA_SCALE                            3.0
 #define SIGMA_MAX_ACCUM_FRAME_NUM                       7
