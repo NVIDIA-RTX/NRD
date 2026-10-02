@@ -1,14 +1,7 @@
-cmake_minimum_required(VERSION 3.22...3.30)
+cmake_minimum_required(VERSION 3.30)
 
 include(CMakeDependentOption)
 include(FetchContent)
-
-# Architecture
-if((CMAKE_GENERATOR_PLATFORM MATCHES "ARM64") OR (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64"))
-    set(IS_ARM64 TRUE)
-else()
-    set(IS_ARM64 FALSE)
-endif()
 
 # Options
 option(NRD_STATIC_LIBRARY "Build static library" OFF)
@@ -52,6 +45,13 @@ set(NRD_VERSION_BUILD ${CMAKE_MATCH_1})
 message("NRD: v${NRD_VERSION_MAJOR}.${NRD_VERSION_MINOR}.${NRD_VERSION_BUILD}")
 
 project(NRD VERSION ${NRD_VERSION_MAJOR}.${NRD_VERSION_MINOR}.${NRD_VERSION_BUILD} LANGUAGES CXX)
+
+# Arm64?
+if((CMAKE_GENERATOR_PLATFORM MATCHES "ARM64") OR (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64"))
+    set(IS_ARM64 TRUE)
+else()
+    set(IS_ARM64 FALSE)
+endif()
 
 # Enable grouping of source files into folders in IDEs
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -157,7 +157,7 @@ if(NOT TARGET NRI AND NRD_NRI)
         nri
         DOWNLOAD_EXTRACT_TIMESTAMP 1
         DOWNLOAD_NO_PROGRESS 1
-        URL "https://github.com/NVIDIA-RTX/NRI/archive/f321a3de47b97422eef34be61372cf60774738a9.zip"
+        URL "https://github.com/NVIDIA-RTX/NRI/archive/d0e1cbf3fe2d866e6fe9f04e9f74ba6162b56620.zip"
     )
     list(APPEND DEPS nri)
 endif()
@@ -170,14 +170,17 @@ if(DEPS)
 endif()
 
 # NRD
-set(GLOB_INCUDE
+set(NRD_HEADERS
     "Include/NRD.h"
     "Include/NRDDescs.h"
     "Include/NRDSettings.h"
 )
-source_group("Include" FILES ${GLOB_INCUDE})
+source_group("Include"
+    FILES
+        ${NRD_HEADERS}
+)
 
-set(GLOB_SOURCE
+set(NRD_SOURCE
     "Source/InstanceImpl.cpp"
     "Source/InstanceImpl.h"
     "Source/Reblur.cpp"
@@ -189,9 +192,12 @@ set(GLOB_SOURCE
     "Source/Timer.h"
     "Source/Wrapper.cpp"
 )
-source_group("Source" FILES ${GLOB_SOURCE})
+source_group("Source"
+    FILES
+        ${NRD_SOURCE}
+)
 
-set(GLOB_DENOISERS
+set(NRD_DENOISERS
     "Source/Denoisers/Reblur_Diffuse.hpp"
     "Source/Denoisers/Reblur_DiffuseDirectionalOcclusion.hpp"
     "Source/Denoisers/Reblur_DiffuseOcclusion.hpp"
@@ -212,42 +218,41 @@ set(GLOB_DENOISERS
     "Source/Denoisers/Sigma_Shadow.hpp"
     "Source/Denoisers/Sigma_ShadowTranslucency.hpp"
 )
-source_group("Denoisers" FILES ${GLOB_DENOISERS})
+source_group("Denoisers"
+    FILES
+        ${NRD_DENOISERS}
+)
 
-set(GLOB_RESOURCES
+set(NRD_RESOURCES
     "Resources/NRD.rc"
     "Resources/Version.h"
 )
-source_group("Resources" FILES ${GLOB_RESOURCES})
+source_group("Resources"
+    FILES
+        ${NRD_RESOURCES}
+)
 
 if(NRD_STATIC_LIBRARY)
-    add_library(NRD STATIC
-        ${GLOB_SOURCE}
-        ${GLOB_DENOISERS}
-        ${GLOB_RESOURCES}
-        ${GLOB_INCUDE}
-    )
+    add_library(NRD STATIC)
 else()
-    add_library(NRD SHARED
-        ${GLOB_SOURCE}
-        ${GLOB_DENOISERS}
-        ${GLOB_RESOURCES}
-        ${GLOB_INCUDE}
-    )
-
-    if(WIN32)
-        target_compile_definitions(NRD PRIVATE "NRD_API=extern \"C\" __declspec(dllexport)")
-    else()
-        target_compile_definitions(NRD PRIVATE "NRD_API=extern \"C\" __attribute__((visibility(\"default\")))")
-    endif()
+    add_library(NRD SHARED)
 
     if(MSVC)
-        target_link_options(NRD PRIVATE
-            $<$<CONFIG:Release>:/DEBUG> # generate a PDB for Release build
-            $<$<CONFIG:Release>:/OPT:ICF> # perform identical COMDAT folding (removes duplicate code/data)
+        target_link_options(NRD
+            PRIVATE
+                $<$<CONFIG:Release>:/DEBUG> # generate a PDB for Release build
+                $<$<CONFIG:Release>:/OPT:ICF> # perform identical COMDAT folding (removes duplicate code/data)
         )
     endif()
 endif()
+
+target_sources(NRD
+    PRIVATE
+        ${NRD_SOURCE}
+        ${NRD_DENOISERS}
+        ${NRD_RESOURCES}
+        ${NRD_HEADERS}
+)
 
 if("${NRD_SHADERS_PATH}" STREQUAL "")
     set(NRD_SHADERS_PATH "${CMAKE_CURRENT_SOURCE_DIR}/_Shaders")
@@ -266,6 +271,14 @@ target_include_directories(NRD
 )
 target_compile_definitions(NRD
     PRIVATE
+        $<$<NOT:$<BOOL:${NRD_STATIC_LIBRARY}>>:
+            $<$<BOOL:${WIN32}>:
+                "NRD_API=extern \"C\" __declspec(dllexport)"
+            >
+            $<$<NOT:$<BOOL:${WIN32}>>:
+                "NRD_API=extern \"C\" __attribute__((visibility(\"default\")))"
+            >
+        >
         WIN32_LEAN_AND_MEAN
         NOMINMAX
         _CRT_SECURE_NO_WARNINGS
@@ -282,44 +295,59 @@ target_compile_definitions(NRD
 )
 target_compile_options(NRD
     PRIVATE
-        # GCC/Clang
+        # Options for Clang/GCC compilers
         $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
-            -Wextra
+            $<$<NOT:$<BOOL:${MSVC}>>:
+                -Wextra
+                -Werror
+                -fvisibility=hidden
+                $<$<NOT:$<BOOL:${IS_ARM64}>>:-mssse3>
+            >
             -Wno-missing-field-initializers
-            $<$<NOT:$<BOOL:${IS_ARM64}>>:-mssse3>
         >
-        # GCC/Clang, but not over MSVC
-        $<$<AND:$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>,$<NOT:$<BOOL:${MSVC}>>>:
-            -Werror
-            -fPIC
-            -fvisibility=hidden
-        >
-        # MSVC specific options
-        $<$<CXX_COMPILER_ID:MSVC>:
+        # Options for MSVC frontend
+        $<$<BOOL:${MSVC}>:
             /W4
             /WX
             /wd4324
             $<$<CONFIG:Release>:/Zi>
         >
 )
-target_compile_features(NRD PUBLIC cxx_std_17)
+target_compile_features(NRD
+    PUBLIC
+        cxx_std_17
+)
 
-set_target_properties(NRD PROPERTIES
-    FOLDER "NRD"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+set_target_properties(NRD
+    PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+        FOLDER "NRD"
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )
 
 # NRD integration
-set(GLOB_INTEGRATION
+set(NRD_INTEGRATION
     "Integration/NRDIntegration.h"
     "Integration/NRDIntegration.hpp"
 )
-source_group("" FILES ${GLOB_INTEGRATION})
+source_group(""
+    FILES
+        ${NRD_INTEGRATION}
+)
 
 add_library(NRDIntegration INTERFACE)
-target_sources(NRDIntegration INTERFACE ${GLOB_INTEGRATION})
-target_include_directories(NRDIntegration INTERFACE "Integration")
-set_target_properties(NRDIntegration PROPERTIES FOLDER "NRD")
+target_sources(NRDIntegration
+    INTERFACE
+        ${NRD_INTEGRATION}
+)
+target_include_directories(NRDIntegration
+    INTERFACE
+        "Integration"
+)
+set_target_properties(NRDIntegration
+    PROPERTIES
+        FOLDER "NRD"
+)
 
 # Shaders
 file(GLOB_RECURSE SHADERS
@@ -327,7 +355,10 @@ file(GLOB_RECURSE SHADERS
     "Shaders/*.hlsli"
 )
 
-set_source_files_properties(${SHADERS} PROPERTIES VS_TOOL_OVERRIDE "None")
+set_source_files_properties(${SHADERS}
+    PROPERTIES
+        VS_TOOL_OVERRIDE "None"
+)
 
 # ShaderMake general arguments
 get_target_property(ML_SOURCE_DIR MathLib SOURCE_DIR)
@@ -378,14 +409,22 @@ endif()
 list(APPEND SHADERMAKE_COMMANDS "") # fix for "The system cannot find the batch label specified - VCEnd"
 
 # Add the target with the commands
-add_custom_target(NRDShaders ALL ${SHADERMAKE_COMMANDS}
-    DEPENDS ShaderMake
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    SOURCES ${SHADERS}
+add_custom_target(NRDShaders
+    ALL
+        ${SHADERMAKE_COMMANDS}
+    DEPENDS
+        ShaderMake
+    WORKING_DIRECTORY
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+    SOURCES
+        ${SHADERS}
     VERBATIM
 )
 
-set_target_properties(NRDShaders PROPERTIES FOLDER "NRD")
+set_target_properties(NRDShaders
+    PROPERTIES
+        FOLDER "NRD"
+)
 add_dependencies(NRD NRDShaders)
 
 # Info
