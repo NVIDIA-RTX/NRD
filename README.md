@@ -69,8 +69,12 @@ See *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* project for all det
   - Generate and build the project using *CMake*
   - To build the binary with static MSVC runtime, add `-DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>"` parameter when deploying the project
 - Build (variant 2) - by running scripts:
-  - Run `1-Deploy`
-  - Run `2-Build`
+  - To deploy the project, run `Scripts/<Platform>/1-Deploy`
+  - To build the project, run `Scripts/<Platform>/2-Build`
+  - To package the SDK, run `Scripts/<Platform>/3-PrepareSDK`
+  - To clean generated files, run `Scripts/<Platform>/4-Clean`
+
+`<Platform>` is `Windows` or `Linux`. Use `.bat` on Windows; run `.sh` scripts with `bash` on Linux.
 
 *CMake* options:
 - Common:
@@ -94,15 +98,14 @@ See *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* project for all det
 
 SDK packaging:
 - Compile the solution (*Debug* / *Release* or both, depending on what you want to get in *NRD* package)
-- Run `3-PrepareSDK`
+- Run `Scripts/<Platform>/3-PrepareSDK`
 - Grab generated in the root directory `_NRD_SDK` and `_NRI_SDK` (if needed) folders and use them in your project
 
 Updating:
 - Clone latest
-- Run `4-Clean`
-- Run `1-Deploy`
-- Run `2-Build`
-- Run `3-Run`
+- Run `Scripts/<Platform>/4-Clean`
+- Run `Scripts/<Platform>/1-Deploy`
+- Run `Scripts/<Platform>/2-Build`
 
 ## HOW TO REPORT ISSUES?
 
