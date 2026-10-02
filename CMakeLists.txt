@@ -126,7 +126,7 @@ if(NOT TARGET ShaderMake)
         shadermake
         DOWNLOAD_EXTRACT_TIMESTAMP 1
         DOWNLOAD_NO_PROGRESS 1
-        URL "https://github.com/NVIDIA-RTX/ShaderMake/archive/7abd1490b4bba728c65e7a1621e0d78d1d1121b7.zip"
+        URL "https://github.com/NVIDIA-RTX/ShaderMake/archive/9c978c37ccd1c00b8669d633735823fe25ee3647.zip"
     )
     list(APPEND DEPS shadermake)
 endif()
@@ -148,6 +148,7 @@ if(NOT TARGET NRI AND NRD_NRI)
     option(NRI_ENABLE_AMDAGS "" OFF)
     option(NRI_ENABLE_NVTX_SUPPORT "" OFF)
     option(NRI_ENABLE_NONE_SUPPORT "" OFF)
+    option(NRI_ENABLE_WGPU_SUPPORT "" OFF)
     cmake_dependent_option(NRI_ENABLE_VK_SUPPORT "" ON "NRD_EMBEDS_SPIRV_SHADERS" OFF)
     cmake_dependent_option(NRI_ENABLE_D3D12_SUPPORT "" ON "NRD_EMBEDS_DXIL_SHADERS" OFF)
     cmake_dependent_option(NRI_ENABLE_D3D11_SUPPORT "" ON "NRD_EMBEDS_DXBC_SHADERS" OFF)
@@ -156,7 +157,7 @@ if(NOT TARGET NRI AND NRD_NRI)
         nri
         DOWNLOAD_EXTRACT_TIMESTAMP 1
         DOWNLOAD_NO_PROGRESS 1
-        URL "https://github.com/NVIDIA-RTX/NRI/archive/730557e13e0b4d1938892c20800fa62e692d8aab.zip"
+        URL "https://github.com/NVIDIA-RTX/NRI/archive/f321a3de47b97422eef34be61372cf60774738a9.zip"
     )
     list(APPEND DEPS nri)
 endif()
