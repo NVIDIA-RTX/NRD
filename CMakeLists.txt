@@ -126,7 +126,7 @@ if(NOT TARGET ShaderMake)
         shadermake
         DOWNLOAD_EXTRACT_TIMESTAMP 1
         DOWNLOAD_NO_PROGRESS 1
-        URL "https://github.com/NVIDIA-RTX/ShaderMake/archive/9c978c37ccd1c00b8669d633735823fe25ee3647.zip"
+        URL "https://github.com/NVIDIA-RTX/ShaderMake/archive/3f01623a76b092ac127d2debd79a672f55d77665.zip"
     )
     list(APPEND DEPS shadermake)
 endif()
@@ -157,7 +157,7 @@ if(NOT TARGET NRI AND NRD_NRI)
         nri
         DOWNLOAD_EXTRACT_TIMESTAMP 1
         DOWNLOAD_NO_PROGRESS 1
-        URL "https://github.com/NVIDIA-RTX/NRI/archive/d0e1cbf3fe2d866e6fe9f04e9f74ba6162b56620.zip"
+        URL "https://github.com/NVIDIA-RTX/NRI/archive/0994c32a3f266e965040cb01710cddfcd539c6bb.zip"
     )
     list(APPEND DEPS nri)
 endif()
