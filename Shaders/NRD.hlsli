@@ -1124,7 +1124,7 @@ float3 NRD_SG_ResolveSpecular( NRD_SG sg, float3 N, float3 V, float roughness )
     Y *= Gmod * NoL; // F applied in demodulation
 
     // Fitting the unfittable
-    Y *= lerp( lerp( 0.1, 0.4, m2 ), 0.8, NoV );
+    Y *= lerp( lerp( 0.2 - 0.1 * saturate( roughness / 0.4 ), 0.4, m2 ), 0.8, NoV );
 
     // Fix the bare minimum
     Y = max( Y, sg.c0 / NRD_PI );
@@ -1146,6 +1146,9 @@ float2 NRD_SG_ReJitter(
     float3 N, float3 Ne, float3 Nw, float3 Nn, float3 Ns
 )
 {
+    // Clamp roughness to avoid numerical imprecisions
+    roughness = max( roughness, 0.05 );
+
     // Extract dominant light directions
     float3 Ld = NRD_SG_ExtractDirection( diffSg );
     float3 Ls = NRD_SG_ExtractDirection( specSg );
