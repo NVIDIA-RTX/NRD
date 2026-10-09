@@ -43,7 +43,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 
 // NRI-based NRD integration layer
 #define NRD_INTEGRATION_VERSION 23
-#define NRD_INTEGRATION_DATE "27 August 2026"
+#define NRD_INTEGRATION_DATE "9 October 2026"
 
 namespace nrd {
 

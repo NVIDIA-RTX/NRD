@@ -17,7 +17,7 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
 #endif
 
 static_assert(NRD_VERSION_MAJOR >= 4 && NRD_VERSION_MINOR >= 18, "Unsupported NRD version!");
-static_assert(NRI_VERSION >= 181, "Unsupported NRI version!");
+static_assert(NRI_VERSION >= 190, "Unsupported NRI version!");
 
 #define NRD_INTEGRATION_RETURN_FALSE_ON_FAILURE(expr) \
     if ((expr) != nri::Result::SUCCESS) \
@@ -210,7 +210,7 @@ bool Integration::RecreatePipelines() {
 
     for (uint32_t i = 0; i < instanceDesc.pipelinesNum; i++) {
         const PipelineDesc& nrdPipelineDesc = instanceDesc.pipelines[i];
-        
+
         const ComputeShaderDesc* nrdComputeShader = nullptr;
         if (deviceDesc.graphicsAPI == nri::GraphicsAPI::D3D12)
             nrdComputeShader = &nrdPipelineDesc.computeShaderDXIL;
