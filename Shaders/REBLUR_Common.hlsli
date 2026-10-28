@@ -141,7 +141,7 @@ float GetLumaScale( float currLuma, float newLuma )
     // is not used. But we can't use "saturate" because otherwise fast history clamping won't be able to
     // increase energy ( i.e. clamp a lower value to a bigger one from fast history ).
 
-    return ( newLuma + NRD_EPS ) / ( currLuma + NRD_EPS );
+    return newLuma / max( currLuma, NRD_EPS );
 }
 
 #if( NRD_MODE == NRD_MODE_OCCLUSION )

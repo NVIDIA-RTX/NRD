@@ -171,11 +171,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float diffLumaStabilized = lerp( diffLuma, diffLumaHistory, min( diffHistoryWeight, gStabilizationStrength ) );
 
         REBLUR_TYPE diff = NRD_SURFACE( gIn_Diff, pixelPos );
-        diff = ChangeLuma( diff, diffLumaStabilized );
         #if( NRD_MODE == NRD_MODE_SH )
             REBLUR_SH_TYPE diffSh = NRD_SURFACE( gIn_DiffSh, pixelPos );
-            diffSh *= GetLumaScale( length( diffSh ), diffLumaStabilized );
+            diffSh *= GetLumaScale( GetLuma( diff ), diffLumaStabilized );
         #endif
+        diff = ChangeLuma( diff, diffLumaStabilized );
 
         // Output
         diff.w = gReturnHistoryLengthInsteadOfOcclusion != 0 ? data1.x : diff.w;
@@ -298,11 +298,11 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         float specLumaStabilized = lerp( specLuma, specLumaHistory, min( specHistoryWeight, gStabilizationStrength ) );
 
         REBLUR_TYPE spec = NRD_SURFACE( gIn_Spec, pixelPos );
-        spec = ChangeLuma( spec, specLumaStabilized );
         #if( NRD_MODE == NRD_MODE_SH )
             REBLUR_SH_TYPE specSh = NRD_SURFACE( gIn_SpecSh, pixelPos );
-            specSh *= GetLumaScale( length( specSh ), specLumaStabilized );
+            specSh *= GetLumaScale( GetLuma( spec ), specLumaStabilized );
         #endif
+        spec = ChangeLuma( spec, specLumaStabilized );
 
         // Output
         spec.w = gReturnHistoryLengthInsteadOfOcclusion != 0 ? data1.y : spec.w;

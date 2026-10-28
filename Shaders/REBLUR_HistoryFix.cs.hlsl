@@ -283,10 +283,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             diffLuma = diffFastCenter;
         #endif
 
-        diff = ChangeLuma( diff, diffLuma );
         #if( NRD_MODE == NRD_MODE_SH )
-            diffSh *= GetLumaScale( length( diffSh ), diffLuma );
+            diffSh *= GetLumaScale( GetLuma( diff ), diffLuma );
         #endif
+        diff = ChangeLuma( diff, diffLuma );
 
         // Output
         NRD_SURFACE( gOut_Diff, pixelPos ) = diff;
@@ -492,10 +492,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             specLuma = specFastCenter;
         #endif
 
-        spec = ChangeLuma( spec, specLuma );
         #if( NRD_MODE == NRD_MODE_SH )
-            specSh *= GetLumaScale( length( specSh ), specLuma );
+            specSh *= GetLumaScale( GetLuma( spec ), specLuma );
         #endif
+        spec = ChangeLuma( spec, specLuma );
 
         // Output
         NRD_SURFACE( gOut_Spec, pixelPos ) = spec;
