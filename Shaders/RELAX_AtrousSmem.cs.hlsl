@@ -135,14 +135,15 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     // Prev normal and roughness
     int2 sharedMemoryIndex = threadPos.xy + int2(NRD_BORDER, NRD_BORDER);
-    float4 normalRoughness = s_Normal_Roughness[sharedMemoryIndex.y][sharedMemoryIndex.x];
     float centerViewZ = UnpackViewZ(viewZpacked);
-    if (!IsInDenoisingRange( centerViewZ ))
+    float4 normalRoughness = 1.0 / 255.0;
+    float4 centerWorldPosMaterialID = float4(0.0, 0.0, 0.0, 255.0); // out-of-range history uses an invalid material ID (valid IDs are 0-3)
+    if (IsInDenoisingRange( centerViewZ ))
     {
-        // Setting normal and roughness to close to zero for out of range pixels
-        normalRoughness = 1.0 / 255.0;
+        // Sky tiles skip SMEM preloading and contain no in-range pixels.
+        normalRoughness = s_Normal_Roughness[sharedMemoryIndex.y][sharedMemoryIndex.x];
+        centerWorldPosMaterialID = s_WorldPos_MaterialID[sharedMemoryIndex.y][sharedMemoryIndex.x];
     }
-    float4 centerWorldPosMaterialID = s_WorldPos_MaterialID[sharedMemoryIndex.y][sharedMemoryIndex.x];
     float3 centerWorldPos = centerWorldPosMaterialID.xyz;
     float centerMaterialID = centerWorldPosMaterialID.w;
 
