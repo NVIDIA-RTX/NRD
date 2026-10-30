@@ -531,7 +531,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         prevWorldPos,
         prevUVSMB,
         currentLinearZ,
-        normalize(currentNormalAveraged),
+        _NRD_SafeNormalize(currentNormalAveraged),
     #if( NRD_HAS_SPEC )
         specularIllumination.a,
     #endif
