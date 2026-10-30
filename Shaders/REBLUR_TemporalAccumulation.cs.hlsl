@@ -423,7 +423,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             ww /= ww.x + ww.y; // TODO: perspective correction?
 
             float3 x = x10 * ww.x + x01 * ww.y;
-            float3 n = normalize( n10 * ww.x + n01 * ww.y );
+            float3 n = _NRD_SafeNormalize( n10 * ww.x + n01 * ww.y ); // opposing neighboring normals can cancel to zero, causing normalize to propagate NaNs into the output
 
             // High parallax - flattens surface on high motion ( test 132, 172, 173, 174, 190, 201, 202, 203, e9 )
             // - "smbParallaxInPixelsMin" is used to get "0" ( ignore "high parallax" ) on objects attached to the camera
