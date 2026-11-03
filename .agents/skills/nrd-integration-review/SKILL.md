@@ -148,6 +148,8 @@ Source basis: README non-noisy inputs/validation; `CommonSettings`; sample `GetM
 - Use a large finite sky/out-of-range Z rather than INF; confirm skip/composition logic agrees with denoisingRange.
 - Make positive/negative view-Z conventions and viewZScale consistent across matrices, guides, and distance normalization.
 - Supply world-space normals and linear material roughness before helper encoding.
+- Verify that the roughness supplied to NRD represents the BSDF actually used for tracing at the primary or PSR surface. Follow material remapping, GGX alpha conversion, minimum-width rules, and delta-event classification; compare effective linear roughness rather than confusing it with squared roughness or a UI parameter.
+- Compare tracing roughness, the value passed to the packing helper, the stored texel after format quantization, and NRD's decoded roughness. Match the installed normal/roughness encoding configuration and allow only the selected representation's expected error or helper-imposed minimum; do not assume that encoded zero always decodes to literal zero.
 - Verify matrix memory layout, row/column-vector conventions, and any transpositions as a coherent transformation.
 - Pass non-jittered current/previous projection matrices and correctly matched camera jitter separately.
 - Check jitter units, signs, amplitude, and current/previous frame association against header comments and the actual camera convention.
@@ -160,7 +162,7 @@ Source basis: README non-noisy inputs/validation; `CommonSettings`; sample `GetM
 - Check moving-origin/camera-relative world coordinates against previous matrices and scene motion.
 - Verify any previous-world transform against the application's coordinate-system changes and the documented feature support.
 - Inspect animated/skinned object motion separately from camera-only motion and static-scene reprojection.
-- Investigate denoising-specific roughness floors/adjustments and ensure they do not create downstream normalization inconsistency.
+- Flag application roughness floors, disocclusion additions, or heuristics for another consumer that change the traced lobe represented by NRD's guide. Matching normalization to that altered guide does not establish that the guide describes the traced BSDF. Evaluate any documented physical roughness adjustment against the installed contract explicitly.
 
 ### Boundary helpers and material factors
 
@@ -222,6 +224,7 @@ Source basis: README noisy inputs/combined lighting and shader pseudocode; helpe
 - Normalize REBLUR distances with `REBLUR_FrontEnd_GetNormHitDist`; supply RELAX distances in scene units.
 - Match shader hit-distance normalization parameters to the denoiser settings and engine world units.
 - Match specular normalization roughness to the effective NRD guide roughness, allowing expected encoding quantization; matching other parameters does not compensate for a roughness mismatch.
+- Check both roughness relationships independently: tracing-to-guide consistency and guide-to-hit-distance-normalization consistency. Correcting one does not correct the other.
 - Use diffuse roughness 1 for diffuse normalization under the inspected helper contract.
 - Average diffuse hit distances over diffuse paths, and specular occlusion distances over specular paths where prescribed; preserve zero when that lobe has no samples and do not count other-lobe paths.
 - For multiple specular radiance/SH samples of the same pixel/layer, use Begin/Add/End and inspect the installed zero/minimum reduction semantics. Count eligible specular samples, not total rays; base `1 + 1` has only one specular sample.
@@ -270,6 +273,7 @@ Source basis: README PSR section; `NRD.hlsli` PSR throughput comments; virtual g
 
 - Identify the primary or PSR surface represented by each layer and the application's replacement/termination criterion; check the guide, material, motion, and distance origin coherently rather than inferring replacement solely from numeric roughness.
 - Replace associated material properties, normal/roughness, viewZ, motion, distance origin, and directions coherently for PSR.
+- Use the replacement surface's effective tracing roughness for its PSR guide. A pure mirror reflecting a rough surface does not imply zero roughness at the replacement surface; do not substitute the original mirror's roughness for that material.
 - Place virtual geometry along the camera view ray using the intended optical-distance model.
 - Transform terminal normals through the reflection chain in the proper order and preserve reflection handedness.
 - Transform object motion into the corresponding virtual frame and distinguish it from camera motion.
@@ -410,6 +414,7 @@ Source basis: README validation layer/issue-reporting guidance, public validatio
 - Use NRD Debug checks and OUT_VALIDATION where available; record which diagnostics were actually enabled.
 - Capture raw lobe RGB, sampled masks, alpha units, decoded normals/roughness, viewZ, motion, factors, and settings for relevant failure modes.
 - Test ordinary contact geometry, a roughness ramp spanning exporter/floor thresholds, and independent diffuse/specular colors.
+- Capture tracing roughness, pre-pack roughness, and decoded NRD roughness for exact-zero materials, values around the tracing delta threshold, and a roughness ramp. Include PSR/disocclusion boundaries and check the selected encoding's expected precision separately from application-side inflation.
 - Test low-F0 dielectrics beside metals to expose lobe coverage and material-boundary mixing.
 - Inspect every active PSR layer, including non-dominant reflected/transmitted branches.
 - Test camera-only motion, animated objects, planar mirrors, and bounded curved/transmissive limitations separately.
