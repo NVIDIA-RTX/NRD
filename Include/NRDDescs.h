@@ -417,7 +417,7 @@ namespace nrd
     struct TextureDesc
     {
         Format format;
-        uint16_t downsampleFactor;
+        uint16_t downsampleFactor; // divide resource width and height by this factor, rounding up
     };
 
     struct ResourceDesc
