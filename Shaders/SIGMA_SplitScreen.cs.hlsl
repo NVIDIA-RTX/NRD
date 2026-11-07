@@ -43,8 +43,8 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     #endif
 
     #if( SIGMA_SHOW == SIGMA_SHOW_PENUMBRA_SIZE )
-        s = PackShadow( data.x );
+        s = data.x;
     #endif
 
-    NRD_SURFACE( gOut_Shadow_Translucency, pixelPos ) = s * float( IsInDenoisingRange( viewZ ) );
+    NRD_SURFACE( gOut_Shadow_Translucency, pixelPos ) = PackShadow( s ) * float( IsInDenoisingRange( viewZ ) );
 }
