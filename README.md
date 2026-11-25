@@ -561,17 +561,17 @@ where:
     - the attached viewport visualizes kernel rotators in time
 - Viewport 1 - linear roughness
 - Viewport 2 - linear viewZ
-  - green = `+`
-  - blue = `-`
-  - red = `out of denoising range`
-- Viewport 3 - difference between MVs, coming from `IN_MV`, and expected MVs, assuming that the scene is static
-  - magenta = likely jittered MVs (the mismatch matches `CommonSettings::cameraJitter`)
-  - blue = `out of screen`
-  - pixels with moving objects have non-0 values
+  - *green* = `+`
+  - *blue* = `-`
+  - *red* = `out of denoising range`
+- Viewport 3 - MV error against static geometry
+  - *magenta* = suspected jitter in MVs; brighter means more jittering suspected
+  - *blue* = `out of screen`
+  - moving objects can turn *magenta* even with correct MVs
 - Viewport 4 - world-space normals
 - Viewport 7 - amount of virtual history
-- Viewport 8 - number of accumulated frames for diffuse signal (checkerboarded red = `history reset`)
-- Viewport 11 - number of accumulated frames for specular signal (checkerboarded red = `history reset`)
+- Viewport 8 - number of accumulated frames for diffuse signal (checkerboarded *red* = `history reset`)
+- Viewport 11 - number of accumulated frames for specular signal (checkerboarded *red* = `history reset`)
 - Viewport 12 - input normalized `hitT` for diffuse signal (ambient occlusion, AO)
 - Viewport 15 - input normalized `hitT` for specular signal (specular occlusion, SO)
 

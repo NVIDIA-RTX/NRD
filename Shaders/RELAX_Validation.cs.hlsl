@@ -132,15 +132,15 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
         float2 uvDelta = ( viewportUvPrev - viewportUvPrevExpected ) * gRectSize;
 
-        bool isMvLikelyJittered = false;
-        if( gMvScale.w == 0.0 && length( gJitter ) > 0.01 )
+        float jitterConfidence = 0.0;
+        if( gMvScale.w == 0.0 && !isInf )
         {
-            float jitterError = length( uvDelta - gJitter );
-            float noJitterError = length( uvDelta );
+            float2 jitterDelta = gJitter - gJitterPrev * gRectSize / gRectSizePrev;
 
-            isMvLikelyJittered = jitterError < noJitterError && jitterError < 0.1;
+            jitterConfidence = GetMvJitterConfidence( uvDelta, gJitter );
+            jitterConfidence = max( jitterConfidence, GetMvJitterConfidence( uvDelta, jitterDelta ) );
         }
-        result.xyz = isMvLikelyJittered ? float3( 1, 0, 1 ) : float3( abs( uvDelta ), 0 );
+        result.xyz = lerp( float3( abs( uvDelta ), 0 ), float3( 1, 0, 1 ), jitterConfidence );
 
         result.xyz = IsInScreenNearest( viewportUvPrev ) != 0.0 ? result.xyz : float3( 0, 0, 1 );
         result.w = 1.0;

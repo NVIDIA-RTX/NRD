@@ -253,6 +253,16 @@ static const float3 g_Special8[ 8 ] =
 #define UnpackViewZ( z )                        abs( z * gViewZScale )
 #define IsInDenoisingRange( z )                 ( z < gDenoisingRange ) // "!IsInDenoisingRange( viewZ )" is NAN safe
 
+float GetMvJitterConfidence( float2 residual, float2 jitter ) // in pixels
+{
+    float jitterLength = length( jitter );
+    float tolerance = clamp( 0.25 * jitterLength, 0.001, 0.1 );
+    float error = length( residual - jitter );
+    float confidence = Math::SmoothStep( tolerance, 0.5 * tolerance, error );
+
+    return confidence * Math::SmoothStep( 0.02, 0.05, jitterLength );
+}
+
 float PixelRadiusToWorld( float unproject, float orthoMode, float pixelRadius, float viewZ )
 {
      return pixelRadius * unproject * lerp( viewZ, 1.0, abs( orthoMode ) );
