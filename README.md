@@ -1,4 +1,4 @@
-# NVIDIA REAL-TIME DENOISERS (NRD) v4.18.0
+# NVIDIA REAL-TIME DENOISERS (NRD) v4.18.1
 
 [![Build NRD SDK](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml/badge.svg)](https://github.com/NVIDIA-RTX/NRD/actions/workflows/build.yml)
 
@@ -6,9 +6,9 @@
 
 # OVERVIEW
 
-*NVIDIA Real-Time Denoisers (NRD)* is an API-agnostic, spatio-temporal library designed for high-quality denoising of noisy signals, focusing primarily on (but not limited to) 1 path/pixel path tracing. Engineered to handle both static and dynamic lighting, *NRD* utilizes per-pixel G-buffer guides (normal, roughness, viewZ and motion vector) to resolve noise on opaque surfaces. *NRD* is used in 15+ *AAA* game titles and *ProVis* applications, like: [*Autodesk Aurora*](https://github.com/Autodesk/Aurora), [*Enscape*](https://blog.chaos.com/revolutionizing-real-time-rendering-nvidia-denoisers) and [*Lumion*](https://community.lumion.com/index.php?threads/lumion-r-d-preview-nrd-for-ray-tracing.4726/). Its modern "SH" mode achieves quality comparable with *DLSS-RR*, offering a powerful, non-AI alternative that holds its own in an AI-dominated world.
+*NVIDIA Real-Time Denoisers (NRD)* is an API-agnostic, spatio-temporal library designed for high-quality denoising of noisy signals, focusing primarily on (but not limited to) 1 path/pixel path tracing. Engineered to handle both static and dynamic lighting, *NRD* utilizes per-pixel G-buffer guides (normal, roughness, viewZ and motion vector) to resolve noise on opaque surfaces. *NRD* is used in 25+ *AAA* game titles and *ProVis* applications, like: [*Autodesk Aurora*](https://github.com/Autodesk/Aurora), [*Enscape*](https://blog.chaos.com/revolutionizing-real-time-rendering-nvidia-denoisers) and [*Lumion*](https://community.lumion.com/index.php?threads/lumion-r-d-preview-nrd-for-ray-tracing.4726/). Its modern "SH" mode achieves quality comparable with *DLSS-RR*, offering a powerful, non-AI alternative that holds its own in an AI-dominated world.
 
-While NRD is not natively designed for volumetrics or transparency, the *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample/simplex)* demonstrates a robust "denoising-free" glass rendering path. This approach combines *[SHARC](https://github.com/NVIDIA-RTX/SHARC)*, clever reprojection of the currently denoised frame and dithering to deliver high-fidelity results via TAA or upscaling.
+While NRD is not natively designed for volumetrics or transparency, the *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* demonstrates a robust "denoising-free" glass rendering path. This approach combines *[SHARC](https://github.com/NVIDIA-RTX/SHARC)*, clever reprojection of the currently denoised frame and dithering to deliver high-fidelity results via TAA or upscaling.
 
 *NRD* includes the following denoisers:
 - *REBLUR* - recurrent blur based denoiser
@@ -58,8 +58,8 @@ NRD is easy to use:
     - use `NRD_MaterialFactors` to convert denoised radiance back to irradiance after "unpacking" data (add materials back)
 
 See *[NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)* project for all details:
-- `simplex` branch (recommended) - focuses on path tracing and *NRD* best practices (less code, less preprocessor, easier to follow)
-- `main` branch - contains everything needed for *NRD* development, testing and maintaining, all variants of *NRD* usage are here
+- `main` branch (recommended) - focuses on path tracing and *NRD* best practices (less code, less preprocessor, easier to follow)
+- `sandbox` branch - contains everything needed for *NRD* development, testing and maintaining, all variants of *NRD* usage are here
 
 ## HOW TO BUILD?
 
@@ -304,7 +304,7 @@ Shader part:
 ```cpp
 #include "NRD.hlsli"
 
-// Pseudo code (this can be simplified for 1 path per pixel, see "NRD sample/simplex" branch)
+// Pseudo code (this can be simplified for 1 path per pixel, see "NRD sample/main" branch)
 Hit primaryHit; // aka 0 bounce, or PSR
 
 Out out = (Out)0;
@@ -710,7 +710,7 @@ Using [*NRD Integration*](https://github.com/NVIDIA-RTX/NRD/blob/master/Integrat
 <summary>(CLICK) Shader code:</summary>
 
 ```cpp
-// See https://github.com/NVIDIA-RTX/NRD-Sample/blob/simplex/Shaders/Composition.cs.hlsl
+// See https://github.com/NVIDIA-RTX/NRD-Sample/blob/main/Shaders/Composition.cs.hlsl
 
 // Radiance
 float4 diff = gIn_Diff[ pixelPos ];
@@ -816,8 +816,8 @@ Tips and tricks:
 - applying reasonable acceleration to surfaces with animated normals (water, etc.) helps maintain responsiveness
 
 Implementation details:
-- see "SHARC Update" [pass](https://github.com/NVIDIA-RTX/NRD-Sample/blob/simplex/Shaders/SharcUpdate.cs.hlsl)
-- see "ConfidenceBlur" [pass](https://github.com/NVIDIA-RTX/NRD-Sample/blob/simplex/Shaders/ConfidenceBlur.cs.hlsl)
+- see "SHARC Update" [pass](https://github.com/NVIDIA-RTX/NRD-Sample/blob/main/Shaders/SharcUpdate.cs.hlsl)
+- see "ConfidenceBlur" [pass](https://github.com/NVIDIA-RTX/NRD-Sample/blob/main/Shaders/ConfidenceBlur.cs.hlsl)
 - search for `Gradient` in [NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample)
 
 ## HAIR DENOISING TIPS
@@ -833,7 +833,7 @@ Sub-pixel thin geometry of strand-based hair transforms "normals guide" into jit
   - in other words, `B` must follow the following rules:
     - `cross( T, B ) != 0`
     - `B` must not follow hair strand "tube"
-- search for `FLAG_HAIR` in [NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample/simplex) for more details (enable `RTXCR_INTEGRATION` in *CMake* and use `Claire` scene)
+- search for `FLAG_HAIR` in [NRD sample](https://github.com/NVIDIA-RTX/NRD-Sample) for more details (enable `RTXCR_INTEGRATION` in *CMake* and use `Claire` scene)
 
 Hair strands tangent vectors *can't* be used as "normals guide" for *NRD* due to BRDF and curvature related calculations, requiring a vector, which can be considered a "normal" vector.
 

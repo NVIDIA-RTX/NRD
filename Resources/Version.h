@@ -25,6 +25,6 @@ Versioning rules:
 
 #define VERSION_MAJOR                   4
 #define VERSION_MINOR                   18
-#define VERSION_BUILD                   0
+#define VERSION_BUILD                   1
 
 #define VERSION_STRING STR(VERSION_MAJOR.VERSION_MINOR.VERSION_BUILD encoding=NRD_NORMAL_ENCODING.NRD_ROUGHNESS_ENCODING)
