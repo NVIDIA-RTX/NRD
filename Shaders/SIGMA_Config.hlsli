@@ -60,6 +60,8 @@ license agreement from NVIDIA CORPORATION is strictly prohibited.
     NRD_CONSTANT( float4, gCameraDelta ) \
     NRD_CONSTANT( float4, gMvScale ) \
     NRD_CONSTANT( float4, gMvBias ) \
+    NRD_CONSTANT( float2, gJitter ) \
+    NRD_CONSTANT( float2, gJitterPrev ) \
     NRD_CONSTANT( float2, gResourceSizeInv ) \
     NRD_CONSTANT( float2, gResourceSizeInvPrev ) \
     NRD_CONSTANT( float2, gRectSize ) \

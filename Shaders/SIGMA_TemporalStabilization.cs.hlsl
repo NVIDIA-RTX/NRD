@@ -121,13 +121,19 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     SIGMA_TYPE sigma = GetStdDev( m1, m2 );
 
+    // Fade jitter compensation out for subpixel penumbras to preserve sharp shadows
+    float penumbraRadiusInPixels = centerPenumbra / PixelRadiusToWorld( gUnproject, gOrthoMode, 1.0, viewZ );
+    float jitterScale = saturate( penumbraRadiusInPixels / 0.5 );
+    float2 jitter = gJitter * jitterScale;
+    float2 jitterPrev = gJitterPrev * jitterScale;
+
     // Current and previous positions
-    float3 Xv = Geometry::ReconstructViewPosition( pixelUv, gFrustum, viewZ, gOrthoMode );
+    float3 Xv = Geometry::ReconstructViewPosition( pixelUv + jitter, gFrustum, viewZ, gOrthoMode );
     float3 X = Geometry::RotateVectorInverse( gWorldToView, Xv );
 
     float3 mv = NRD_SURFACE( gIn_Mv, pixelPos ) * gMvScale.xyz + gMvBias.xyz;
     float3 Xprev = X;
-    float2 smbPixelUv = pixelUv + mv.xy;
+    float2 smbPixelUv = pixelUv + mv.xy + jitter - jitterPrev;
 
     if( gMvScale.w == 0.0 )
     {
@@ -135,14 +141,14 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
             mv.z = Geometry::AffineTransform( gWorldToViewPrev, X ).z - viewZ;
 
         float viewZprev = viewZ + mv.z;
-        float3 Xvprevlocal = Geometry::ReconstructViewPosition( smbPixelUv, gFrustumPrev, viewZprev, gOrthoMode ); // TODO: use gOrthoModePrev
+        float3 Xvprevlocal = Geometry::ReconstructViewPosition( smbPixelUv + jitterPrev, gFrustumPrev, viewZprev, gOrthoMode ); // TODO: use gOrthoModePrev
 
         Xprev = Geometry::RotateVectorInverse( gWorldToViewPrev, Xvprevlocal ) + gCameraDelta.xyz;
     }
     else
     {
         Xprev += mv;
-        smbPixelUv = Geometry::GetScreenUv( gWorldToClipPrev, Xprev );
+        smbPixelUv = Geometry::GetScreenUv( gWorldToClipPrev, Xprev ) - jitterPrev;
     }
 
     // History length
@@ -165,7 +171,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     float historyLength = Filtering::ApplyBilinearCustomWeights( prevHistoryLength.x, prevHistoryLength.y, prevHistoryLength.z, prevHistoryLength.w, smbOcclusionWeights );
 
     // Sample history
-    bool isCatRomAllowed = dot( smbOcclusionWeights, 1.0 ) > 3.5;
+    bool isCatRomAllowed = SIGMA_USE_CATROM == 1 && dot( smbOcclusion, 1.0 ) > 3.5 && IsInScreenBicubic( smbBilinearFilter.origin, gRectSizePrev );
 
     SIGMA_TYPE history;
     BicubicFilterNoCornersWithFallbackToBilinearFilterWithCustomWeights(

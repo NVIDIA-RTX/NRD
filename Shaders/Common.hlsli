@@ -329,6 +329,11 @@ float4 IsInScreenBilinear( float2 footprintOrigin, float2 rectSize )
     return float4( r.xzxz & r.yyww );
 }
 
+bool IsInScreenBicubic( float2 footprintOrigin, float2 rectSize )
+{
+    return all( ( footprintOrigin >= 1.0 ) & ( footprintOrigin < rectSize - 2.0 ) );
+}
+
 float2 ApplyCheckerboardShift( float2 pos, uint mode, uint counter, uint frameIndex )
 {
     // IMPORTANT: "pos" must be snapped to the pixel center
