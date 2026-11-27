@@ -121,8 +121,10 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
 
     SIGMA_TYPE sigma = GetStdDev( m1, m2 );
 
-    // Fade jitter compensation out for subpixel penumbras to preserve sharp shadows
     float penumbraRadiusInPixels = centerPenumbra / PixelRadiusToWorld( gUnproject, gOrthoMode, 1.0, viewZ );
+    penumbraRadiusInPixels = IsLit( centerPenumbra ) ? 0.0 : penumbraRadiusInPixels;
+
+    // Fade jitter compensation out for subpixel penumbras to preserve sharp shadows
     float jitterScale = saturate( penumbraRadiusInPixels / 0.5 );
     float2 jitter = gJitter * jitterScale;
     float2 jitterPrev = gJitterPrev * jitterScale;
@@ -194,17 +196,34 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
     antilag = 1.0 - Math::Sqrt01( antilag );
     historyLength *= antilag;
 
-    // History weight
-    float historyWeight = historyLength / ( 1.0 + historyLength );
+    // Increase history confidence for "in penumbra" motion
+    float2 motionInPixels = ( smbPixelUv - pixelUv + jitterPrev - jitter ) * gRectSize;
+    float motionInPenumbra = max( length( motionInPixels ), 0.1 ) * Math::PositiveRcp( 0.75 * 2.0 * penumbraRadiusInPixels ); // 75% of size
+    float historyConfidence = Math::SmoothStep01( motionInPenumbra );
 
-    // Combine with the current frame
-    float stabilizationWeight = 1.0 - min( gStabilizationStrength, historyWeight );
+    // Increase history confidence if clamping didn't occur
+    SIGMA_TYPE historyDelta = abs( historyClamped - history );
+    float historyDeltaMax = historyDelta.x;
+    #if( TRANSLUCENCY == 1 )
+        historyDeltaMax = max( max( historyDelta.x, historyDelta.y ), max( historyDelta.z, historyDelta.w ) );
+    #endif
+    historyConfidence *= saturate( historyDeltaMax * 4.0 );
+
+    // Decorrelate color clamping artefacts probabilistically based on hsitory confidence (0 = confident)
+    Rng::Hash::Initialize( pixelPos, gFrameIndex );
+    historyClamped = Rng::Hash::GetFloat( ) >= historyConfidence ? history : historyClamped;
+
+    // Accumulation speed
+    float accumSpeed = 1.0 / ( 1.0 + historyLength );
+    accumSpeed = max( 1.0 - gStabilizationStrength, accumSpeed );
+
     #if( NRD_SUPPORTS_CHECKERBOARD == 1 )
         if( gCheckerboard != 2 && Sequence::CheckerBoard( pixelPos, gFrameIndex ) != gCheckerboard )
-            stabilizationWeight *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, stabilizationWeight );
+            accumSpeed *= lerp( 1.0 - gCheckerboardResolveAccumSpeed, 1.0, accumSpeed );
     #endif
 
-    SIGMA_TYPE result = lerp( historyClamped, input, stabilizationWeight );
+    // Combine with the current frame
+    SIGMA_TYPE result = lerp( historyClamped, input, accumSpeed );
 
     // Debug ( don't forget that ".x" is used in antilag computations! )
     #if( SIGMA_SHOW == SIGMA_SHOW_TILES )
@@ -220,7 +239,7 @@ NRD_EXPORT void NRD_CS_MAIN( NRD_CS_MAIN_ARGS )
         result *= all( ( pixelPos & 15 ) != 0 );
     #elif( SIGMA_SHOW == SIGMA_SHOW_HISTORY_WEIGHT )
         #if( TRANSLUCENCY == 1 )
-            result.yzw = historyWeight * float( !earlyOut );
+            result.yzw = ( 1.0 - accumSpeed ) * float( !earlyOut );
         #endif
     #elif( SIGMA_SHOW == SIGMA_SHOW_HISTORY_LENGTH )
         #if( TRANSLUCENCY == 1 )
